@@ -1,2 +1,5 @@
-# patient-portal
-This is the patient portal for Oncolife AI.
+# Patient Platform
+
+## Structure - `frontend/` - React application - `backend/` - Python API 
+
+## Getting Started 
