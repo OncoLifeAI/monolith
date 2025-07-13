@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from authlib.oidc.core import CodeIDToken
@@ -9,9 +9,10 @@ from itsdangerous import URLSafeTimedSerializer
 import json
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 
-app = FastAPI()
+# Create router instead of app
+router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Session management using signed cookies
 SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-here')
@@ -53,24 +54,24 @@ async def get_oauth_client():
             userinfo_endpoint=metadata['userinfo_endpoint'],
         )
 
-@app.get("/", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     session_data = get_session_data(request)
     user = session_data.get('user')
     
     if user:
-        return f'Hello, {user["email"]}. <a href="/logout">Logout</a>'
+        return f'Hello, {user["email"]}. <a href="/auth/logout">Logout</a>'
     else:
-        return f'Welcome! Please <a href="/login">Login</a>.'
+        return f'Welcome! Please <a href="/auth/login">Login</a>.'
 
-@app.get("/login")
+@router.get("/login")
 async def login(request: Request):
     oauth_client = await get_oauth_client()
     
     # Generate authorization URL
     authorization_url, state = oauth_client.create_authorization_url(
         url=oauth_client.authorization_endpoint,
-        redirect_uri=f"{request.base_url}authorize",
+        redirect_uri=f"{request.base_url}auth/authorize",
         scope="email openid phone"
     )
     
@@ -87,7 +88,7 @@ async def login(request: Request):
     
     return response
 
-@app.get("/authorize")
+@router.get("/authorize")
 async def authorize(request: Request, code: str = None, state: str = None):
     if not code:
         raise HTTPException(status_code=400, detail="Authorization code not provided")
@@ -104,7 +105,7 @@ async def authorize(request: Request, code: str = None, state: str = None):
     token_response = await oauth_client.fetch_token(
         url=oauth_client.token_endpoint,
         code=code,
-        redirect_uri=f"{request.base_url}authorize"
+        redirect_uri=f"{request.base_url}auth/authorize"
     )
     
     # Get user info
@@ -119,7 +120,7 @@ async def authorize(request: Request, code: str = None, state: str = None):
     session_data['user'] = user_info
     session_data.pop('oauth_state', None)  # Remove state after use
     
-    response = RedirectResponse(url="/")
+    response = RedirectResponse(url="/auth/")
     response.set_cookie(
         key="session",
         value=create_session_cookie(session_data),
@@ -130,12 +131,8 @@ async def authorize(request: Request, code: str = None, state: str = None):
     
     return response
 
-@app.get("/logout")
+@router.get("/logout")
 async def logout():
-    response = RedirectResponse(url="/")
+    response = RedirectResponse(url="/auth/")
     response.delete_cookie("session")
     return response
-
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, debug=True)
