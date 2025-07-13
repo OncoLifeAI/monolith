@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const healthRoutes = require('./health-endpoint');
+const loginRoutes = require('./login-endpoints');
 
 router.get('/', (req, res) => {
   res.json({
@@ -14,5 +15,6 @@ router.get('/', (req, res) => {
 
 
 router.use('/api', healthRoutes);
+router.use('/api', loginRoutes);
 
 module.exports = router;

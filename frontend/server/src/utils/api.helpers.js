@@ -4,45 +4,115 @@ const api = {
   get: async (url, config = {}) => {
     try {
       const response = await apiClient.get(url, config);
-      return response.data;
+      return {
+        success: true,
+        status: response.status,
+        data: response.data,
+        error: null
+      };
     } catch (error) {
-      throw error;
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        data: null,
+        error: {
+          message: error.response?.data?.detail || error.message || 'Request failed',
+          code: error.response?.status || 500,
+          details: error.response?.data || error.message
+        }
+      };
     }
   },
 
   post: async (url, data = {}, config = {}) => {
     try {
       const response = await apiClient.post(url, data, config);
-      return response.data;
+      return {
+        success: true,
+        status: response.status,
+        data: response.data,
+        error: null
+      };
     } catch (error) {
-      throw error;
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        data: null,
+        error: {
+          message: error.response?.data?.detail || error.message || 'Request failed',
+          code: error.response?.status || 500,
+          details: error.response?.data || error.message
+        }
+      };
     }
   },
 
   put: async (url, data = {}, config = {}) => {
     try {
       const response = await apiClient.put(url, data, config);
-      return response.data;
+      return {
+        success: true,
+        status: response.status,
+        data: response.data,
+        error: null
+      };
     } catch (error) {
-      throw error;
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        data: null,
+        error: {
+          message: error.response?.data?.detail || error.message || 'Request failed',
+          code: error.response?.status || 500,
+          details: error.response?.data || error.message
+        }
+      };
     }
   },
 
   delete: async (url, config = {}) => {
     try {
       const response = await apiClient.delete(url, config);
-      return response.data;
+      return {
+        success: true,
+        status: response.status,
+        data: response.data,
+        error: null
+      };
     } catch (error) {
-      throw error;
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        data: null,
+        error: {
+          message: error.response?.data?.detail || error.message || 'Request failed',
+          code: error.response?.status || 500,
+          details: error.response?.data || error.message
+        }
+      };
     }
   },
 
   patch: async (url, data = {}, config = {}) => {
     try {
       const response = await apiClient.patch(url, data, config);
-      return response.data;
+      return {
+        success: true,
+        status: response.status,
+        data: response.data,
+        error: null
+      };
     } catch (error) {
-      throw error;
+      return {
+        success: false,
+        status: error.response?.status || 500,
+        data: null,
+        error: {
+          message: error.response?.data?.detail || error.message || 'Request failed',
+          code: error.response?.status || 500,
+          details: error.response?.data || error.message
+        }
+      };
     }
   },
 };
