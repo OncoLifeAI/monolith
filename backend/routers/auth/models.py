@@ -15,23 +15,24 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-class LoginResponse(BaseModel):
-    valid: bool
-    message: str
-    user_status: Optional[str] = None
-    session: Optional[str] = None
-
-class CompleteNewPasswordRequest(BaseModel):
-    email: EmailStr
-    new_password: str
-    session: str
-    
 class AuthTokens(BaseModel):
     access_token: str
     refresh_token: str
     id_token: str
     token_type: str
 
+class LoginResponse(BaseModel):
+    valid: bool
+    message: str
+    user_status: Optional[str] = None
+    session: Optional[str] = None
+    tokens: Optional[AuthTokens] = None
+
+class CompleteNewPasswordRequest(BaseModel):
+    email: EmailStr
+    new_password: str
+    session: str
+    
 class CompleteNewPasswordResponse(BaseModel):
     message: str
     tokens: AuthTokens 

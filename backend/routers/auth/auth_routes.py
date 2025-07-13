@@ -1,4 +1,18 @@
-from fastapi import APIRouter, HTTPException
+"""
+Authentication Routes
+
+This module provides authentication endpoints using AWS Cognito:
+
+Routes:
+- POST /auth/signup: Register a new user account
+- POST /auth/login: Authenticate user and get tokens
+- POST /auth/complete-new-password: Complete new password challenge for first-time users
+
+All routes handle Cognito integration and manage user data in the patient database.
+"""
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import os
 import boto3
@@ -7,7 +21,7 @@ import logging
 import hmac
 import hashlib
 import base64
-from .models import (
+from routers.auth.models import (
     SignupRequest,
     SignupResponse,
     LoginRequest,
@@ -16,6 +30,10 @@ from .models import (
     CompleteNewPasswordResponse,
     AuthTokens,
 )
+# Import DB session and models
+from database import get_patient_db
+from routers.db.models import PatientInfo, PatientConfigurations
+
 
 # Load environment variables
 load_dotenv()
@@ -50,10 +68,11 @@ def _get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
 
 
 @router.post("/signup", response_model=SignupResponse)
-async def signup_user(request: SignupRequest):
+async def signup_user(request: SignupRequest, db: Session = Depends(get_patient_db)):
     """
     Create a new user in AWS Cognito User Pool.
-    Cognito will generate a temporary password and email it to the user.
+    On success, also creates corresponding records in the patient_info
+    and patient_configurations tables.
     """
     try:
         user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
@@ -78,9 +97,36 @@ async def signup_user(request: SignupRequest):
             ForceAliasCreation=False,
         )
 
+        # Extract the UUID (sub) that Cognito automatically generates
+        user_sub = None
+        for attribute in response["User"]["Attributes"]:
+            if attribute["Name"] == "sub":
+                user_sub = attribute["Value"]
+                break
+        
+        if not user_sub:
+            # This is a critical failure, should be investigated if it occurs
+            logger.error(f"Could not find UUID in Cognito response for {request.email}")
+            raise HTTPException(status_code=500, detail="User created in Cognito, but failed to retrieve UUID.")
+
         logger.info(
-            f"Successfully created user: {request.email}. Cognito will send a temporary password."
+            f"Successfully created user in Cognito: {request.email}. User UUID (sub): {user_sub}"
         )
+
+        # Now, create the corresponding records in our own database
+        new_patient_info = PatientInfo(
+            uuid=user_sub,
+            email_address=request.email,
+            first_name=request.first_name,
+            last_name=request.last_name,
+        )
+        new_patient_config = PatientConfigurations(uuid=user_sub)
+
+        db.add(new_patient_info)
+        db.add(new_patient_config)
+        db.commit()
+        
+        logger.info(f"Successfully created database records for user {user_sub}")
 
         return SignupResponse(
             message=f"User {request.email} created successfully. A temporary password has been sent to their email.",
@@ -145,7 +191,19 @@ async def validate_login(request: LoginRequest):
 
         if "AuthenticationResult" in auth_response:
             logger.info(f"Successful login for: {request.email}")
-            return LoginResponse(valid=True, message="Login credentials are valid", user_status="CONFIRMED")
+            auth_result = auth_response["AuthenticationResult"]
+            tokens = AuthTokens(
+                access_token=auth_result["AccessToken"],
+                refresh_token=auth_result["RefreshToken"],
+                id_token=auth_result["IdToken"],
+                token_type=auth_result["TokenType"],
+            )
+            return LoginResponse(
+                valid=True,
+                message="Login credentials are valid",
+                user_status="CONFIRMED",
+                tokens=tokens
+            )
 
         elif "ChallengeName" in auth_response:
             challenge_name = auth_response["ChallengeName"]
