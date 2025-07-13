@@ -5,3 +5,4 @@ httpx
 python-dotenv
 python-multipart
 itsdangerous
+boto3

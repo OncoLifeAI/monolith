@@ -1,138 +1,287 @@
-from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
-from authlib.integrations.httpx_client import AsyncOAuth2Client
-from authlib.oidc.core import CodeIDToken
-import os
+from fastapi import APIRouter, HTTPException
 from dotenv import load_dotenv
-import httpx
-from itsdangerous import URLSafeTimedSerializer
-import json
+import os
+import boto3
+from botocore.exceptions import ClientError
+import logging
+import hmac
+import hashlib
+import base64
+from .models import (
+    SignupRequest,
+    SignupResponse,
+    LoginRequest,
+    LoginResponse,
+    CompleteNewPasswordRequest,
+    CompleteNewPasswordResponse,
+    AuthTokens,
+)
 
-# Load environment variables from .env file
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+# Load environment variables
+load_dotenv()
 
-# Create router instead of app
+# Create router
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-# Session management using signed cookies
-SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-here')
-serializer = URLSafeTimedSerializer(SECRET_KEY)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# OAuth2 client configuration
-COGNITO_AUTHORITY = os.getenv('COGNITO_AUTHORITY')
-COGNITO_CLIENT_ID = os.getenv('COGNITO_CLIENT_ID')
-COGNITO_CLIENT_SECRET = os.getenv('COGNITO_CLIENT_SECRET')
-COGNITO_METADATA_URL = os.getenv('COGNITO_METADATA_URL')
-FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-# Helper functions for session management
-def get_session_data(request: Request):
-    """Extract session data from signed cookie"""
-    session_cookie = request.cookies.get('session')
-    if not session_cookie:
-        return {}
+def get_cognito_client():
+    """Get AWS Cognito client"""
+    return boto3.client(
+        "cognito-idp",
+        region_name=os.getenv("AWS_REGION", "us-east-1"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
+
+
+def _get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
+    """Calculates the SecretHash for Cognito API calls."""
+    msg = username + client_id
+    dig = hmac.new(
+        key=client_secret.encode("utf-8"),
+        msg=msg.encode("utf-8"),
+        digestmod=hashlib.sha256,
+    ).digest()
+    return base64.b64encode(dig).decode()
+
+
+@router.post("/signup", response_model=SignupResponse)
+async def signup_user(request: SignupRequest):
+    """
+    Create a new user in AWS Cognito User Pool.
+    Cognito will generate a temporary password and email it to the user.
+    """
     try:
-        return serializer.loads(session_cookie, max_age=3600)  # 1 hour expiry
-    except:
-        return {}
+        user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
+        if not user_pool_id:
+            raise HTTPException(
+                status_code=500, detail="COGNITO_USER_POOL_ID not configured"
+            )
 
-def create_session_cookie(data: dict):
-    """Create signed session cookie"""
-    return serializer.dumps(data)
+        cognito_client = get_cognito_client()
 
-async def get_oauth_client():
-    """Get OAuth2 client with metadata"""
-    async with httpx.AsyncClient() as client:
-        metadata_response = await client.get(COGNITO_METADATA_URL)
-        metadata = metadata_response.json()
-        
-        return AsyncOAuth2Client(
-            client_id=COGNITO_CLIENT_ID,
-            client_secret=COGNITO_CLIENT_SECRET,
-            authorization_endpoint=metadata['authorization_endpoint'],
-            token_endpoint=metadata['token_endpoint'],
-            userinfo_endpoint=metadata['userinfo_endpoint'],
+        user_attributes = [
+            {"Name": "email", "Value": request.email},
+            {"Name": "email_verified", "Value": "true"},
+            {"Name": "given_name", "Value": request.first_name},
+            {"Name": "family_name", "Value": request.last_name},
+        ]
+
+        response = cognito_client.admin_create_user(
+            UserPoolId=user_pool_id,
+            Username=request.email,
+            UserAttributes=user_attributes,
+            ForceAliasCreation=False,
         )
 
-@router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    session_data = get_session_data(request)
-    user = session_data.get('user')
-    
-    if user:
-        return f'Hello, {user["email"]}. <a href="/auth/logout">Logout</a>'
-    else:
-        return f'Welcome! Please <a href="/auth/login">Login</a>.'
-
-@router.get("/login")
-async def login(request: Request):
-    oauth_client = await get_oauth_client()
-    
-    # Generate authorization URL
-    authorization_url, state = oauth_client.create_authorization_url(
-        url=oauth_client.authorization_endpoint,
-        redirect_uri=f"{request.base_url}auth/authorize",
-        scope="email openid phone"
-    )
-    
-    # Store state in session for security
-    response = RedirectResponse(url=authorization_url)
-    session_data = {'oauth_state': state}
-    response.set_cookie(
-        key="session",
-        value=create_session_cookie(session_data),
-        httponly=True,
-        secure=True,
-        samesite='lax'
-    )
-    
-    return response
-
-@router.get("/authorize")
-async def authorize(request: Request, code: str = None, state: str = None):
-    if not code:
-        raise HTTPException(status_code=400, detail="Authorization code not provided")
-    
-    session_data = get_session_data(request)
-    stored_state = session_data.get('oauth_state')
-    
-    if not stored_state or stored_state != state:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
-    
-    oauth_client = await get_oauth_client()
-    
-    # Exchange code for token
-    token_response = await oauth_client.fetch_token(
-        url=oauth_client.token_endpoint,
-        code=code,
-        redirect_uri=f"{request.base_url}auth/authorize"
-    )
-    
-    # Get user info
-    async with httpx.AsyncClient() as client:
-        userinfo_response = await client.get(
-            oauth_client.userinfo_endpoint,
-            headers={'Authorization': f"Bearer {token_response['access_token']}"}
+        logger.info(
+            f"Successfully created user: {request.email}. Cognito will send a temporary password."
         )
-        user_info = userinfo_response.json()
-    
-    # Store user in session
-    session_data['user'] = user_info
-    session_data.pop('oauth_state', None)  # Remove state after use
-    
-    response = RedirectResponse(url="/auth/")
-    response.set_cookie(
-        key="session",
-        value=create_session_cookie(session_data),
-        httponly=True,
-        secure=True,
-        samesite='lax'
-    )
-    
-    return response
 
-@router.get("/logout")
-async def logout():
-    response = RedirectResponse(url="/auth/")
-    response.delete_cookie("session")
-    return response
+        return SignupResponse(
+            message=f"User {request.email} created successfully. A temporary password has been sent to their email.",
+            email=request.email,
+            user_status=response["User"]["UserStatus"],
+        )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+
+        if error_code == "UsernameExistsException":
+            raise HTTPException(
+                status_code=400, detail=f"User with email {request.email} already exists"
+            )
+        else:
+            logger.error(f"Cognito error: {error_code} - {error_message}")
+            raise HTTPException(
+                status_code=500, detail=f"AWS Cognito error: {error_message}"
+            )
+
+    except Exception as e:
+        logger.error(f"Unexpected error creating user: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/login", response_model=LoginResponse)
+async def validate_login(request: LoginRequest):
+    """
+    Validate if a user's email and password is valid for login.
+    If a temporary password is used, it returns a session token for the password change flow.
+    """
+    try:
+        user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not user_pool_id or not client_id:
+            logger.error("Cognito environment variables not configured.")
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        auth_parameters = {"USERNAME": request.email, "PASSWORD": request.password}
+
+        if client_secret:
+            auth_parameters["SECRET_HASH"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        auth_response = cognito_client.admin_initiate_auth(
+            UserPoolId=user_pool_id,
+            ClientId=client_id,
+            AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+            AuthParameters=auth_parameters,
+        )
+
+        logger.info(f"Cognito auth response for {request.email}: {auth_response}")
+
+        if "AuthenticationResult" in auth_response:
+            logger.info(f"Successful login for: {request.email}")
+            return LoginResponse(valid=True, message="Login credentials are valid", user_status="CONFIRMED")
+
+        elif "ChallengeName" in auth_response:
+            challenge_name = auth_response["ChallengeName"]
+            session = auth_response.get("Session")
+            logger.info(
+                f"Login for {request.email} requires challenge: {challenge_name}"
+            )
+
+            if challenge_name == "NEW_PASSWORD_REQUIRED":
+                return LoginResponse(
+                    valid=True,
+                    message="Login credentials are valid but password change is required.",
+                    user_status="FORCE_CHANGE_PASSWORD",
+                    session=session,
+                )
+            else:
+                return LoginResponse(
+                    valid=True,
+                    message=f"Login credentials are valid but challenge required: {challenge_name}",
+                    user_status="CHALLENGE_REQUIRED",
+                    session=session,
+                )
+        else:
+            logger.warning(f"Unexpected Cognito response for {request.email}: {auth_response}")
+            return LoginResponse(valid=False, message="Unexpected authentication response")
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(f"Cognito ClientError for {request.email}: Code={error_code}, Message='{error_message}'")
+
+        if error_code == "NotAuthorizedException":
+            logger.info(f"Invalid login attempt for: {request.email} (NotAuthorizedException)")
+            return LoginResponse(valid=False, message="Invalid email or password")
+        elif error_code == "UserNotFoundException":
+            logger.info(f"User not found: {request.email}")
+            return LoginResponse(valid=False, message="User not found")
+        else:
+            logger.error(
+                f"Unhandled Cognito error during login validation: {error_code} - {error_message}"
+            )
+            raise HTTPException(
+                status_code=500, detail=f"AWS Cognito error: {error_message}"
+            )
+
+    except Exception as e:
+        logger.error(f"Unexpected server error during login validation for {request.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/complete-new-password", response_model=CompleteNewPasswordResponse)
+async def complete_new_password(request: CompleteNewPasswordRequest):
+    """
+    Complete the new password setup for a user who was created with a temporary password.
+    """
+    try:
+        user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not user_pool_id or not client_id:
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        challenge_responses = {
+            "USERNAME": request.email,
+            "NEW_PASSWORD": request.new_password,
+        }
+
+        if client_secret:
+            challenge_responses["SECRET_HASH"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        response = cognito_client.admin_respond_to_auth_challenge(
+            UserPoolId=user_pool_id,
+            ClientId=client_id,
+            ChallengeName="NEW_PASSWORD_REQUIRED",
+            Session=request.session,
+            ChallengeResponses=challenge_responses,
+        )
+
+        if "AuthenticationResult" in response:
+            auth_result = response["AuthenticationResult"]
+            tokens = AuthTokens(
+                access_token=auth_result["AccessToken"],
+                refresh_token=auth_result["RefreshToken"],
+                id_token=auth_result["IdToken"],
+                token_type=auth_result["TokenType"],
+            )
+            logger.info(
+                f"Successfully set new password and authenticated user: {request.email}"
+            )
+            return CompleteNewPasswordResponse(
+                message="Password successfully changed and user authenticated.",
+                tokens=tokens,
+            )
+        else:
+            logger.error(
+                f"Unexpected response from Cognito for {request.email} while setting new password: {response}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Could not set new password. Unexpected response from authentication service.",
+            )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(
+            f"Cognito error setting new password for {request.email}: {error_code} - {error_message}"
+        )
+        if error_code in [
+            "NotAuthorizedException",
+            "CodeMismatchException",
+            "ExpiredCodeException",
+        ]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or expired session. Please try logging in again.",
+            )
+        if error_code == "InvalidPasswordException":
+            raise HTTPException(
+                status_code=400,
+                detail=f"New password does not meet requirements: {error_message}",
+            )
+        raise HTTPException(
+            status_code=500, detail=f"AWS Cognito error: {error_message}"
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Unexpected error setting new password for {request.email}: {str(e)}"
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")

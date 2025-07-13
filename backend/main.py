@@ -6,6 +6,7 @@ import os
 
 # Import routers
 from routers.auth.auth_routes import router as auth_router
+from routers.db.db_routes import router as db_router
 
 # Load environment variables
 load_dotenv()
@@ -28,6 +29,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(db_router)
 
 # Root endpoint
 @app.get("/")
