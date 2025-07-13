@@ -25,6 +25,14 @@ function App() {
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>
       </div>
+      <button type="button" onClick={() => {
+        fetch('http://localhost:3000/api/health')
+          .then(response => response.json())
+          .then(data => console.log(data))
+          .catch(error => console.error('Error:', error));
+      }}>
+        Health Check
+      </button>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
