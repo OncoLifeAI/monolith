@@ -1,3 +1,15 @@
+"""
+Patient Configuration Routes
+
+This module provides endpoints for managing patient settings and preferences:
+
+Routes:
+- PATCH /patient/update-reminders: Update patient reminder method (email/text) and time
+- PATCH /patient/update-consent: Update patient consent flags and acknowledgements
+
+All routes require authentication and operate on the logged-in user's data.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List

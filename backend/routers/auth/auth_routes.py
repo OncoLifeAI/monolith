@@ -4,9 +4,10 @@ Authentication Routes
 This module provides authentication endpoints using AWS Cognito:
 
 Routes:
-- POST /auth/signup: Register a new user account
-- POST /auth/login: Authenticate user and get tokens
-- POST /auth/complete-new-password: Complete new password challenge for first-time users
+- POST /auth/signup: Register a new user account with email, first name, and last name
+- POST /auth/login: Authenticate user with email/password and return JWT tokens
+- POST /auth/complete-new-password: Complete password setup for users with temporary passwords
+- DELETE /auth/delete-patient: Delete patient account and all associated data (testing only)
 
 All routes handle Cognito integration and manage user data in the patient database.
 """

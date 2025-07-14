@@ -1,3 +1,16 @@
+"""
+Diary Entry Routes
+
+This module provides endpoints for managing patient diary entries:
+
+Routes:
+- GET /diary/{year}/{month}: Fetch diary entries for a specific month and year
+- POST /diary/: Create a new diary entry with text and doctor flag
+- PATCH /diary/{entry_uuid}/delete: Soft delete a diary entry by UUID
+
+All routes require authentication and operate on the logged-in user's data.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
