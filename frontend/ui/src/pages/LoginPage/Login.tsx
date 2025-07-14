@@ -29,7 +29,7 @@ const Login: React.FC = () => {
       navigate('/reset-password');
     }
     if (result?.data?.user_status === 'CONFIRMED') {
-      navigate('/dashboard');
+      navigate('/');
     }
   };
 

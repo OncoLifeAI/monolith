@@ -1,70 +1,43 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import ChatPage from './pages/ChatPage';
+import SummariesPage from './pages/SummariesPage';
+import NotesPage from './pages/NotesPage';
+import LoremPage from './pages/LoremPage';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
 import ResetPassword from './pages/LoginPage/ResetPassword';
 import Acknowledgement from './pages/LoginPage/Acknowledgement';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <UserProvider>
-        <Router>
-          <div className="App">
-            <Routes>
-              <Route 
-                path="/signup" 
-                element={
-                  <ProtectedRoute requireAuth={false}>
-                    <SignUpPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute requireAuth={false}>
-                    <LoginPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/reset-password" 
-                element={
-                  <ProtectedRoute requireAuth={true}>
-                    <ResetPassword />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/acknowledgement" 
-                element={
-                  <ProtectedRoute requireAuth={true}>
-                    <Acknowledgement />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* Protected routes - require authentication */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute requireAuth={true}>
-                    <div>Dashboard Page</div>
-                  </ProtectedRoute>
-                } 
-              />
-              
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </Router>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password" element={<ProtectedRoute><ResetPassword /></ProtectedRoute>} />
+            <Route path="/acknowledgement" element={<ProtectedRoute><Acknowledgement /></ProtectedRoute>} />
+            
+            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route index element={<Navigate to="/chat" replace />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="summaries" element={<SummariesPage />} />
+              <Route path="notes" element={<NotesPage />} />
+              <Route path="lorem" element={<LoremPage />} />
+            </Route>
+            
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </BrowserRouter>
       </UserProvider>
     </AuthProvider>
   );
-};
+}
 
 export default App;
