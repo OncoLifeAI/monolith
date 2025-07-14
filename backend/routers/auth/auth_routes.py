@@ -11,7 +11,7 @@ Routes:
 All routes handle Cognito integration and manage user data in the patient database.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import os
@@ -21,6 +21,8 @@ import logging
 import hmac
 import hashlib
 import base64
+
+# Use absolute imports from the 'backend' directory
 from routers.auth.models import (
     SignupRequest,
     SignupResponse,
@@ -29,10 +31,20 @@ from routers.auth.models import (
     CompleteNewPasswordRequest,
     CompleteNewPasswordResponse,
     AuthTokens,
+    DeletePatientRequest,
 )
 # Import DB session and models
 from database import get_patient_db
-from routers.db.models import PatientInfo, PatientConfigurations
+from routers.db.models import (
+    PatientInfo,
+    PatientConfigurations,
+    PatientDiaryEntries,
+    Conversations,
+    PatientChemoDates,
+    PatientPhysicianAssociations
+)
+# Import shared dependencies
+from routers.auth.dependencies import get_cognito_client, get_current_user, TokenData
 
 
 # Load environment variables
@@ -44,16 +56,6 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-def get_cognito_client():
-    """Get AWS Cognito client"""
-    return boto3.client(
-        "cognito-idp",
-        region_name=os.getenv("AWS_REGION", "us-east-1"),
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    )
 
 
 def _get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
@@ -343,3 +345,58 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
             f"Unexpected error setting new password for {request.email}: {str(e)}"
         )
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.delete("/delete-patient", status_code=status.HTTP_204_NO_CONTENT, summary="Delete patient account")
+async def delete_patient(
+    request: DeletePatientRequest,
+    db: Session = Depends(get_patient_db)
+):
+    """
+    Deletes all data for the specified user (by email) from the application database
+    and then permanently deletes the user from the Cognito user pool.
+    This is an irreversible action.
+    """
+    # First, find the user by email to get their UUID
+    patient_info = db.query(PatientInfo).filter(PatientInfo.email_address == request.email).first()
+    if not patient_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Patient with email {request.email} not found"
+        )
+    
+    user_id = patient_info.uuid
+    logger.warning(f"Initiating account deletion for user {user_id} (email: {request.email})")
+
+    # --- Step 1: Soft-delete all related data in the database ---
+    try:
+        db.query(PatientDiaryEntries).filter(PatientDiaryEntries.patient_uuid == user_id).update({"is_deleted": True})
+        db.query(PatientPhysicianAssociations).filter(PatientPhysicianAssociations.patient_uuid == user_id).update({"is_deleted": True})
+        db.query(PatientChemoDates).filter(PatientChemoDates.patient_uuid == user_id).delete()
+        db.query(Conversations).filter(Conversations.patient_uuid == user_id).delete()
+        db.query(PatientConfigurations).filter(PatientConfigurations.uuid == user_id).update({"is_deleted": True})
+        db.query(PatientInfo).filter(PatientInfo.uuid == user_id).update({"is_deleted": True})
+        logger.info(f"Database records marked for deletion for user {user_id}")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete database records for user {user_id}. Error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not delete user data. Please try again.")
+
+    # --- Step 2: Delete the user from Cognito ---
+    try:
+        cognito_client = get_cognito_client()
+        cognito_client.admin_delete_user(
+            UserPoolId=os.getenv("COGNITO_USER_POOL_ID"),
+            Username=request.email
+        )
+        logger.info(f"Successfully deleted user {user_id} from Cognito.")
+    except ClientError as e:
+        db.rollback()
+        logger.error(f"Failed to delete user {user_id} from Cognito. Error: {e.response['Error']['Message']}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete user from authentication service.")
+    
+    # --- Step 3: Commit the transaction ---
+    db.commit()
+    logger.warning(f"Account deletion complete for user {user_id} (email: {request.email})")
+    
+    return

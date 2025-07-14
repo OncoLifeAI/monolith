@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
+from typing import Generator
 
 load_dotenv()
 
@@ -42,7 +43,7 @@ SessionFactories = {name: sessionmaker(autocommit=False, autoflush=False, bind=e
 # These are the reusable dependencies that our API routes will use.
 # Each function provides a session to a specific database.
 
-def get_patient_db() -> Session:
+def get_patient_db() -> Generator[Session, None, None]:
     """Dependency to get a session for the Patient Database."""
     if "patient_db" not in SessionFactories:
         raise RuntimeError("Patient database is not configured. Check your .env file.")

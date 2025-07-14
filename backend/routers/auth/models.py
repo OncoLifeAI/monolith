@@ -35,4 +35,7 @@ class CompleteNewPasswordRequest(BaseModel):
     
 class CompleteNewPasswordResponse(BaseModel):
     message: str
-    tokens: AuthTokens 
+    tokens: AuthTokens
+
+class DeletePatientRequest(BaseModel):
+    email: EmailStr 

@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from pydantic import BaseModel
 import logging
+import boto3
 
 # This will require the client to send a header: "Authorization: Bearer <token>"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -41,6 +42,15 @@ def _get_jwks():
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to fetch JWKS from {jwks_url}: {e}")
         raise HTTPException(status_code=500, detail="Could not fetch security keys.")
+
+def get_cognito_client():
+    """Get AWS Cognito client, reusable across routers."""
+    return boto3.client(
+        "cognito-idp",
+        region_name=os.getenv("AWS_REGION", "us-east-1"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
 
 # --- The Main Security Dependency ---
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:

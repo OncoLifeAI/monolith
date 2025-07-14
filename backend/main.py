@@ -4,9 +4,11 @@ from dotenv import load_dotenv
 import uvicorn
 import os
 
-# Import routers
+# Import all the new, organized routers
 from routers.auth.auth_routes import router as auth_router
-from routers.db.db_routes import router as db_router
+from routers.patient.patient_routes import router as patient_router
+from routers.summaries.summaries_routes import router as summaries_router
+from routers.diary.diary_routes import router as diary_router
 
 # Load environment variables
 load_dotenv()
@@ -27,9 +29,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Include all the new routers
 app.include_router(auth_router)
-app.include_router(db_router)
+app.include_router(patient_router)
+app.include_router(summaries_router)
+app.include_router(diary_router)
 
 # Root endpoint
 @app.get("/")
