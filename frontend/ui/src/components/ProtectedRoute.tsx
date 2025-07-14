@@ -24,17 +24,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       </div>
     );
   }
-
   // For routes that require authentication
   if (requireAuth && !isAuthenticated) {
     // Redirect to login page, but save the attempted location
-    return <Navigate to={redirectTo} state={{ from: location }} replace />;
+    <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // For routes that should only be accessible when NOT authenticated (like login/register)
-  if (!requireAuth && isAuthenticated) {
-    // Redirect to dashboard if user is already authenticated
-    return <Navigate to="/dashboard" replace />;
+  if (requireAuth && isAuthenticated) {
+    <Navigate to={location.pathname} />;
   }
 
   return <>{children}</>;

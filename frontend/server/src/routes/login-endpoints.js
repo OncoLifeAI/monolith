@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post('/auth/complete-new-password', async (req, res) => {
+router.post('/complete-new-password', async (req, res) => {
   try {
     const { email, new_password, session } = req.body;
 
@@ -127,7 +127,6 @@ router.post('/auth/complete-new-password', async (req, res) => {
     });
   }
 });
-
 
 router.post('/signup', async (req, res) => {
   try {

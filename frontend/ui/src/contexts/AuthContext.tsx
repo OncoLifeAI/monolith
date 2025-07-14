@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { useLogin } from '../restful/login';
+import { useLogin, useCompleteNewPassword } from '../restful/login';
 
 interface User {
-  id: string;
   email: string;
-  name: string;
-  role: string;
+  name?: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -14,9 +13,10 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  authenticateLogin: (email: string, password: string) => Promise<void>;
+  isPasswordChangeRequired: boolean;
+  authenticateLogin: (email: string, password: string) => Promise<any>;
   logout: () => void;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  completeNewPassword: (email: string, newPassword: string,) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,15 +35,17 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordChangeRequired, setIsPasswordChangeRequired] = useState(false);
   const loginMutation = useLogin();
+  const completeNewPasswordMutation = useCompleteNewPassword();
 
-  const isAuthenticated = !!token && !!user;
+  const isAuthenticated = !!token;
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
+      const storedToken = localStorage.getItem('authToken');
       if (storedToken) {
         // TODO: Verify token with backend
         setToken(storedToken);
@@ -59,18 +61,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await loginMutation.mutateAsync({ email, password });
       
       if (result.success) {
-        const userData = {
-          id: result.data?.user?.id || '1',
-          email,
-          name: result.data?.user?.name || 'User',
-          role: result.data?.user?.role || 'patient'
-        };
-        
-        setUser(userData);
-        if (result.data?.token) {
-          setToken(result.data.token);
-          localStorage.setItem('token', result.data.token);
+        setUser({email: email});
+        if (result.data?.requiresPasswordChange) {
+          setIsPasswordChangeRequired(true);
         }
+        return result;
       } else {
         throw new Error(result.message || 'Login failed');
       }
@@ -79,20 +74,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
-    setIsLoading(true);
+  const completeNewPassword = async (email: string, newPassword: string) => {
     try {
-      // TODO: Replace with actual API call
-      const userData = { id: '1', email, name, role: 'patient' };
-      const authToken = 'mock-jwt-token';
-      
-      setUser(userData);
-      setToken(authToken);
-      localStorage.setItem('token', authToken);
+      const result = await completeNewPasswordMutation.mutateAsync({ email, newPassword });
+      return result;
     } catch (error) {
-      throw new Error('Registration failed');
-    } finally {
-      setIsLoading(false);
+      throw new Error('New password reset failed');
     }
   };
 
@@ -106,10 +93,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     token,
     isAuthenticated,
+    isPasswordChangeRequired,
     isLoading,
     authenticateLogin,
+    completeNewPassword,
     logout,
-    register,
   };
 
   return (

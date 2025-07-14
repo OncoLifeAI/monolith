@@ -26,7 +26,7 @@ const SignUpPage = () => {
 
     signUpMutation.mutate(formData, {
       onSuccess: () => {
-        navigate('/dashboard');
+        navigate('/login');
       },
       onError: (error) => {
         setError(error.message || 'Registration failed. Please try again.');

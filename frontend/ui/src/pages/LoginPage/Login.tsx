@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form } from 'react-bootstrap';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail } from 'lucide-react';
+import { Card, Title, Subtitle } from '../../styles/GlobalStyles';
 import {
-  Card,
-  Title,
-  Subtitle,
   StyledForm,
   ForgotPassword,
   Divider,
@@ -13,21 +11,26 @@ import {
   StyledInputGroup,
   StyledInput,
   InputIcon,
-  EyeButton,
   StyledButton
 } from './LoginPage.styles';
 import { useAuth } from '../../contexts/AuthContext';
+import InputPassword from '../../common/InputPassword/InputPassword';
+import { useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const { authenticateLogin } = useAuth();
+  const navigate = useNavigate();
 
-  const handleTogglePassword = () => setShowPassword((prev) => !prev);
-
-  const handleLogin = () => {
-    authenticateLogin(email, password);
+  const handleLogin = async() => {
+    const result = await authenticateLogin(email, password);
+    if (result?.data?.requiresPasswordChange) {
+      navigate('/reset-password');
+    }
+    if (result.data.user_status === 'CONFIRMED') {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -50,24 +53,13 @@ const Login: React.FC = () => {
             />
           </StyledInputGroup>
         </Form.Group>
-        <Form.Group className="mb-1" controlId="formPassword">
-          <Form.Label>Password</Form.Label>
-          <StyledInputGroup>
-            <InputIcon>
-              <Lock size={20} />
-            </InputIcon>
-            <StyledInput
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <EyeButton type="button" onClick={handleTogglePassword} aria-label={showPassword ? "Hide password" : "Show password"}>
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </EyeButton>
-          </StyledInputGroup>
-        </Form.Group>
+        <InputPassword
+          value={password}
+          onChange={setPassword}
+          className="mb-1"
+          label="Password"
+          placeholder="Password"
+        />
         <ForgotPassword href="#">Forgot Password?</ForgotPassword>
         <StyledButton variant="primary" type="button" onClick={handleLogin}>
           Sign In

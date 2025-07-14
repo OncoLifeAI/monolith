@@ -5,6 +5,8 @@ import { UserProvider } from './contexts/UserContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
+import ResetPassword from './pages/LoginPage/ResetPassword';
+import Acknowledgement from './pages/LoginPage/Acknowledgement';
 
 const App: React.FC = () => {
   return (
@@ -26,6 +28,22 @@ const App: React.FC = () => {
                 element={
                   <ProtectedRoute requireAuth={false}>
                     <LoginPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reset-password" 
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <ResetPassword />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/acknowledgement" 
+                element={
+                  <ProtectedRoute requireAuth={true}>
+                    <Acknowledgement />
                   </ProtectedRoute>
                 } 
               />

@@ -48,6 +48,7 @@ export const GlobalStyles = createGlobalStyle`
 
   p {
     margin-bottom: ${theme.spacing.md};
+    font-size: 0.75rem;
   }
 
   a {
@@ -107,4 +108,34 @@ export const Header = styled.div`
 export const Logo = styled.img`
   width: 56px;
   height: 56px;
+`;
+
+interface CardProps {
+  width?: string;
+}
+
+export const Card = styled.div<CardProps>`
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.07);
+  padding: 1.5rem;
+  max-width: ${(props) => props.width || '490px'};
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+export const Title = styled.h2`
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-align: center;
+`;
+
+export const Subtitle = styled.p`
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+  text-align: center;
 `;

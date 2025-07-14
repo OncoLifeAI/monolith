@@ -19,32 +19,6 @@ export const MainContent = styled.div`
   padding: 0 36px;
 `;
 
-export const Card = styled.div`
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 24px;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.07);
-  padding: 1.5rem;
-  max-width: 490px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-export const Title = styled.h2`
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  text-align: center;
-`;
-
-export const Subtitle = styled.p`
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 1.5rem;
-  text-align: center;
-`;
-
 export const StyledForm = styled(Form)`
   width: 100%;
 `;

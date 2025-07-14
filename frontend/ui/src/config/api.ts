@@ -6,6 +6,7 @@ export const API_CONFIG = {
       LOGIN: '/api/login',
       LOGOUT: '/api/logout',
       VERIFY: '/api/verify',
+      COMPLETE_NEW_PASSWORD: '/api/complete-new-password',
     },
   },
 } as const;
