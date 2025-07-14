@@ -1,4 +1,4 @@
-import React, { useEffect, useState} from 'react';
+import React, { useState} from 'react';
 import { Background, WrapperStyle, Header, Logo, Card, Title, Subtitle } from '../../styles/GlobalStyles';
 import { MainContent, StyledButton } from './LoginPage.styles';
 import InputPassword from '../../common/InputPassword/InputPassword';
@@ -13,7 +13,7 @@ const ResetPassword: React.FC = () => {
     const handleResetPassword = async () => {
       if (user?.email) {
         await completeNewPassword(user.email, resetPassword);
-        navigate('/acknowledgement'); // Navigate after successful password reset
+        navigate('/acknowledgement');
       }
     };
 

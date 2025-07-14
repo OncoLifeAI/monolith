@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const { valid, message, user_status, session } = response.data;
+    const { valid, message, user_status, session, tokens } = response.data;
 
     if (valid) {
       if (user_status === 'CONFIRMED') {
@@ -37,7 +37,8 @@ router.post('/login', async (req, res) => {
           message: 'Login successful',
           data: {
             user_status,
-            message
+            message,
+            tokens
           }
         });
       } else if (user_status === 'FORCE_CHANGE_PASSWORD') {

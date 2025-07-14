@@ -12,7 +12,7 @@ interface CompleteNewPasswordData {
   newPassword: string;
 }
 
-interface CompleteNewPasswordResponse {
+export interface CompleteNewPasswordResponse {
   success: boolean;
   message: string;
   data?: {
@@ -24,7 +24,7 @@ interface CompleteNewPasswordResponse {
     };
   };
 }
-interface LoginResponse {
+export interface LoginResponse {
   success: boolean;
   message: string;
   data?: {
@@ -32,6 +32,12 @@ interface LoginResponse {
     message?: string;
     session?: string;
     requiresPasswordChange?: boolean;
+    tokens?: {
+      access_token: string;
+      refresh_token: string;
+      id_token: string;
+      token_type: string;
+    };
   };
 }
 
@@ -47,6 +53,9 @@ export const useLogin = () => {
 
       if (data.data?.session) {
         localStorage.setItem('authToken', data.data.session);
+      }
+      if (data.data?.tokens) {
+        localStorage.setItem('authToken', data.data.tokens.access_token);
       }
     },
     onError: (error) => {

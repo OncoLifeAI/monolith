@@ -18,6 +18,7 @@ class ApiClient {
   constructor(options: ApiClientOptions = {}) {
     this.baseHeaders = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       ...options.headers,
     };
     this.timeout = options.timeout || 10000;

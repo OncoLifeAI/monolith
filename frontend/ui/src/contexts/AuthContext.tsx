@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLogin, useCompleteNewPassword } from '../restful/login';
+import type { CompleteNewPasswordResponse, LoginResponse } from '../restful/login';
 
 interface User {
   email: string;
@@ -14,9 +15,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isPasswordChangeRequired: boolean;
-  authenticateLogin: (email: string, password: string) => Promise<any>;
+  authenticateLogin: (email: string, password: string) => Promise<LoginResponse>;
   logout: () => void;
-  completeNewPassword: (email: string, newPassword: string,) => Promise<void>;
+  completeNewPassword: (email: string, newPassword: string,) => Promise<CompleteNewPasswordResponse>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,8 +85,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);
-    setToken(null);
     localStorage.removeItem('token');
   };
 

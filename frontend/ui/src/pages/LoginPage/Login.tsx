@@ -28,7 +28,7 @@ const Login: React.FC = () => {
     if (result?.data?.requiresPasswordChange) {
       navigate('/reset-password');
     }
-    if (result.data.user_status === 'CONFIRMED') {
+    if (result?.data?.user_status === 'CONFIRMED') {
       navigate('/dashboard');
     }
   };
