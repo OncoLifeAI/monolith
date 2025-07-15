@@ -9,6 +9,7 @@ from routers.auth.auth_routes import router as auth_router
 from routers.patient.patient_routes import router as patient_router
 from routers.summaries.summaries_routes import router as summaries_router
 from routers.diary.diary_routes import router as diary_router
+from routers.chat.chat_routes import router as chat_router
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +35,7 @@ app.include_router(auth_router)
 app.include_router(patient_router)
 app.include_router(summaries_router)
 app.include_router(diary_router)
+app.include_router(chat_router)
 
 # Root endpoint
 @app.get("/")

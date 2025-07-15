@@ -5,7 +5,7 @@ This module provides endpoints for retrieving conversation summaries and details
 
 Routes:
 - GET /summaries/{year}/{month}: Fetch conversation summaries for a specific month and year
-- GET /summaries/{conversation_uuid}: Fetch detailed conversation data by UUID
+- GET /summaries/{conversation_uuid}: Fetch longer summary by conversationUUID
 
 All routes require authentication and operate on the logged-in user's data.
 """

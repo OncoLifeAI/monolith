@@ -24,7 +24,6 @@ class Conversations(Base):
     messages = Column(JSONB)
     symptom_list = Column(JSONB)
     severity_list = Column(JSONB)
-    short_summary = Column(String)
     longer_summary = Column(String)
     medication_list = Column(JSONB)
     chemo_date = Column(Date)

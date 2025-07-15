@@ -6,7 +6,7 @@ import uuid
 class ConversationSummarySchema(BaseModel):
     uuid: uuid.UUID
     created_at: datetime
-    short_summary: str | None = None
+    bulleted_summary: str | None = None
     overall_feeling: str | None = None
 
     class Config:
