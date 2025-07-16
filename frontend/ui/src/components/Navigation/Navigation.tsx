@@ -247,17 +247,17 @@ const SidebarMenu: React.FC = () => {
     localStorage.removeItem('authToken');
 
     // 2. Optional: Hit the backend logout endpoint (as a formality)
-    axios.post('http://localhost:8000/auth/logout')
-      .then((response: AxiosResponse<{ message: string }>) => {
-        console.log(response.data.message); // "Logout successful"
-      })
-      .catch((error) => {
-        console.error("Error during logout:", error);
-      })
-      .finally(() => {
-        // 3. Navigate to the login screen
-        navigate('/login');
-      });
+    // axios.post('http://localhost:8000/auth/logout')
+    //   .then((response: AxiosResponse<{ message: string }>) => {
+    //     console.log(response.data.message); // "Logout successful"
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error during logout:", error);
+    //   })
+    //   .finally(() => {
+    //     navigate('/login');
+    //   });
+    navigate('/login');
     console.log('Logging out...');
   };
 
