@@ -1,13 +1,14 @@
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:3000',
+  BASE_URL: 'http://localhost:3000/api',
   ENDPOINTS: {
     AUTH: {
-      SIGNUP: '/api/signup',
-      LOGIN: '/api/login',
-      LOGOUT: '/api/logout',
-      VERIFY: '/api/verify',
-      COMPLETE_NEW_PASSWORD: '/api/complete-new-password',
+      SIGNUP: '/signup',
+      LOGIN: '/login',
+      LOGOUT: '/logout',
+      VERIFY: '/verify',
+      COMPLETE_NEW_PASSWORD: '/complete-new-password',
     },
+    SUMMARIES: '/summaries',
   },
 } as const;
 
