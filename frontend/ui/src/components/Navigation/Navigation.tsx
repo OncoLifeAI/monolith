@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { MessageCircle, FileText, StickyNote, Grid3X3, LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import type { AxiosResponse } from 'axios';
 
 const Sidebar = styled.nav<{ isExpanded: boolean }>`
   height: 100vh;
@@ -241,6 +243,21 @@ const SidebarMenu: React.FC = () => {
   };
 
   const handleLogout = (): void => {
+    // 1. Clear the token from local storage
+    localStorage.removeItem('authToken');
+
+    // 2. Optional: Hit the backend logout endpoint (as a formality)
+    axios.post('http://localhost:8000/auth/logout')
+      .then((response: AxiosResponse<{ message: string }>) => {
+        console.log(response.data.message); // "Logout successful"
+      })
+      .catch((error) => {
+        console.error("Error during logout:", error);
+      })
+      .finally(() => {
+        // 3. Navigate to the login screen
+        navigate('/login');
+      });
     console.log('Logging out...');
   };
 

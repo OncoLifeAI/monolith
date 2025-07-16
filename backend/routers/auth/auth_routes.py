@@ -22,6 +22,7 @@ import logging
 import hmac
 import hashlib
 import base64
+from pydantic import BaseModel
 
 # Use absolute imports from the 'backend' directory
 from routers.auth.models import (
@@ -48,6 +49,10 @@ from routers.db.models import (
 from routers.auth.dependencies import get_cognito_client, get_current_user, TokenData
 
 
+class LogoutResponse(BaseModel):
+    message: str
+
+
 # Load environment variables
 load_dotenv()
 
@@ -68,6 +73,15 @@ def _get_secret_hash(username: str, client_id: str, client_secret: str) -> str:
         digestmod=hashlib.sha256,
     ).digest()
     return base64.b64encode(dig).decode()
+
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout():
+    """
+    Client-side logout. The real action is the client deleting the token.
+    This endpoint is a formality.
+    """
+    return {"message": "Logout successful"}
 
 
 @router.post("/signup", response_model=SignupResponse)
