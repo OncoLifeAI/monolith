@@ -18,4 +18,4 @@ class ConversationDetailSchema(ConversationSummarySchema):
     # Add other fields you want to expose from the Conversations model
     symptom_list: List | None = None
     severity_list: dict | None = None
-    medication_list: dict | None = None 
+    medication_list: List[str] | None = None 

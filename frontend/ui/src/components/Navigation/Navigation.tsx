@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { MessageCircle, FileText, StickyNote, Grid3X3, LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
+import { MessageCircle, FileText, StickyNote, Grid3X3, LogOut, ChevronRight, ChevronLeft, Menu as MenuIcon } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import type { AxiosResponse } from 'axios';
+import { useLogout } from '../../restful/login';
 
 const Sidebar = styled.nav<{ isExpanded: boolean }>`
   height: 100vh;
@@ -129,7 +128,7 @@ const MenuButton = styled.button<{ isExpanded: boolean }>`
   }
 `;
 
-const MenuIcon = styled.span`
+const MenuIconWrapper = styled.span`
   color: #4b5563;
   display: flex;
   align-items: center;
@@ -206,7 +205,7 @@ interface MenuItemProps {
 
 const MenuItemComponent: React.FC<MenuItemProps> = ({ item, onClick, isExpanded }) => (
   <MenuButton onClick={() => onClick(item.href)} isExpanded={isExpanded} title={!isExpanded ? item.label : ''}>
-    <MenuIcon>{item.icon}</MenuIcon>
+    <MenuIconWrapper>{item.icon}</MenuIconWrapper>
     {isExpanded && <MenuLabel>{item.label}</MenuLabel>}
   </MenuButton>
 );
@@ -218,88 +217,92 @@ interface LogoutButtonProps {
 
 const LogoutButtonComponent: React.FC<LogoutButtonProps> = ({ onClick, isExpanded }) => (
   <LogoutButton onClick={onClick} isExpanded={isExpanded} title={!isExpanded ? 'Log out' : ''}>
-    <MenuIcon as={LogOut} size={20} style={{ color: '#ef4444' }} />
+    <MenuIconWrapper as={LogOut} size={20} style={{ color: '#ef4444' }} />
     {isExpanded && <LogoutLabel>Log out</LogoutLabel>}
   </LogoutButton>
 );
 
-const SidebarMenu: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const navigate = useNavigate();
-
+// Extract menu content to a function for reuse
+const SidebarContent: React.FC<{
+  isExpanded: boolean;
+  onMenuClick: (href: string) => void;
+  onLogout: () => void;
+  onToggleExpand: () => void;
+}> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand }) => {
   const menuItems: MenuItem[] = [
     { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
     { id: '2', label: 'Summaries', icon: <FileText size={20} />, href: '/summaries' },
     { id: '3', label: 'Notes', icon: <StickyNote size={20} />, href: '/notes' },
     { id: '4', label: 'Lorem Ipsum', icon: <Grid3X3 size={20} />, href: '/lorem' },
   ];
+  return (
+    <>
+      <Header isExpanded={isExpanded}>
+        <Logo 
+          src={logo}
+          alt="Company Logo"
+        />
+        {isExpanded && <LogoText>Oncolife AI</LogoText>}
+        <ToggleButton onClick={onToggleExpand} aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}>
+          {isExpanded ? (
+            <ChevronLeft size={20} style={{ color: '#4b5563' }} />
+          ) : (
+            <ChevronRight size={20} style={{ color: '#4b5563' }} />
+          )}
+        </ToggleButton>
+      </Header>
+      <UserProfile 
+        name="Floyd Miles" 
+        avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" 
+        isExpanded={isExpanded}
+      />
+      <MenuSection>
+        {isExpanded && <MenuTitle>MENU</MenuTitle>}
+        <MenuList isExpanded={isExpanded}>
+          {menuItems.map((item) => (
+            <MenuItemComponent 
+              key={item.id} 
+              item={item} 
+              onClick={onMenuClick}
+              isExpanded={isExpanded}
+            />
+          ))}
+        </MenuList>
+      </MenuSection>
+      <LogoutSection isExpanded={isExpanded}>
+        <LogoutButtonComponent onClick={onLogout} isExpanded={isExpanded} />
+      </LogoutSection>
+    </>
+  );
+};
 
-  const toggleExpanded = (): void => {
-    setIsExpanded(!isExpanded);
-  };
+const SidebarMenu: React.FC = () => {
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const navigate = useNavigate();
 
-  const handleMenuItemClick = (href: string): void => {
+  const handleMenuItemClick = (href: string) => {
     navigate(href);
   };
 
-  const handleLogout = (): void => {
-    // 1. Clear the token from local storage
+  const handleLogout = () => {
+    // useLogout();
     localStorage.removeItem('authToken');
-
-    // 2. Optional: Hit the backend logout endpoint (as a formality)
-    // axios.post('http://localhost:8000/auth/logout')
-    //   .then((response: AxiosResponse<{ message: string }>) => {
-    //     console.log(response.data.message); // "Logout successful"
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error during logout:", error);
-    //   })
-    //   .finally(() => {
-    //     navigate('/login');
-    //   });
     navigate('/login');
-    console.log('Logging out...');
   };
 
   return (
     <>
-      <Sidebar isExpanded={isExpanded}>
-        <Header isExpanded={isExpanded}>
-          <Logo 
-            src={logo}
-            alt="Company Logo"
+      {/* Sidebar for desktop */}
+      <div className="d-none d-md-flex" style={{ height: '100vh' }}>
+        <Sidebar isExpanded={isExpanded}>
+          <SidebarContent
+            isExpanded={isExpanded}
+            onMenuClick={handleMenuItemClick}
+            onLogout={handleLogout}
+            onToggleExpand={() => setIsExpanded((prev) => !prev)}
           />
-          {isExpanded && <LogoText>Oncolife AI</LogoText>}
-          <ToggleButton onClick={toggleExpanded} aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}>
-            {isExpanded ? (
-              <ChevronLeft size={20} style={{ color: '#4b5563' }} />
-            ) : (
-              <ChevronRight size={20} style={{ color: '#4b5563' }} />
-            )}
-          </ToggleButton>
-        </Header>
-        <UserProfile 
-          name="Floyd Miles" 
-          avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" 
-          isExpanded={isExpanded}
-        />
-        <MenuSection>
-          {isExpanded && <MenuTitle>MENU</MenuTitle>}
-          <MenuList isExpanded={isExpanded}>
-            {menuItems.map((item) => (
-              <MenuItemComponent 
-                key={item.id} 
-                item={item} 
-                onClick={handleMenuItemClick}
-                isExpanded={isExpanded}
-              />
-            ))}
-          </MenuList>
-        </MenuSection>
-        <LogoutSection isExpanded={isExpanded}>
-          <LogoutButtonComponent onClick={handleLogout} isExpanded={isExpanded} />
-        </LogoutSection>
-      </Sidebar>
+        </Sidebar>
+      </div>
     </>
   );
 };

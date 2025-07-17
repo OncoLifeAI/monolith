@@ -18,7 +18,6 @@ class ApiClient {
   constructor(options: ApiClientOptions = {}) {
     this.baseHeaders = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       ...options.headers,
     };
     this.timeout = options.timeout || 10000;
@@ -31,12 +30,18 @@ class ApiClient {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
+    const dynamicHeaders: Record<string, string> = { ...this.baseHeaders };
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      dynamicHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...this.baseHeaders,
-          ...options.headers,
+          ...dynamicHeaders,
+          ...options.headers as Record<string, string>,
         },
         signal: controller.signal,
       });

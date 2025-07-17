@@ -88,3 +88,27 @@ export const useCompleteNewPassword = () => {
     },
   });
 };
+
+interface LogoutResponse {
+  success: boolean;
+  message: string;
+}
+
+const logoutUser = async (): Promise<LogoutResponse> => {
+  const response = await apiClient.post<LogoutResponse>(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
+  return response.data;
+};
+
+
+export const useLogout = () => {
+  return useMutation({
+    mutationFn: logoutUser,
+    onSuccess: () => {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+    },
+    onError: (error) => {
+      console.error('Logout error:', error);
+    },
+  });
+};

@@ -117,6 +117,17 @@ const api = {
   },
 };
 
+// Helper to always include Authorization from res.locals if present
+const getWithAuth = async (url, req, res) => {
+  const config = {};
+  if (req.headers.authorization) {
+    config.headers = { Authorization: req.headers.authorization };
+  }
+  console.log(JSON.stringify(config));
+  return api.get(url, config);
+};
+
 module.exports = {
   api,
+  getWithAuth,
 }; 
