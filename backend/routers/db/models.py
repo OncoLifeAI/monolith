@@ -40,7 +40,8 @@ class PatientChemoDates(Base):
 class PatientDiaryEntries(Base):
     __tablename__ = 'patient_diary_entries'
     id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime, server_default=func.now())
+    last_updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     patient_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
     diary_entry = Column(String, nullable=False)
     entry_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
@@ -75,7 +76,6 @@ class PatientInfo(Base):
 class PatientPhysicianAssociations(Base):
     __tablename__ = 'patient_physician_associations'
     id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
     patient_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
     physician_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
     clinic_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)

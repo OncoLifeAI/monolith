@@ -91,6 +91,19 @@ async def signup_user(request: SignupRequest, db: Session = Depends(get_patient_
     On success, also creates corresponding records in the patient_info
     and patient_configurations tables.
     """
+    
+    # Check if a non-deleted user with this email already exists in the local DB
+    existing_patient = db.query(PatientInfo).filter(
+        PatientInfo.email_address == request.email,
+        PatientInfo.is_deleted == False
+    ).first()
+
+    if existing_patient:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A user with email {request.email} already exists and is active."
+        )
+
     try:
         user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
         if not user_pool_id:

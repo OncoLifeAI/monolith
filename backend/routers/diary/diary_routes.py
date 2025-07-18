@@ -21,7 +21,7 @@ import uuid
 from database import get_patient_db
 from routers.db.models import PatientDiaryEntries
 from routers.auth.dependencies import get_current_user, TokenData
-from .models import DiaryEntrySchema, DiaryEntryCreate
+from .models import DiaryEntrySchema, DiaryEntryCreate, DiaryEntryUpdate
 
 router = APIRouter(prefix="/diary", tags=["Patient Diary"])
 
@@ -49,7 +49,7 @@ async def get_diary_entries_by_month(
         PatientDiaryEntries.is_deleted == False,
         extract('year', PatientDiaryEntries.created_at) == year,
         extract('month', PatientDiaryEntries.created_at) == month
-    ).order_by(PatientDiaryEntries.created_at.desc()).all()
+    ).order_by(PatientDiaryEntries.last_updated_at.desc()).all()
 
     return entries
 
@@ -77,6 +77,40 @@ async def create_diary_entry(
     db.commit()
     db.refresh(new_entry)
     return new_entry
+
+
+@router.patch(
+    "/{entry_uuid}",
+    response_model=DiaryEntrySchema,
+    summary="Update a diary entry"
+)
+async def update_diary_entry(
+    entry_uuid: uuid.UUID,
+    update_data: DiaryEntryUpdate,
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Updates the content of a specific diary entry.
+    The `last_updated_at` timestamp will be automatically updated by the database.
+    """
+    entry_to_update = db.query(PatientDiaryEntries).filter(
+        PatientDiaryEntries.entry_uuid == entry_uuid,
+        PatientDiaryEntries.patient_uuid == current_user.sub,
+        PatientDiaryEntries.is_deleted == False
+    ).first()
+
+    if not entry_to_update:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diary entry not found or you do not have permission to edit it."
+        )
+
+    entry_to_update.diary_entry = update_data.diary_entry
+    db.commit()
+    db.refresh(entry_to_update)
+
+    return entry_to_update
 
 
 @router.patch(

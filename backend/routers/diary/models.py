@@ -14,4 +14,7 @@ class DiaryEntrySchema(BaseModel):
 
 class DiaryEntryCreate(BaseModel):
     diary_entry: str
-    marked_for_doctor: bool = False 
+    marked_for_doctor: bool = False
+
+class DiaryEntryUpdate(BaseModel):
+    diary_entry: str 
