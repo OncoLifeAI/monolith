@@ -97,12 +97,58 @@ export const WrapperStyle = styled.div`
   position: relative;
 `;
 
+export const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #F8F9FA;
+`;
+
 export const Header = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 36px 36px 0 36px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E0E0E0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+export const Title = styled.h1`
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #2C3E50;
+  margin: 0;
+  letter-spacing: -0.5px;
+`;
+
+export const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+`;
+
+export const PageHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #E9ECEF;
+`;
+
+export const PageTitle = styled.h2`
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 `;
 
 export const Logo = styled.img`
@@ -124,13 +170,6 @@ export const Card = styled.div<CardProps>`
   display: flex;
   flex-direction: column;
   align-items: center;
-`;
-
-export const Title = styled.h2`
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  text-align: center;
 `;
 
 export const Subtitle = styled.p`

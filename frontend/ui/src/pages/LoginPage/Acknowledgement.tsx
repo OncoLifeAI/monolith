@@ -1,17 +1,17 @@
 import React from 'react';
-import { Background, WrapperStyle, Header, Logo, Card, Title } from '../../styles/GlobalStyles';
-import { MainContent, StyledButton } from './LoginPage.styles';
+import { Background, WrapperStyle, Logo, Card } from '../../styles/GlobalStyles';
+import { MainContent, StyledButton, LoginTitle, LoginHeader } from './LoginPage.styles';
 
 const Acknowledgement: React.FC<{ onAgree?: () => void }> = ({ onAgree }) => {
   return (
     <Background>
         <WrapperStyle>
-            <Header>
+            <LoginHeader>
                 <Logo src="/src/assets/logo.png" alt="Logo" />
-            </Header>
+            </LoginHeader>
             <MainContent>
                 <Card width="720px">
-                    <Title>Acknowledgement</Title>
+                    <LoginTitle>Acknowledgement</LoginTitle>
                     <p>Dear OncoLife AI User,</p>
                     <p>
                         Welcome to OncoLife. This chatbot is designed to track patient feedback for patient-reported outcomes. We appreciate your commitment to improving your health and well-being through our personalized healthcare solutions. Do not put in any information that you do not want to share.

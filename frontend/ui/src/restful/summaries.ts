@@ -11,8 +11,8 @@ export interface Summary {
   // Add other fields as needed
 }
 
-const fetchSummaries = async (year: number, month: number): Promise<Summary[]> => {
-  const response = await apiClient.get<Summary[]>(
+const fetchSummaries = async (year: number, month: number): Promise<{data:Summary[]}> => {
+  const response = await apiClient.get<{data:Summary[]}>(
     `${API_CONFIG.ENDPOINTS.SUMMARIES}/${year}/${month}`
   );
   return response.data;

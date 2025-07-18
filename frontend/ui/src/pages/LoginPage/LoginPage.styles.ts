@@ -1,6 +1,21 @@
 import styled from 'styled-components';
 import { Form, Button } from 'react-bootstrap';
 
+export const LoginTitle = styled.h2`
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-align: center;
+`;
+
+export const LoginHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 36px 36px 0 36px;
+  flex-shrink: 0;
+`;
+
 export const TopRightText = styled.div`
   font-size: 1rem;
   color: #222;

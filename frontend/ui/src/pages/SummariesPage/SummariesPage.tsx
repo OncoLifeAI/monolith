@@ -2,30 +2,24 @@ import React, { useState } from 'react';
 import { CircularProgress } from '@mui/material';
 import { Button } from 'react-bootstrap';
 import { 
-  Container, 
-  Header, 
-  Title, 
-  Content, 
   PageHeader, 
   PageTitle, 
-  DatePickerContainer, 
   NavigationContainer,
   DateNavigationGroup,
   NavigationButton,
-  DateDisplayButton,
   LoadingContainer,
   ErrorContainer,
 } from './SummariesPage.styles';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useSummaries } from '../../restful/summaries';
+import SharedDatePicker from '../../components/DatePicker';
+import { useSummaries, type Summary } from '../../restful/summaries';
 import { SummaryGrid } from './components';
 import dayjs, { Dayjs } from 'dayjs';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Container, Header, Title, Content } from '../../styles/GlobalStyles';
 
 const SummariesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const navigate = useNavigate();
   
   const { data, isLoading, error } = useSummaries(
@@ -36,7 +30,6 @@ const SummariesPage: React.FC = () => {
   const handleDateChange = (newDate: Dayjs | null) => {
     if (newDate) {
       setSelectedDate(newDate);
-      setShowDatePicker(false);
     }
   };
 
@@ -50,10 +43,6 @@ const SummariesPage: React.FC = () => {
 
   const goToToday = () => {
     setSelectedDate(dayjs());
-  };
-
-  const toggleDatePicker = () => {
-    setShowDatePicker(!showDatePicker);
   };
 
   const handleViewDetails = (summaryId: string) => {
@@ -82,36 +71,10 @@ const SummariesPage: React.FC = () => {
                 <ChevronLeft />
               </NavigationButton>
               
-              <DatePickerContainer>
-                {showDatePicker ? (
-                  <DatePicker 
-                    label="Select Month & Year"
-                    views={['month', 'year']} 
-                    value={selectedDate}
-                    onChange={handleDateChange}
-                    open={true}
-                    onClose={() => setShowDatePicker(false)}
-                    slotProps={{
-                      textField: {
-                        size: 'small',
-                        sx: {
-                          '& .MuiInputBase-root': {
-                            height: '40px',
-                          },
-                          '& .MuiInputLabel-root': {
-                            fontSize: '14px',
-                          }
-                        }
-                      }
-                    }}
-                  />
-                ) : (
-                  <DateDisplayButton onClick={toggleDatePicker}>
-                    <span>{formatCurrentDate(selectedDate)}</span>
-                    <Calendar />
-                  </DateDisplayButton>
-                )}
-              </DatePickerContainer>
+              <SharedDatePicker
+                value={selectedDate}
+                onChange={handleDateChange}
+              />
               
               <NavigationButton onClick={goToNextMonth}>
                 <ChevronRight />
@@ -140,7 +103,7 @@ const SummariesPage: React.FC = () => {
           </LoadingContainer>
         ) : (
           <SummaryGrid 
-            summaries={data || [] } 
+            summaries={data as { data: Summary[] } || [] } 
             onViewDetails={handleViewDetails} 
           />
         )}

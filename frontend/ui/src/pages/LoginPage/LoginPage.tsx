@@ -2,23 +2,24 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Login from './Login';
 import logo from '../../assets/logo.png';
-import { Background, WrapperStyle, Header, Logo } from '../../styles/GlobalStyles';
+import { Background, WrapperStyle, Logo } from '../../styles/GlobalStyles';
 import {
   TopRightText,
   MainContent,
   Footer,
+  LoginHeader,
 } from './LoginPage.styles';
 
 const LoginPage: React.FC = () => {
   return (
     <Background>
       <WrapperStyle>
-        <Header>
+        <LoginHeader>
           <Logo src={logo} alt="Logo" />
           <TopRightText>
             Don't you have an account? <Link to="/signup">Sign up</Link>
           </TopRightText>
-        </Header>
+        </LoginHeader>
         
         <MainContent>
           <Login />

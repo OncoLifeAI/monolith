@@ -98,12 +98,15 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ summary, onViewDetails }) => 
     <Card>
       <DateHeader>{formatDate(summary.created_at)}</DateHeader>
       <SummaryContent>
-        {/* <BulletList>
-          {summary.bulleted_summary.map((point, index) => (
-            <BulletItem key={index}>{point}</BulletItem>
-          ))}
-        </BulletList> */}
-        {summary.bulleted_summary}
+        <BulletList>
+          {summary.bulleted_summary
+            .split(/,\s*-/)
+            .map((line, index) => (
+              <BulletItem key={index}>{line.replace(/^\s*-?\s*/, '')}</BulletItem>
+            ))}
+        </BulletList>
+        
+        
       </SummaryContent>
       <ViewDetailsButton 
         variant="primary" 

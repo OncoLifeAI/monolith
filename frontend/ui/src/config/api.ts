@@ -9,6 +9,7 @@ export const API_CONFIG = {
       COMPLETE_NEW_PASSWORD: '/complete-new-password',
     },
     SUMMARIES: '/summaries',
+    NOTES: '/notes',
   },
 } as const;
 

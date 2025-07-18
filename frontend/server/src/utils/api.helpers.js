@@ -127,7 +127,34 @@ const getWithAuth = async (url, req, res) => {
   return api.get(url, config);
 };
 
+const postWithAuth = async (url, data, req, res) => {
+  const config = {};
+  if (req.headers.authorization) {
+    config.headers = { Authorization: req.headers.authorization };
+  }
+  return api.post(url, data, config);
+};
+
+const updateWithAuth = async (url, data, req, res) => {
+  const config = {};
+  if (req.headers.authorization) {
+    config.headers = { Authorization: req.headers.authorization };
+  }
+  return api.patch(url, data, config);
+};
+
+const deleteWithAuth = async (url, req, res) => {
+  const config = {};
+  if (req.headers.authorization) {
+    config.headers = { Authorization: req.headers.authorization };
+  }
+  return api.delete(url, config);
+};
+
 module.exports = {
   api,
   getWithAuth,
+  postWithAuth,
+  updateWithAuth,
+  deleteWithAuth,
 }; 
