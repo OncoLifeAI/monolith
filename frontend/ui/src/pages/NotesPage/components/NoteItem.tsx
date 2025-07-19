@@ -14,7 +14,7 @@ interface NoteItemProps {
 export const NoteItem: React.FC<NoteItemProps> = ({ note, isSelected, onSelect, onDelete }) => {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete && onDelete(note.id);
+    onDelete && onDelete(note.id || '');
   };
 
   return (
@@ -25,7 +25,7 @@ export const NoteItem: React.FC<NoteItemProps> = ({ note, isSelected, onSelect, 
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <NoteTitle>{note.title}</NoteTitle>
-        <NotePreview>{note.preview}</NotePreview>
+        <NotePreview>{note.diary_entry}</NotePreview>
       </div>
       <Button
         variant="outline-danger"

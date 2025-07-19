@@ -6,8 +6,8 @@ import type { Note } from '../types';
 interface NoteEditorProps {
   note: Note;
   onNoteUpdate: (note: Note) => void;
-  onSaveNote?: (note: Note) => void;
-  onDeleteNote?: (noteId: string) => void;
+  onSaveNote: (note: Note) => void;
+  onDeleteNote: (noteId: string) => void;
   isDraft?: boolean;
   onCancelDraft?: () => void;
   forceEdit?: boolean;
@@ -16,7 +16,7 @@ interface NoteEditorProps {
 
 export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSaveNote, onDeleteNote, isDraft, onCancelDraft, forceEdit, onForceEditHandled }) => {
   const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content);
+  const [content, setContent] = useState(note.diary_entry);
   const [isEditing, setIsEditing] = useState(false);
 
   const titleInputRef = useCallback((node: HTMLInputElement | null) => {
@@ -47,12 +47,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
     const updatedNote: Note = {
       ...note,
       title,
-      content,
-      preview: content.substring(0, 50) + (content.length > 50 ? '...' : '')
+      diary_entry: content,
+      // preview: content.substring(0, 50) + (content.length > 50 ? '...' : '')
     };
     onNoteUpdate(updatedNote);
     
-    if (isDraft && onSaveNote) {
+    if (!note.id) {
       onSaveNote(updatedNote);
     }
     
@@ -64,7 +64,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
       onCancelDraft();
     } else {
       setTitle(note.title);
-      setContent(note.content);
+      setContent(note.diary_entry);
       setIsEditing(false);
     }
   };
@@ -149,7 +149,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
           </CancelButton>
           {!isDraft && (
             <DeleteButton
-              onClick={() => onDeleteNote && onDeleteNote(note.id)}
+              onClick={() => onDeleteNote && onDeleteNote(note.id || '')}
             >
               Delete
             </DeleteButton>
