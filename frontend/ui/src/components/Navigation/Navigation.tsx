@@ -64,6 +64,10 @@ const UserProfileContainer = styled.div<{ isExpanded: boolean }>`
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
   justify-content: ${props => (props.isExpanded ? 'flex-start' : 'center')};
+  transition: background 0.2s;
+  &:hover {
+    background: #f3f4f6;
+  }
 `;
 
 const Avatar = styled.img`
@@ -183,10 +187,11 @@ interface UserProfileProps {
   name: string;
   avatar: string;
   isExpanded: boolean;
+  onClick?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ name, avatar, isExpanded }) => (
-  <UserProfileContainer isExpanded={isExpanded}>
+const UserProfile: React.FC<UserProfileProps> = ({ name, avatar, isExpanded, onClick }) => (
+  <UserProfileContainer isExpanded={isExpanded} onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
     <Avatar src={avatar} alt={name} />
     {isExpanded && (
       <UserInfo>
@@ -228,7 +233,8 @@ const SidebarContent: React.FC<{
   onMenuClick: (href: string) => void;
   onLogout: () => void;
   onToggleExpand: () => void;
-}> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand }) => {
+  onProfileClick: () => void;
+}> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand, onProfileClick }) => {
   const menuItems: MenuItem[] = [
     { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
     { id: '2', label: 'Summaries', icon: <FileText size={20} />, href: '/summaries' },
@@ -255,6 +261,7 @@ const SidebarContent: React.FC<{
         name="Floyd Miles" 
         avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" 
         isExpanded={isExpanded}
+        onClick={onProfileClick}
       />
       <MenuSection>
         {isExpanded && <MenuTitle>MENU</MenuTitle>}
@@ -290,6 +297,10 @@ const SidebarMenu: React.FC = () => {
     navigate('/login');
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   return (
     <>
       {/* Sidebar for desktop */}
@@ -300,6 +311,7 @@ const SidebarMenu: React.FC = () => {
             onMenuClick={handleMenuItemClick}
             onLogout={handleLogout}
             onToggleExpand={() => setIsExpanded((prev) => !prev)}
+            onProfileClick={handleProfileClick}
           />
         </Sidebar>
       </div>

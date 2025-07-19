@@ -14,6 +14,7 @@ import Acknowledgement from './pages/LoginPage/Acknowledgement';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import ProfilePage from './pages/ProfilePage';
 
 const App: React.FC = () => {
   return (
@@ -29,6 +30,7 @@ const App: React.FC = () => {
             
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/chat" replace />} />
+              <Route path="profile" element={<ProfilePage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="summaries" element={<SummariesPage />} />
               <Route path="summaries/:summaryId" element={<SummariesDetailsPage />} />
