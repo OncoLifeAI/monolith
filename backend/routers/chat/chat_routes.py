@@ -5,16 +5,42 @@ This module provides endpoints for managing chat interactions and conversations.
 """
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import date, datetime
+from pydantic import BaseModel
 
 # Absolute imports
 from database import get_patient_db
-from routers.db.models import Conversations
+from routers.db.patient_models import Conversations
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import ConversationResponse
+from .llm import CerebrasProvider # Using Cerebras for the streaming endpoint
+
+
+class StreamRequest(BaseModel):
+    system_prompt: str
+    user_prompt: str
+
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+
+@router.post("/stream-response")
+async def stream_llm_response(request: StreamRequest):
+    """
+    Receives a prompt and streams back the response from an LLM provider.
+    """
+    # Here, you could have logic to select different providers.
+    # For now, we'll hardcode the CerebrasProvider.
+    llm_provider = CerebrasProvider()
+    
+    response_generator = llm_provider.query(
+        system_prompt=request.system_prompt,
+        user_prompt=request.user_prompt
+    )
+    
+    return StreamingResponse(response_generator, media_type="text/plain")
 
 
 @router.post(

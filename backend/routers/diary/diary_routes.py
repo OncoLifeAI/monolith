@@ -19,7 +19,7 @@ import uuid
 
 # Absolute imports
 from database import get_patient_db
-from routers.db.models import PatientDiaryEntries
+from routers.db.patient_models import PatientDiaryEntries
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import DiaryEntrySchema, DiaryEntryCreate, DiaryEntryUpdate
 
@@ -70,6 +70,7 @@ async def create_diary_entry(
     """
     new_entry = PatientDiaryEntries(
         patient_uuid=current_user.sub,
+        title=entry.title,
         diary_entry=entry.diary_entry,
         marked_for_doctor=entry.marked_for_doctor,
     )
@@ -91,7 +92,7 @@ async def update_diary_entry(
     current_user: TokenData = Depends(get_current_user)
 ):
     """
-    Updates the content of a specific diary entry.
+    Updates the content and/or title of a specific diary entry.
     The `last_updated_at` timestamp will be automatically updated by the database.
     """
     entry_to_update = db.query(PatientDiaryEntries).filter(
@@ -105,8 +106,20 @@ async def update_diary_entry(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Diary entry not found or you do not have permission to edit it."
         )
+    
+    # Get the update data, excluding any fields that were not set
+    update_data_dict = update_data.dict(exclude_unset=True)
 
-    entry_to_update.diary_entry = update_data.diary_entry
+    # If no data was sent, return a 400 error
+    if not update_data_dict:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No update data provided."
+        )
+
+    for key, value in update_data_dict.items():
+        setattr(entry_to_update, key, value)
+
     db.commit()
     db.refresh(entry_to_update)
 

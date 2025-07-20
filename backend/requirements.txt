@@ -8,3 +8,6 @@ psycopg2-binary
 python-jose[cryptography]
 email_validator
 requests
+groq
+cerebras-cloud-sdk
+openai

@@ -43,6 +43,7 @@ class PatientDiaryEntries(Base):
     created_at = Column(DateTime, server_default=func.now())
     last_updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     patient_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
+    title = Column(String, nullable=True)
     diary_entry = Column(String, nullable=False)
     entry_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
     marked_for_doctor = Column(Boolean, server_default='false', nullable=False)

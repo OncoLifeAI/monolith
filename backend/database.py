@@ -17,11 +17,14 @@ DATABASE_CONFIG = {
         "port": os.getenv("PATIENT_DB_PORT"),
         "name": os.getenv("PATIENT_DB_NAME"),
     },
-    # You can add the doctor DB configuration here when ready
-    # "doctor_db": {
-    #     "user": os.getenv("DOCTOR_DB_USER"),
-    #     ...
-    # }
+    # Configuration for the Doctor Database
+    "doctor_db": {
+        "user": os.getenv("DOCTOR_DB_USER"),
+        "password": os.getenv("DOCTOR_DB_PASSWORD"),
+        "host": os.getenv("DOCTOR_DB_HOST"),
+        "port": os.getenv("DOCTOR_DB_PORT"),
+        "name": os.getenv("DOCTOR_DB_NAME"),
+    }
 }
 
 # --- SQLAlchemy Engine Creation ---
@@ -54,14 +57,13 @@ def get_patient_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-# Example for when you add the doctor database
-# def get_doctor_db() -> Session:
-#     """Dependency to get a session for the Doctor Database."""
-#     if "doctor_db" not in SessionFactories:
-#         raise RuntimeError("Doctor database is not configured. Check your .env file.")
-#     
-#     db = SessionFactories["doctor_db"]()
-#     try:
-#         yield db
-#     finally:
-#         db.close() 
+def get_doctor_db() -> Generator[Session, None, None]:
+    """Dependency to get a session for the Doctor Database."""
+    if "doctor_db" not in SessionFactories:
+        raise RuntimeError("Doctor database is not configured. Check your .env file.")
+    
+    db = SessionFactories["doctor_db"]()
+    try:
+        yield db
+    finally:
+        db.close() 

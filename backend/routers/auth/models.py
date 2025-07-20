@@ -5,6 +5,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
+    physician_email: Optional[EmailStr] = None
 
 class SignupResponse(BaseModel):
     message: str

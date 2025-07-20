@@ -19,7 +19,7 @@ import os
 
 # Absolute imports
 from database import get_patient_db
-from routers.db.models import (
+from routers.db.patient_models import (
     PatientConfigurations,
 )
 from routers.auth.dependencies import get_current_user, TokenData

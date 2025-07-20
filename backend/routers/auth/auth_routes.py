@@ -36,8 +36,8 @@ from routers.auth.models import (
     DeletePatientRequest,
 )
 # Import DB session and models
-from database import get_patient_db
-from routers.db.models import (
+from database import get_patient_db, get_doctor_db
+from routers.db.patient_models import (
     PatientInfo,
     PatientConfigurations,
     PatientDiaryEntries,
@@ -45,6 +45,7 @@ from routers.db.models import (
     PatientChemoDates,
     PatientPhysicianAssociations
 )
+from routers.db.doctor_models import StaffProfiles
 # Import shared dependencies
 from routers.auth.dependencies import get_cognito_client, get_current_user, TokenData
 
@@ -85,15 +86,19 @@ async def logout():
 
 
 @router.post("/signup", response_model=SignupResponse)
-async def signup_user(request: SignupRequest, db: Session = Depends(get_patient_db)):
+async def signup_user(
+    request: SignupRequest,
+    patient_db: Session = Depends(get_patient_db),
+    doctor_db: Session = Depends(get_doctor_db)
+):
     """
     Create a new user in AWS Cognito User Pool.
     On success, also creates corresponding records in the patient_info
     and patient_configurations tables.
+    If a physician_email is provided, it links the patient to the physician.
     """
-    
     # Check if a non-deleted user with this email already exists in the local DB
-    existing_patient = db.query(PatientInfo).filter(
+    existing_patient = patient_db.query(PatientInfo).filter(
         PatientInfo.email_address == request.email,
         PatientInfo.is_deleted == False
     ).first()
@@ -152,9 +157,32 @@ async def signup_user(request: SignupRequest, db: Session = Depends(get_patient_
         )
         new_patient_config = PatientConfigurations(uuid=user_sub)
 
-        db.add(new_patient_info)
-        db.add(new_patient_config)
-        db.commit()
+        patient_db.add(new_patient_info)
+        patient_db.add(new_patient_config)
+
+        # Step 3: If physician_email is provided, find and associate the physician
+        if request.physician_email:
+            physician_profile = doctor_db.query(StaffProfiles).filter(
+                StaffProfiles.email_address == request.physician_email,
+                StaffProfiles.role == 'physician'
+            ).first()
+
+            if not physician_profile:
+                # Decide on error handling: either fail signup or just log a warning.
+                # Failing is safer to ensure data integrity.
+                patient_db.rollback() # Rollback patient creation
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Physician with email {request.physician_email} not found."
+                )
+            
+            new_association = PatientPhysicianAssociations(
+                patient_uuid=user_sub,
+                physician_uuid=physician_profile.staff_uuid
+            )
+            patient_db.add(new_association)
+        
+        patient_db.commit()
         
         logger.info(f"Successfully created database records for user {user_sub}")
 

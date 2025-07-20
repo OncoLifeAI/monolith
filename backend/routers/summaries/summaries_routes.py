@@ -18,7 +18,7 @@ import uuid
 
 # Absolute imports
 from database import get_patient_db
-from routers.db.models import Conversations
+from routers.db.patient_models import Conversations
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import ConversationSummarySchema, ConversationDetailSchema
 
