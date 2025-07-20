@@ -15,8 +15,13 @@ from database import get_patient_db
 from routers.db.patient_models import Conversations
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import ConversationResponse
-from .llm import CerebrasProvider # Using Cerebras for the streaming endpoint
+from .llm import CerebrasProvider
+from .llm.gpt import GPT4oProvider
+from .llm.context import ContextLoader
+import os
 
+class AskRequest(BaseModel):
+    question: str
 
 class StreamRequest(BaseModel):
     system_prompt: str
@@ -27,9 +32,10 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 
 
 @router.post("/stream-response")
-async def stream_llm_response(request: StreamRequest):
+async def stream_llm_response(request: StreamRequest, current_user: TokenData = Depends(get_current_user)):
     """
     Receives a prompt and streams back the response from an LLM provider.
+    This endpoint requires authentication.
     """
     # Here, you could have logic to select different providers.
     # For now, we'll hardcode the CerebrasProvider.
@@ -42,6 +48,30 @@ async def stream_llm_response(request: StreamRequest):
     
     return StreamingResponse(response_generator, media_type="text/plain")
 
+
+@router.post("/ask")
+async def ask_question(request: AskRequest, current_user: TokenData = Depends(get_current_user)):
+    """
+    Receives a question and streams back the response from an LLM provider, 
+    using context from the model_inputs directory.
+    This endpoint requires authentication.
+    """
+    model_inputs_path = os.path.join(os.path.dirname(__file__), 'model_inputs')
+    context_loader = ContextLoader(model_inputs_path)
+    context = context_loader.load_context()
+    system_prompt = context_loader.load_system_prompt()
+    
+    llm_provider = GPT4oProvider()
+    
+    # The entire loaded context becomes the user prompt
+    user_prompt = f"{context}\n\nQuestion: {request.question}"
+    
+    response_generator = llm_provider.query(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt
+    )
+    
+    return StreamingResponse(response_generator, media_type="text/plain")
 
 @router.post(
     "/create-dummy",
