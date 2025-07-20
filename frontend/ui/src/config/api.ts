@@ -13,6 +13,8 @@ export const API_CONFIG = {
   },
 } as const;
 
+export const SESSION_TIMEOUT_MINUTES = 60; // Session timeout in minutes (configurable)
+
 export const buildApiUrl = (endpoint: string): string => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 }; 
