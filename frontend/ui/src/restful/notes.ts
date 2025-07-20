@@ -15,9 +15,10 @@ export const useFetchNotes = (year: number, month: number) => {
   });
 };
 
-export const saveNewNotes = async (params: { content: string}) => {
+export const saveNewNotes = async (params: { content: string, title: string}) => {
   const body = {
     diary_entry: params.content,
+    title: params.title,
   };
   const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.NOTES}`, body);
   return response.data;
@@ -34,9 +35,14 @@ export const useSaveNewNotes = (year: number, month: number) => {
   });
 };
 
-export const updateNote = async (params: {noteId: string, diary_entry: string}) => {
+export const updateNote = async (params: {noteId: string, diary_entry: string, title: string }) => {
 
-  const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.NOTES}/${params.noteId}`, params);
+  const body = {
+    diary_entry: params.diary_entry,
+    title: params.title,
+  };
+
+  const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.NOTES}/${params.noteId}`, body);
   return response.data;
 };
 
@@ -44,6 +50,21 @@ export const useUpdateNote = (year: number, month: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateNote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes', year, month] });
+    },
+  });
+};  
+
+export const deleteNote = async (params: {noteId: string}) => {
+  const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.NOTES}/${params.noteId}/delete`);
+  return response.data;
+};
+
+export const useDeleteNote = (year: number, month: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', year, month] });
     },

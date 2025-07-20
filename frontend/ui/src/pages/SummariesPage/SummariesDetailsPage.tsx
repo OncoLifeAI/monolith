@@ -8,9 +8,6 @@ const SummariesDetailsPage = () => {
 
     const { data, isLoading, isError, error } = useSummaryDetails(summaryId || '');
 
-    // Console log the data to inspect it
-    console.log('Fetched Summary Details:', data);
-
     if (isLoading) {
         return <div>Loading...</div>;
     }
@@ -31,7 +28,7 @@ const SummariesDetailsPage = () => {
             </Header>
             <div style={{ padding: '1rem' }}>
                 <h3>Longer Summary:</h3>
-                <p>{data.data.longer_summary}</p>
+                <p>{data?.data?.longer_summary}</p>
             </div>
         </Container>
     )

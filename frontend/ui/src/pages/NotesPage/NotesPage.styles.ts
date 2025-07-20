@@ -7,6 +7,7 @@ export const NotesPageContainer = styled.div`
   flex-direction: row;
   overflow: hidden;
   height: calc(100vh - 80px);
+  min-height: 0;
 `;
 
 export const NotesHeader = styled.div`

@@ -5,7 +5,7 @@ import type { Note, NoteResponse } from './types';
 import { Header, Title, Container } from '../../styles/GlobalStyles';
 import SharedDatePicker from '../../components/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
-import { useFetchNotes, useSaveNewNotes, useUpdateNote } from '../../restful/notes';
+import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../restful/notes';
 
 const NotesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
@@ -22,7 +22,7 @@ const NotesPage: React.FC = () => {
   // Hooks for API mutations
   const saveNewNotesMutation = useSaveNewNotes(selectedDate.year(), selectedDate.month() + 1);
   const updateNoteMutation = useUpdateNote(selectedDate.year(), selectedDate.month() + 1);
-
+  const deleteNoteMutation = useDeleteNote(selectedDate.year(), selectedDate.month() + 1);
   // On initial load, select the first note if available
   useEffect(() => {
     if (
@@ -55,7 +55,8 @@ const NotesPage: React.FC = () => {
       // Update existing note via API
       updateNoteMutation.mutate({
         noteId: updatedNote.entry_uuid || '',
-        diary_entry: updatedNote.diary_entry
+        diary_entry: updatedNote.diary_entry,
+        title: updatedNote.title,
       });
     }
   };
@@ -75,18 +76,17 @@ const NotesPage: React.FC = () => {
       // Save draft note to main notes array
       // save notes to api
       saveNewNotesMutation.mutate({
-        content: noteToSave.diary_entry
+        content: noteToSave.diary_entry,
+        title: noteToSave.title,
       });
       setDraftNote(null);
     }
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    // This part of the logic needs to be adapted to the new 'notes' array
-    // For now, we'll just update the draft note if it's the selected one
-    if (selectedNote && selectedNote.id === noteId) {
-      setDraftNote(null);
-    }
+  const handleDeleteNote = () => {
+    deleteNoteMutation.mutate({
+      noteId: selectedNote?.entry_uuid || '',
+    });
   };
 
   const handleCancelDraft = () => {
@@ -103,26 +103,17 @@ const NotesPage: React.FC = () => {
         <Title>Notes</Title>
       </Header>
       <NotesPageContainer>
-        <div style={{ width: '400px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)' }}>
-          <div style={{ padding: '1rem 0', flexShrink: 0 }}>
-            <SharedDatePicker
-              value={selectedDate}
-              onChange={setSelectedDate}
-              fullWidth={true}
-            />
-          </div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <NotesSidebar
-              notes={filteredNotes}
-              selectedNoteId={selectedNoteId}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onNoteSelect={handleNoteSelect}
-              onAddNote={handleAddNote}
-              onDeleteNote={handleDeleteNote}
-            />
-          </div>
-        </div>
+        <NotesSidebar
+          notes={filteredNotes}
+          selectedNoteId={selectedNoteId}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onNoteSelect={handleNoteSelect}
+          onAddNote={handleAddNote}
+          onDeleteNote={handleDeleteNote}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+        />
         <div style={{ flex: 1, height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
           {selectedNote && (
             <NoteEditor

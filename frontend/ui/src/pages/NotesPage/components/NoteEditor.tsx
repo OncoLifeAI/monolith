@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Form } from 'react-bootstrap';
-import { EditorContainer, EditorHeader, EditorContent, EditorHeading, SaveButton, DeleteButton, CancelButton } from './NoteEditor.styles';
+import { EditorContainer, EditorHeader, EditorContent, EditorHeading, SaveButton, DeleteButton, CancelButton, EditorInput, EditorTextarea } from './NoteEditor.styles';
 import type { Note } from '../types';
 
 interface NoteEditorProps {
@@ -83,19 +83,24 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
         {isEditing ? (
           <>
             <EditorHeading>
-              <Form.Control
+              <EditorInput
                 type="text"
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
-                className="fw-bold fs-3"
-                style={{ width: '100%', border: 'none', padding: 0, backgroundColor: 'transparent', fontSize: '2rem', fontWeight: 700 }}
                 ref={titleInputRef}
+                placeholder="Title"
+                autoFocus
               />
             </EditorHeading>
           </>
         ) : (
-          <EditorHeading onClick={handleTitleClick} style={{ cursor: 'pointer' }}>
-            {title}
+          <EditorHeading onClick={handleTitleClick} style={{ cursor: 'pointer', width: '100%' }}>
+            <EditorInput
+              type="text"
+              value={title}
+              readOnly
+              style={{ background: '#f8f9fa', cursor: 'pointer' }}
+            />
           </EditorHeading>
         )}
       </EditorHeader>
@@ -103,33 +108,21 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
       <EditorContent>
         {isEditing ? (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Form.Control
-              as="textarea"
+            <EditorTextarea
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
               placeholder="Start writing your note..."
-              style={{ 
-                border: 'none', 
-                resize: 'none', 
-                fontSize: '1rem', 
-                width: '100%', 
-                flex: 1,
-                overflow: 'hidden'
-              }}
               ref={contentTextareaRef}
+              autoFocus={lastEditField === 'content'}
             />
           </div>
         ) : (
-          <div 
-            onClick={handleContentClick}
-            style={{ 
-              cursor: 'pointer',
-              height: '100%',
-              whiteSpace: 'pre-wrap',
-              lineHeight: '1.6'
-            }}
-          >
-            {content || 'Click to start writing...'}
+          <div onClick={handleContentClick} style={{ cursor: 'pointer', height: '100%' }}>
+            <EditorTextarea
+              value={content || 'Click to start writing...'}
+              readOnly
+              style={{ background: '#f8f9fa', cursor: 'pointer', minHeight: 200 }}
+            />
           </div>
         )}
       </EditorContent>

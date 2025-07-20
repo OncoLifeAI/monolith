@@ -5,6 +5,7 @@ export interface Note {
   created_at: string;
   entry_uuid?: string;
   marked_for_doctor?: boolean;
+  is_deleted?: boolean;
 } 
 
 export interface NoteResponse {

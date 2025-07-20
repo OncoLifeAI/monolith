@@ -123,7 +123,6 @@ const getWithAuth = async (url, req, res) => {
   if (req.headers.authorization) {
     config.headers = { Authorization: req.headers.authorization };
   }
-  console.log(JSON.stringify(config));
   return api.get(url, config);
 };
 

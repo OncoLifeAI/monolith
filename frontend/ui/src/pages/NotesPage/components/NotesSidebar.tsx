@@ -2,8 +2,10 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import { AddNewButton } from '../NotesPage.styles';
 import { NoteItem } from './NoteItem';
-import { SidebarContainer, NotesList } from './NotesSidebar.styles';
+import { SidebarContainer, SidebarHeader, NotesList, NotesSidebarTitle } from './NotesSidebar.styles';
+import SharedDatePicker from '../../../components/DatePicker';
 import type { Note } from '../types';
+import type { Dayjs } from 'dayjs';
 
 interface NotesSidebarProps {
   notes: Note[];
@@ -13,6 +15,8 @@ interface NotesSidebarProps {
   onNoteSelect: (noteId: string) => void;
   onAddNote: () => void;
   onDeleteNote?: (noteId: string) => void;
+  selectedDate: Dayjs;
+  setSelectedDate: (date: Dayjs) => void;
 }
 
 export const NotesSidebar: React.FC<NotesSidebarProps> = ({
@@ -22,24 +26,20 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onSearchChange,
   onNoteSelect,
   onAddNote,
-  onDeleteNote
+  onDeleteNote,
+  selectedDate,
+  setSelectedDate
 }) => {
   return (
     <SidebarContainer>
-      <div style={{ padding: '1rem', borderBottom: '1px solid #e9ecef' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <button 
-            style={{ 
-              background: '#f8f9fa', 
-              border: 'none', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '4px',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-          >
-            All Notes
-          </button>
+      <SidebarHeader>
+        <SharedDatePicker
+          value={selectedDate}
+          onChange={setSelectedDate}
+          fullWidth={true}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '1rem' }}>
+          <NotesSidebarTitle>All Notes</NotesSidebarTitle>
           <AddNewButton onClick={onAddNote}>
             <Plus size={16} />
             Add New
@@ -59,7 +59,7 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
             outline: 'none'
           }}
         />
-      </div>
+      </SidebarHeader>
 
       <NotesList>
         {notes.map((note) => {
@@ -68,7 +68,7 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
               key={note.id}
               note={note}
               isSelected={note.id === selectedNoteId}
-              onSelect={() => onNoteSelect(note.id)}
+              onSelect={() => onNoteSelect(note.id || '')}
               onDelete={onDeleteNote}
             />
           );

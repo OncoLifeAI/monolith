@@ -11,6 +11,7 @@ import {
 } from './ProfilePage.styles';
 import { ProfileHeader, PersonalInformation } from './components';
 import type { ProfileData, ProfileFormData } from './types';
+import { useFetchProfile } from '../../restful/profile';
 
 // Mock data - replace with actual API call
 const mockProfileData: ProfileData = {
@@ -33,34 +34,13 @@ const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: profileData, isLoading: isProfileLoading, error: profileError } = useFetchProfile();
+  console.log(profileData);
 
   useEffect(() => {
-    // Simulate API call
-    const fetchProfile = async () => {
-      try {
-        setIsLoading(true);
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setProfile(mockProfileData);
-        setFormData({
-          firstName: mockProfileData.firstName,
-          lastName: mockProfileData.lastName,
-          email: mockProfileData.email,
-          phoneNumber: mockProfileData.phoneNumber,
-          dateOfBirth: mockProfileData.dateOfBirth,
-          doctor: mockProfileData.doctor,
-          clinic: mockProfileData.clinic,
-          chemotherapyDay: mockProfileData.chemotherapyDay,
-          reminderTime: mockProfileData.reminderTime,
-        });
-      } catch (err) {
-        setError('Failed to load profile data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
+    if (profileData) {
+      setProfile(mockProfileData);
+    }
   }, []);
 
   const handleEditProfile = () => {

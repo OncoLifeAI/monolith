@@ -116,4 +116,40 @@ export const EditorActionBar = styled.div`
   background: linear-gradient(0deg, #fff 90%, rgba(255,255,255,0.7) 100%);
   border-top: 1px solid #e9ecef;
   z-index: 10;
+`;
+
+export const EditorInput = styled.input`
+  width: 100%;
+  border: 2px solid #e0e7ef;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 2rem;
+  font-weight: 700;
+  background: #fff;
+  color: #2C3E50;
+  transition: border 0.2s;
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+    background: #f8faff;
+  }
+`;
+
+export const EditorTextarea = styled.textarea`
+  width: 100%;
+  flex: 1;
+  border: 2px solid #e0e7ef;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 1rem;
+  background: #fff;
+  color: #2C3E50;
+  resize: none;
+  transition: border 0.2s;
+  min-height: 200px;
+  &:focus {
+    border-color: #007bff;
+    outline: none;
+    background: #f8faff;
+  }
 `; 
