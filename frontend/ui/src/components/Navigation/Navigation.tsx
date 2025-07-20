@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { MessageCircle, FileText, StickyNote, Grid3X3, LogOut, ChevronRight, ChevronLeft, Menu as MenuIcon } from 'lucide-react';
+import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, Menu as MenuIcon, User } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
-import { useLogout } from '../../restful/login';
+// import { useLogout } from '../../restful/login';
 
 const Sidebar = styled.nav<{ isExpanded: boolean }>`
   height: 100vh;
@@ -190,17 +190,31 @@ interface UserProfileProps {
   onClick?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ name, avatar, isExpanded, onClick }) => (
-  <UserProfileContainer isExpanded={isExpanded} onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-    <Avatar src={avatar} alt={name} />
-    {isExpanded && (
-      <UserInfo>
-        <UserHello>Hello</UserHello>
-        <UserName>{name}</UserName>
-      </UserInfo>
-    )}
-  </UserProfileContainer>
-);
+const UserProfile: React.FC<UserProfileProps> = ({ name, avatar, isExpanded, onClick }) => {
+  return (
+    <UserProfileContainer isExpanded={isExpanded} onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+      <div
+        style={{
+          width: '2.5rem',
+          height: '2.5rem',
+          borderRadius: '9999px',
+          background: '#e5e7eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <User size={28} color="#2563eb" />
+      </div>
+      {isExpanded && (
+        <UserInfo>
+          <UserHello>Hello</UserHello>
+          <UserName>User</UserName>
+        </UserInfo>
+      )}
+    </UserProfileContainer>
+  );
+};
 
 interface MenuItemProps {
   item: MenuItem;
@@ -237,8 +251,8 @@ const SidebarContent: React.FC<{
 }> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand, onProfileClick }) => {
   const menuItems: MenuItem[] = [
     { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
-    { id: '2', label: 'Summaries', icon: <FileText size={20} />, href: '/summaries' },
-    { id: '3', label: 'Notes', icon: <StickyNote size={20} />, href: '/notes' },
+    { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
+    { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
     { id: '4', label: 'Lorem Ipsum', icon: <Grid3X3 size={20} />, href: '/lorem' },
   ];
   return (

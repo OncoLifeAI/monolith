@@ -26,8 +26,7 @@ export const ProfileTitle = styled.h1`
 `;
 
 export const ProfileContent = styled.div`
-  display: flex;
-  flex-direction: column;
+  /* Removed display: flex and flex-direction: column to allow Bootstrap grid to work properly */
   padding: 2rem;
   flex: 1;
   max-width: 1200px;

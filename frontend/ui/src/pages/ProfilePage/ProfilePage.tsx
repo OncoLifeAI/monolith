@@ -13,35 +13,19 @@ import { ProfileHeader, PersonalInformation } from './components';
 import type { ProfileData, ProfileFormData } from './types';
 import { useFetchProfile } from '../../restful/profile';
 
-// Mock data - replace with actual API call
-const mockProfileData: ProfileData = {
-  id: '1',
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'Jondoe34@gmail.com',
-  phoneNumber: '+93 30974743348',
-  dateOfBirth: '17 January, 2001',
-  doctor: 'Dermatologist',
-  clinic: 'Health care center',
-  chemotherapyDay: 'Thursday',
-  reminderTime: '6:00 PM',
-  profileImage: undefined, // Add profile image URL when available
-};
-
 const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [formData, setFormData] = useState<ProfileFormData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { data: profileData, isLoading: isProfileLoading, error: profileError } = useFetchProfile();
-  console.log(profileData);
 
   useEffect(() => {
     if (profileData) {
-      setProfile(mockProfileData);
+      setProfile(profileData as ProfileData);
+      setFormData(profileData as ProfileFormData);
     }
-  }, []);
+  }, [profileData]);
 
   const handleEditProfile = () => {
     setIsEditing(true);
@@ -85,21 +69,21 @@ const ProfilePage: React.FC = () => {
   const handleCancel = () => {
     if (profile) {
       setFormData({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
-        email: profile.email,
-        phoneNumber: profile.phoneNumber,
-        dateOfBirth: profile.dateOfBirth,
-        doctor: profile.doctor,
-        clinic: profile.clinic,
-        chemotherapyDay: profile.chemotherapyDay,
-        reminderTime: profile.reminderTime,
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        email_address: profile.email_address || '',
+        phone_number: profile.phone_number || '',
+        date_of_birth: profile.date_of_birth || '',
+        chemotherapy_day: profile.chemotherapy_day || '',
+        reminder_time: profile.reminder_time || '',
+        doctor_name: profile.doctor_name || '',
+        clinic_name: profile.clinic_name || '',
       });
     }
     setIsEditing(false);
   };
 
-  if (isLoading) {
+  if (isProfileLoading) {
     return (
       <ProfileContainer>
         <ProfileHeaderStyled>

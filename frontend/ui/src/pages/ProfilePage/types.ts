@@ -1,29 +1,28 @@
 export interface ProfileData {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  dateOfBirth: string;
-  doctor: string;
-  clinic: string;
-  chemotherapyDay: string;
-  reminderTime: string;
-  profileImage?: string;
+  first_name: string;
+  last_name: string;
+  email_address: string;
+  phone_number: string | null;
+  date_of_birth: string | null;
+  chemotherapy_day: string;
+  reminder_time: string | null;
+  doctor_name: string;
+  clinic_name: string;
 }
 
 export interface ProfileFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  dateOfBirth: string;
-  doctor: string;
-  clinic: string;
-  chemotherapyDay: string;
-  reminderTime: string;
+  first_name: string;
+  last_name: string;
+  email_address: string;
+  phone_number: string | null;
+  date_of_birth: string | null;
+  chemotherapy_day: string;
+  reminder_time: string | null;
+  doctor_name: string;
+  clinic_name: string;
 }
 
 export interface ProfilePageProps {
   // Add any props if needed
 } 
+

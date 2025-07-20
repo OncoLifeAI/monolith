@@ -23,15 +23,15 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onEditProfile,
   onEditImage,
 }) => {
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getInitials = (first_name: string, last_name: string) => {
+    return `${(first_name?.charAt(0) || '')}${(last_name?.charAt(0) || '')}`.toUpperCase();
   };
 
   return (
     <ProfileInfoHeader>
       <ProfileImageContainer>
-        <ProfileImage imageUrl={profile.profileImage}>
-          {!profile.profileImage && getInitials(profile.firstName, profile.lastName)}
+        <ProfileImage imageUrl={undefined}>
+          {getInitials(profile.first_name, profile.last_name)}
         </ProfileImage>
         <EditImageButton onClick={onEditImage}>
           <Edit />
@@ -39,10 +39,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       </ProfileImageContainer>
       
       <ProfileInfo>
-        <ProfileName>{`${profile.firstName} ${profile.lastName}`}</ProfileName>
+        <ProfileName>{`${profile.first_name || ''} ${profile.last_name || ''}`}</ProfileName>
         <ProfileEmail>
           <Mail />
-          {profile.email}
+          {profile.email_address || ''}
         </ProfileEmail>
       </ProfileInfo>
       

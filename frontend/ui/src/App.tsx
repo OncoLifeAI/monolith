@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import Layout from './components/Layout';
-import ChatPage from './pages/ChatPage';
+import ChatsPage from './pages/ChatsPage';
 import { SummariesPage, SummariesDetailsPage } from './pages/SummariesPage';
 import NotesPage from './pages/NotesPage';
 import LoremPage from './pages/LoremPage';
@@ -32,7 +32,7 @@ const App: React.FC = () => {
               <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/chat" replace />} />
                 <Route path="profile" element={<ProfilePage />} />
-                <Route path="chat" element={<ChatPage />} />
+                <Route path="chat" element={<ChatsPage />} />
                 <Route path="summaries" element={<SummariesPage />} />
                 <Route path="summaries/:summaryId" element={<SummariesDetailsPage />} />
                 <Route path="notes" element={<NotesPage />} />

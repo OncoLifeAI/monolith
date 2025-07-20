@@ -1,7 +1,6 @@
 import React from 'react';
+import styled from 'styled-components';
 import {
-  InformationGrid,
-  InformationColumn,
   InputGroup,
   InputLabel,
   InputField,
@@ -20,6 +19,16 @@ interface PersonalInformationProps {
   onCancel: () => void;
 }
 
+const GridContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  align-items: center;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 const PersonalInformation: React.FC<PersonalInformationProps> = ({
   formData,
   isEditing,
@@ -36,114 +45,98 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
   return (
     <div>
       <SectionTitle>Personal Information</SectionTitle>
-      
-      <InformationGrid>
-        <InformationColumn>
-          <InputGroup>
-            <InputLabel>First Name</InputLabel>
-            <InputField
-              type="text"
-              value={formData.firstName}
-              onChange={handleInputChange('firstName')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <InputLabel>Phone Number</InputLabel>
-            <InputField
-              type="tel"
-              value={formData.phoneNumber}
-              onChange={handleInputChange('phoneNumber')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <InputLabel>Chemotherapy Day</InputLabel>
-            <InputField
-              type="text"
-              value={formData.chemotherapyDay}
-              onChange={handleInputChange('chemotherapyDay')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-        </InformationColumn>
-        
-        <InformationColumn>
-          <InputGroup>
-            <InputLabel>Last Name</InputLabel>
-            <InputField
-              type="text"
-              value={formData.lastName}
-              onChange={handleInputChange('lastName')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <InputLabel>Date of Birth</InputLabel>
-            <InputField
-              type="text"
-              value={formData.dateOfBirth}
-              onChange={handleInputChange('dateOfBirth')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <InputLabel>Reminder Time</InputLabel>
-            <InputField
-              type="text"
-              value={formData.reminderTime}
-              onChange={handleInputChange('reminderTime')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-        </InformationColumn>
-        
-        <InformationColumn>
-          <InputGroup>
-            <InputLabel>Email</InputLabel>
-            <InputField
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange('email')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <InputLabel>Doctor</InputLabel>
-            <InputField
-              type="text"
-              value={formData.doctor}
-              onChange={handleInputChange('doctor')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-          
-          <InputGroup>
-            <InputLabel>Clinic</InputLabel>
-            <InputField
-              type="text"
-              value={formData.clinic}
-              onChange={handleInputChange('clinic')}
-              disabled={!isEditing}
-              isEditing={isEditing}
-            />
-          </InputGroup>
-        </InformationColumn>
-      </InformationGrid>
-      
+      <GridContainer>
+        <InputGroup>
+          <InputLabel>First Name</InputLabel>
+          <InputField
+            type="text"
+            value={formData.first_name || ''}
+            onChange={handleInputChange('first_name')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Last Name</InputLabel>
+          <InputField
+            type="text"
+            value={formData.last_name || ''}
+            onChange={handleInputChange('last_name')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Email</InputLabel>
+          <InputField
+            type="email"
+            value={formData.email_address || ''}
+            onChange={handleInputChange('email_address')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Phone Number</InputLabel>
+          <InputField
+            type="tel"
+            value={formData.phone_number || ''}
+            onChange={handleInputChange('phone_number')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Date of Birth</InputLabel>
+          <InputField
+            type="text"
+            value={formData.date_of_birth || ''}
+            onChange={handleInputChange('date_of_birth')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Chemotherapy Day</InputLabel>
+          <InputField
+            type="text"
+            value={formData.chemotherapy_day || ''}
+            onChange={handleInputChange('chemotherapy_day')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Reminder Time</InputLabel>
+          <InputField
+            type="text"
+            value={formData.reminder_time || ''}
+            onChange={handleInputChange('reminder_time')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Doctor</InputLabel>
+          <InputField
+            type="text"
+            value={formData.doctor_name || ''}
+            onChange={handleInputChange('doctor_name')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+        <InputGroup>
+          <InputLabel>Clinic</InputLabel>
+          <InputField
+            type="text"
+            value={formData.clinic_name || ''}
+            onChange={handleInputChange('clinic_name')}
+            disabled={!isEditing}
+            isEditing={isEditing}
+          />
+        </InputGroup>
+      </GridContainer>
       {isEditing && (
         <ButtonGroup>
           <SaveButton onClick={onSave}>
