@@ -6,10 +6,12 @@ from sqlalchemy import (
     Date, 
     Time, 
     Boolean,
-    func
+    func,
+    ForeignKey,
+    Text
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 import uuid
 
 # A single Base for all models in this file to inherit from.
@@ -19,16 +21,37 @@ class Conversations(Base):
     __tablename__ = 'conversations'
     uuid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     patient_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
+    
     conversation_state = Column(String)
-    messages = Column(JSONB)
-    symptom_list = Column(JSONB)
-    severity_list = Column(JSONB)
-    longer_summary = Column(String)
-    medication_list = Column(JSONB)
-    chemo_date = Column(Date)
-    bulleted_summary = Column(String)
-    overall_feeling = Column(String)
+    symptom_list = Column(JSONB, nullable=True)
+    severity_list = Column(JSONB, nullable=True)
+    longer_summary = Column(Text, nullable=True)
+    medication_list = Column(JSONB, nullable=True)
+    bulleted_summary = Column(Text, nullable=True)
+    overall_feeling = Column(String, nullable=True)
+
+    # Relationship to the Messages table
+    messages = relationship("Messages", back_populates="conversation", cascade="all, delete-orphan")
+
+class Messages(Base):
+    __tablename__ = 'messages'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
+    chat_uuid = Column(UUID(as_uuid=True), ForeignKey('conversations.uuid'), nullable=False, index=True)
+    
+    # Sequence number within a chat, managed by the application layer
+    message_id = Column(Integer, nullable=False)
+    
+    sender = Column(String, nullable=False) # 'user', 'assistant', 'system'
+    message_type = Column(String, nullable=False) # e.g., 'text', 'button_response'
+    content = Column(Text, nullable=False)
+    structured_data = Column(JSONB, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    conversation = relationship("Conversations", back_populates="messages")
+
 
 class PatientChemoDates(Base):
     __tablename__ = 'patient_chemo_dates'

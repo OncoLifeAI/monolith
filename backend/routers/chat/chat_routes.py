@@ -1,85 +1,110 @@
 """
 Chat and Conversation Routes
 
-This module provides endpoints for managing chat interactions and conversations.
+This module provides REST and WebSocket endpoints for managing real-time chat conversations.
+- REST API: Handles chat creation, history retrieval, and state management.
+- WebSocket: Manages real-time, bidirectional message exchange for a single chat.
 """
 
-from fastapi import APIRouter, Depends, status
-from fastapi.responses import StreamingResponse
+import json
+from uuid import UUID
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status, HTTPException, Query
 from sqlalchemy.orm import Session
-from datetime import date, datetime
-from pydantic import BaseModel
+from typing import List, Optional
+from datetime import date
+from jose import jwt, JWTError
 
 # Absolute imports
 from database import get_patient_db
-from routers.db.patient_models import Conversations
-from routers.auth.dependencies import get_current_user, TokenData
-from .models import ConversationResponse
-from .llm import CerebrasProvider
-from .llm.gpt import GPT4oProvider
-from .llm.context import ContextLoader
+from routers.auth.dependencies import get_current_user, TokenData, _get_jwks # Re-use the JWKS fetcher
 import os
+from .models import (
+    CreateChatRequest, CreateChatResponse, FullChatResponse, ChatStateResponse, 
+    UpdateStateRequest, ChatSummaryResponse, WebSocketMessageIn, TodaySessionResponse,
+    Message # Import the Message model for manual conversion
+)
+from .services import ConversationService
+from routers.db.patient_models import Conversations as ChatModel, Messages as MessageModel
 
-class AskRequest(BaseModel):
-    question: str
+router = APIRouter(prefix="/chat", tags=["Chat Conversation"])
 
-class StreamRequest(BaseModel):
-    system_prompt: str
-    user_prompt: str
-
-
-router = APIRouter(prefix="/chat", tags=["Chat"])
-
-
-@router.post("/stream-response")
-async def stream_llm_response(request: StreamRequest, current_user: TokenData = Depends(get_current_user)):
+# ===============================================================================
+# WebSocket Authentication and Authorization Helper
+# ===============================================================================
+async def get_user_from_token(token: str) -> Optional[TokenData]:
     """
-    Receives a prompt and streams back the response from an LLM provider.
-    This endpoint requires authentication.
+    Validates a JWT token passed to a WebSocket and returns the user's data.
+    This is a modified, non-dependency version of `get_current_user`.
     """
-    # Here, you could have logic to select different providers.
-    # For now, we'll hardcode the CerebrasProvider.
-    llm_provider = CerebrasProvider()
+    if not token:
+        return None
+    try:
+        jwks = _get_jwks()
+        unverified_header = jwt.get_unverified_header(token)
+        rsa_key = {}
+        for key in jwks["keys"]:
+            if key["kid"] == unverified_header["kid"]:
+                rsa_key = {
+                    "kty": key["kty"], "kid": key["kid"], "use": key["use"],
+                    "n": key["n"], "e": key["e"]
+                }
+        if not rsa_key:
+            return None
+
+        payload = jwt.decode(
+            token, rsa_key, algorithms=["RS256"],
+            audience=os.getenv("COGNITO_CLIENT_ID"),
+            issuer=f"https://cognito-idp.{os.getenv('AWS_REGION')}.amazonaws.com/{os.getenv('COGNITO_USER_POOL_ID')}"
+        )
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+        return TokenData(sub=user_id, email=payload.get("email"))
+    except JWTError:
+        return None
+
+# ===============================================================================
+# REST API Routes for Conversation Management
+# ===============================================================================
+
+@router.get(
+    "/session/today",
+    response_model=TodaySessionResponse,
+    summary="Get or create the chat session for the current day"
+)
+def get_or_create_session(
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    This is the primary endpoint for starting or resuming a conversation.
+    It fetches the most recent chat for the user for the current day.
+    If no chat exists, it creates a new one and returns its first message.
+    If a chat exists, it returns its full history.
+    """
+    service = ConversationService(db)
+    patient_uuid = UUID(current_user.sub)
     
-    response_generator = llm_provider.query(
-        system_prompt=request.system_prompt,
-        user_prompt=request.user_prompt
+    chat, messages, is_new = service.get_or_create_today_session(patient_uuid)
+    
+    # Manually convert the list of SQLAlchemy MessageModel objects to Pydantic Message models.
+    # This is the crucial step that fixes the validation error.
+    pydantic_messages = [Message.from_orm(msg) for msg in messages]
+    
+    return TodaySessionResponse(
+        chat_uuid=chat.uuid,
+        conversation_state=chat.conversation_state,
+        messages=pydantic_messages,
+        is_new_session=is_new
     )
-    
-    return StreamingResponse(response_generator, media_type="text/plain")
-
-
-@router.post("/ask")
-async def ask_question(request: AskRequest, current_user: TokenData = Depends(get_current_user)):
-    """
-    Receives a question and streams back the response from an LLM provider, 
-    using context from the model_inputs directory.
-    This endpoint requires authentication.
-    """
-    model_inputs_path = os.path.join(os.path.dirname(__file__), 'model_inputs')
-    context_loader = ContextLoader(model_inputs_path)
-    context = context_loader.load_context()
-    system_prompt = context_loader.load_system_prompt()
-    
-    llm_provider = GPT4oProvider()
-    
-    # The entire loaded context becomes the user prompt
-    user_prompt = f"{context}\n\nQuestion: {request.question}"
-    
-    response_generator = llm_provider.query(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt
-    )
-    
-    return StreamingResponse(response_generator, media_type="text/plain")
 
 @router.post(
     "/create-dummy",
-    response_model=ConversationResponse,
+    response_model=FullChatResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a dummy conversation entry"
 )
-async def create_dummy_conversation(
+def create_dummy_conversation(
     db: Session = Depends(get_patient_db),
     current_user: TokenData = Depends(get_current_user)
 ):
@@ -87,29 +112,204 @@ async def create_dummy_conversation(
     Creates a new, fully-populated dummy conversation entry for the logged-in user.
     This is used for testing and development purposes.
     """
-    dummy_conversation = Conversations(
+    # 1. Create the parent Conversation object
+    dummy_conversation = ChatModel(
         patient_uuid=current_user.sub,
         conversation_state="completed",
-        messages=[
-            {"speaker": "bot", "text": "Hello, how are you feeling today?"},
-            {"speaker": "patient", "text": "I'm feeling a bit nauseous and have a headache."},
-            {"speaker": "bot", "text": "I'm sorry to hear that. On a scale of 1-10, how severe is the nausea?"},
-            {"speaker": "patient", "text": "About a 4."},
-            {"speaker": "bot", "text": "And the headache?"},
-            {"speaker": "patient", "text": "A 3."},
-        ],
         symptom_list=["nausea", "headache"],
         severity_list={"nausea": 4, "headache": 3},
         longer_summary="The patient is experiencing mild nausea (4/10) and a slight headache (3/10) but is otherwise feeling stable. No other acute symptoms were reported.",
-        medication_list=["Ondansetron", "Tylenol"],
-        chemo_date=date(2023, 10, 20),
-        bulleted_summary="- Symptom: Nausea (Severity: 4/10), - Symptom: Headache (Severity: 3/10), - Medications mentioned: Ondansetron, Tylenol",
-        overall_feeling="Slightly unwell but stable.",
-        created_at=datetime.utcnow() # Manually set for consistency
+        medication_list=[
+            {"symptom": "nausea", "medicineName": "Ondansetron", "frequency": "as_needed", "response": "yes"},
+            {"symptom": "headache", "medicineName": "Tylenol", "frequency": "daily", "response": "neutral"}
+        ],
+        bulleted_summary="- Symptom: Nausea (Severity: 4/10)\n- Symptom: Headache (Severity: 3/10)\n- Medications mentioned: Ondansetron, Tylenol",
+        overall_feeling="Neutral"
     )
     
+    # 2. Create the individual Message objects
+    messages_data = [
+        {"id": 1, "sender": "assistant", "content": "Hello, how are you feeling today?"},
+        {"id": 2, "sender": "user", "content": "I'm feeling a bit nauseous and have a headache."},
+        {"id": 3, "sender": "assistant", "content": "I'm sorry to hear that. On a scale of 1-10, how severe is the nausea?"},
+        {"id": 4, "sender": "user", "content": "About a 4."},
+        {"id": 5, "sender": "assistant", "content": "And the headache?"},
+        {"id": 6, "sender": "user", "content": "A 3."},
+    ]
+    
+    for msg_data in messages_data:
+        message = MessageModel(
+            message_id=msg_data["id"],
+            sender=msg_data["sender"],
+            message_type="text",
+            content=msg_data["content"],
+            conversation=dummy_conversation
+        )
+        db.add(message)
+
+    # 3. Add the conversation to the session and commit
     db.add(dummy_conversation)
     db.commit()
     db.refresh(dummy_conversation)
     
-    return dummy_conversation 
+    db.refresh(dummy_conversation, attribute_names=['messages'])
+    
+    return dummy_conversation
+
+@router.post(
+    "/create",
+    response_model=CreateChatResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Start a new conversation"
+)
+def create_chat(
+    request: CreateChatRequest,
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Initializes a new chat session for the authenticated patient,
+    returning the new chat UUID and the first question to ask the user.
+    """
+    if request.patient_uuid != UUID(current_user.sub):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot create chat for another patient.")
+    
+    service = ConversationService(db)
+    chat, initial_question = service.create_chat(request.patient_uuid)
+    
+    return CreateChatResponse(
+        chat_uuid=chat.uuid,
+        initial_question=initial_question
+    )
+
+@router.get(
+    "/{chat_uuid}/full",
+    response_model=FullChatResponse,
+    summary="Get a complete conversation with all messages"
+)
+def get_full_chat(
+    chat_uuid: UUID,
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Fetches the entire history of a specific chat, including all messages.
+    This is useful for rehydrating the UI when a user resumes a conversation.
+    """
+    chat = db.query(ChatModel).filter(
+        ChatModel.uuid == chat_uuid,
+        ChatModel.patient_uuid == UUID(current_user.sub)
+    ).first()
+
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found or access denied.")
+        
+    # The `messages` are automatically loaded by SQLAlchemy thanks to the relationship
+    # defined in the `patient_models.py` file.
+    return FullChatResponse.from_orm(chat)
+
+@router.get(
+    "/{chat_uuid}/state",
+    response_model=ChatStateResponse,
+    summary="Get the current state of a conversation"
+)
+def get_chat_state(
+    chat_uuid: UUID,
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Quickly retrieves the current state and key data of a chat without
+    fetching the entire message history.
+    """
+    chat = db.query(ChatModel).filter(
+        ChatModel.uuid == chat_uuid,
+        ChatModel.patient_uuid == UUID(current_user.sub)
+    ).first()
+    
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found or access denied.")
+    
+    return ChatStateResponse.from_orm(chat)
+
+# Note: The PUT /state endpoint is not exposed to clients as per the design.
+# It's intended for internal use by the conversation processing engine.
+
+@router.delete(
+    "/{chat_uuid}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a conversation"
+)
+def delete_chat(
+    chat_uuid: UUID,
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Deletes a specific conversation and all of its associated messages.
+    The user must be the owner of the chat.
+    """
+    service = ConversationService(db)
+    try:
+        service.delete_chat(chat_uuid, UUID(current_user.sub))
+    except ValueError as e:
+        # This catches the "Chat not found or access denied" error from the service
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    
+    return # Returns a 204 No Content response on success
+
+
+# ===============================================================================
+# WebSocket Endpoint for Real-Time Communication
+# ===============================================================================
+
+@router.websocket("/ws/{chat_uuid}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    chat_uuid: UUID,
+    token: str = Query(...),
+    db: Session = Depends(get_patient_db)
+):
+    """
+    Handles real-time, bidirectional communication for a single chat session.
+    The connection is authenticated and authorized using a JWT token from query params.
+    """
+    # 1. Authenticate the user from the token
+    current_user = await get_user_from_token(token)
+    if not current_user:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid or expired token.")
+        return
+
+    # 2. Authorize the user for the specific chat room
+    chat = db.query(ChatModel).filter(
+        ChatModel.uuid == chat_uuid,
+        ChatModel.patient_uuid == UUID(current_user.sub)
+    ).first()
+    
+    if not chat:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Chat not found or access denied.")
+        return
+
+    # 3. If authentication and authorization succeed, proceed
+    await websocket.accept()
+    
+    service = ConversationService(db)
+    
+    ack_message = service.get_connection_ack(chat_uuid)
+    if ack_message:
+        await websocket.send_text(ack_message.json())
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message_data = WebSocketMessageIn(**json.loads(data))
+            
+            response = await service.process_message(chat_uuid, message_data)
+            
+            await websocket.send_text(response.assistant_response.json())
+
+    except WebSocketDisconnect:
+        print(f"Client disconnected from chat {chat_uuid}")
+    except Exception as e:
+        print(f"An error occurred in chat {chat_uuid}: {e}")
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason=str(e)) 

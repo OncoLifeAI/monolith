@@ -1,25 +1,139 @@
-from pydantic import BaseModel, Json
-from typing import List, Dict, Any
-from datetime import datetime, date
-import uuid
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any, Literal
+from uuid import UUID, uuid4
+from datetime import datetime
 
-class ConversationResponse(BaseModel):
-    """
-    Response model for a conversation entry.
-    Reflects the structure of the Conversations table.
-    """
-    uuid: uuid.UUID
-    created_at: datetime
-    patient_uuid: uuid.UUID
-    conversation_state: str
-    messages: List[Dict[str, Any]]
-    symptom_list: List[str]
-    severity_list: Dict[str, int]
-    longer_summary: str
-    medication_list: List[str]
-    chemo_date: date
-    bulleted_summary: str
-    overall_feeling: str
+from .constants import ConversationState
+
+# ===============================================================================
+# Database-related Models (Pydantic representations of SQLAlchemy models)
+# ===============================================================================
+
+class Message(BaseModel):
+    uuid: UUID = Field(default_factory=uuid4)
+    chat_uuid: UUID
+    message_id: int
+    sender: Literal["user", "assistant", "system"]
+    message_type: Literal["text", "button_response", "multi_select", "system", "button_prompt"]
+    content: str
+    structured_data: Optional[Dict[str, Any]] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
-        orm_mode = True 
+        from_attributes = True
+
+class Chat(BaseModel):
+    uuid: UUID = Field(default_factory=uuid4)
+    patient_uuid: UUID
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    conversation_state: ConversationState = ConversationState.INITIAL
+    symptom_list: Optional[List[str]] = []
+    severity_list: Optional[Dict[str, int]] = {}
+    medication_list: Optional[List[Dict[str, Any]]] = []
+    longer_summary: Optional[str] = None
+    bulleted_summary: Optional[str] = None
+    overall_feeling: Optional[Literal['Very Happy', 'Happy', 'Neutral', 'Bad', 'Very Bad']] = None
+    
+    class Config:
+        from_attributes = True
+
+# ===============================================================================
+# REST API Request/Response Models
+# ===============================================================================
+
+class CreateChatRequest(BaseModel):
+    patient_uuid: UUID
+
+class InitialQuestion(BaseModel):
+    text: str
+    type: str
+    options: List[str]
+
+class CreateChatResponse(BaseModel):
+    chat_uuid: UUID
+    initial_question: InitialQuestion
+
+class ChatSummaryResponse(BaseModel):
+    uuid: UUID
+    created_at: datetime
+    conversation_state: str
+    bulleted_summary: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+class FullChatResponse(Chat):
+    messages: List[Message]
+
+class TodaySessionResponse(BaseModel):
+    chat_uuid: UUID
+    conversation_state: str
+    messages: List[Message]
+    is_new_session: bool
+
+    class Config:
+        from_attributes = True
+
+class ChatStateResponse(BaseModel):
+    conversation_state: str
+    symptom_list: Optional[List[str]]
+    severity_list: Optional[Dict[str, int]]
+
+    class Config:
+        from_attributes = True
+
+class UpdateStateRequest(BaseModel):
+    conversation_state: str
+    symptom_list: Optional[List[str]] = None
+    severity_list: Optional[Dict[str, int]] = None
+
+# ===============================================================================
+# WebSocket Message Models
+# ===============================================================================
+
+class WebSocketMessageIn(BaseModel):
+    type: Literal["user_message"]
+    message_type: Literal["text", "button_response", "multi_select"]
+    content: str
+    structured_data: Optional[Dict[str, Any]] = None
+
+class WebSocketMessageOut(BaseModel):
+    type: Literal["assistant_message", "system_notification", "connection_established"]
+    message_type: Literal["text", "button_prompt", "multi_select", "system"]
+    content: str
+    options: Optional[List[str]] = None
+    message_id: Optional[int] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+class ConnectionEstablished(WebSocketMessageOut):
+    type: Literal["connection_established"] = "connection_established"
+    message_type: Literal["system"] = "system"
+    content: str = "Connection established."
+    chat_state: Dict[str, Any]
+
+# ===============================================================================
+# Conversation Processing Models
+# ===============================================================================
+
+class ProcessRequest(BaseModel):
+    message: WebSocketMessageIn
+    trigger_kb_query: bool = False
+
+class AssistantResponse(BaseModel):
+    content: str
+    message_type: str
+    expects_response_type: str
+
+class ConversationUpdate(BaseModel):
+    new_state: str
+    symptom_list: Optional[List[str]] = None
+
+class ProcessResponse(BaseModel):
+    user_message_saved: Message
+    assistant_response: WebSocketMessageOut
+    conversation_updated: Optional[ConversationUpdate] = None 
+
+    class Config:
+        from_attributes = True 
+
