@@ -10,9 +10,8 @@ from .constants import ConversationState
 # ===============================================================================
 
 class Message(BaseModel):
-    uuid: UUID = Field(default_factory=uuid4)
+    id: int
     chat_uuid: UUID
-    message_id: int
     sender: Literal["user", "assistant", "system"]
     message_type: Literal["text", "button_response", "multi_select", "system", "button_prompt"]
     content: str
@@ -21,6 +20,9 @@ class Message(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            UUID: str
+        }
 
 class Chat(BaseModel):
     uuid: UUID = Field(default_factory=uuid4)
@@ -37,6 +39,9 @@ class Chat(BaseModel):
     
     class Config:
         from_attributes = True
+        json_encoders = {
+            UUID: str
+        }
 
 # ===============================================================================
 # REST API Request/Response Models
@@ -103,7 +108,6 @@ class WebSocketMessageOut(BaseModel):
     message_type: Literal["text", "button_prompt", "multi_select", "system"]
     content: str
     options: Optional[List[str]] = None
-    message_id: Optional[int] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 class ConnectionEstablished(WebSocketMessageOut):
@@ -131,9 +135,12 @@ class ConversationUpdate(BaseModel):
 
 class ProcessResponse(BaseModel):
     user_message_saved: Message
-    assistant_response: WebSocketMessageOut
+    assistant_response: Message
     conversation_updated: Optional[ConversationUpdate] = None 
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+        json_encoders = {
+            UUID: str
+        } 
 

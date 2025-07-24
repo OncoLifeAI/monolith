@@ -51,16 +51,6 @@ class ConversationService:
         )
         self.db.add(new_chat)
         
-        # 2. Create the initial system message to mark the start
-        system_message = MessageModel(
-            message_id=0,
-            sender="system",
-            message_type="system",
-            content="Conversation initiated. Asking chemo status.",
-            conversation=new_chat
-        )
-        self.db.add(system_message)
-        
         if commit:
             self.db.commit()
             self.db.refresh(new_chat)
@@ -101,11 +91,11 @@ class ConversationService:
             response_content = self._query_knowledge_base(context)
             response_type = "text"
         elif current_state == ConversationState.FOLLOWUP_QUESTIONS:
-            chat_history = self.db.query(MessageModel).filter(MessageModel.chat_uuid == chat.uuid).order_by(MessageModel.message_id.desc()).limit(10).all()
+            chat_history = self.db.query(MessageModel).filter(MessageModel.chat_uuid == chat.uuid).order_by(MessageModel.id.desc()).limit(10).all()
             context = {
                 "patient_state": {"current_symptoms": chat.symptom_list},
                 "latest_input": message.content,
-                "history": [Message.from_orm(m).dict() for m in reversed(chat_history)]
+                "history": [Message.from_orm(m).model_dump(mode='json') for m in reversed(chat_history)]
             }
             response_content = self._query_knowledge_base(context)
             response_type = "text"
@@ -140,8 +130,6 @@ class ConversationService:
             
             # The first visible message for the user
             first_bot_message = MessageModel(
-                chat_uuid=new_chat.uuid,
-                message_id=1,
                 sender="assistant",
                 message_type=initial_question["type"],
                 content=initial_question["text"],
@@ -162,58 +150,53 @@ class ConversationService:
             # This should ideally not happen if client gets UUID from backend
             raise ValueError("Chat not found.")
 
-        # Determine the next message ID
-        last_message_id = self.db.query(func.max(MessageModel.message_id)).filter(MessageModel.chat_uuid == chat_uuid).scalar() or 0
-        
-        # 1. Create the user message object
+        # 1. Create the user message object and save it
         user_msg = MessageModel(
             chat_uuid=chat_uuid,
-            message_id=last_message_id + 1,
             sender="user",
-            message_type=message.message_type,
+            message_type="button_response",
             content=message.content,
             structured_data=message.structured_data
         )
+        self.db.add(user_msg)
+        self.db.flush() # Ensure the user message gets an ID before the assistant replies
 
-        # 2. Determine next state and assistant response
-        new_state, assistant_response = self._determine_next_state_and_response(chat, message)
+        # 2. Determine next state and assistant response details
+        new_state, assistant_response_details = self._determine_next_state_and_response(chat, message)
         chat.conversation_state = new_state
         
         # 3. Create the assistant message object
-        assistant_response.message_id = last_message_id + 2
         assistant_msg = MessageModel(
              chat_uuid=chat_uuid,
-             message_id=assistant_response.message_id,
              sender="assistant",
-             message_type=assistant_response.message_type,
-             content=assistant_response.content,
-             structured_data={"options": assistant_response.options} if assistant_response.options else None
+             message_type=assistant_response_details.message_type,
+             content=assistant_response_details.content,
+             structured_data={"options": assistant_response_details.options} if assistant_response_details.options else None
         )
         
         # 4. Add all new objects to the session and commit once
-        self.db.add_all([chat, user_msg, assistant_msg])
+        self.db.add_all([chat, assistant_msg])
         self.db.commit()
         
-        # 5. Prepare the response
-        conversation_updated = ConversationUpdate(new_state=new_state, symptom_list=chat.symptom_list)
-        
+        # 5. Prepare the full response payload
         return ProcessResponse(
             user_message_saved=Message.from_orm(user_msg),
-            assistant_response=assistant_response,
-            conversation_updated=conversation_updated
+            assistant_response=Message.from_orm(assistant_msg),
+            conversation_updated=ConversationUpdate(new_state=new_state, symptom_list=chat.symptom_list)
         )
 
     def get_connection_ack(self, chat_uuid: UUID) -> ConnectionEstablished:
         """Acknowledges a WebSocket connection with the current chat state."""
+        # This message is for backend confirmation, not for display in the UI.
+        # It can be logged on the client if needed.
         chat = self.db.query(ChatModel).filter(ChatModel.uuid == chat_uuid).first()
         if not chat:
-            return None # Should not happen in normal flow
+            return None
 
         return ConnectionEstablished(
             content="Connection acknowledged.",
             chat_state={
-                "conversation_state": chat.conversation_state,
-                "pending_question": "Welcome back! Let's continue."
+                "conversation_state": chat.conversation_state
             }
         )
         

@@ -6,6 +6,7 @@ const loginRoutes = require('./login-endpoints');
 const summariesRoutes = require('./summaries-endpoint');
 const notesRoutes = require('./notes-endpoint');
 const profileRoutes = require('./profile-endpoint');
+const chatRoutes = require('./chat-routes');
 
 router.get('/', (req, res) => {
   res.json({
@@ -22,5 +23,6 @@ router.use('/api', loginRoutes);
 router.use('/api', summariesRoutes);
 router.use('/api', notesRoutes);
 router.use('/api', profileRoutes);
+router.use('/api/chat', chatRoutes);
 
 module.exports = router;

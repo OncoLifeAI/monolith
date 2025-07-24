@@ -38,11 +38,7 @@ class Conversations(Base):
 class Messages(Base):
     __tablename__ = 'messages'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     chat_uuid = Column(UUID(as_uuid=True), ForeignKey('conversations.uuid'), nullable=False, index=True)
-    
-    # Sequence number within a chat, managed by the application layer
-    message_id = Column(Integer, nullable=False)
     
     sender = Column(String, nullable=False) # 'user', 'assistant', 'system'
     message_type = Column(String, nullable=False) # e.g., 'text', 'button_response'

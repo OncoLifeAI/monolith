@@ -139,7 +139,6 @@ def create_dummy_conversation(
     
     for msg_data in messages_data:
         message = MessageModel(
-            message_id=msg_data["id"],
             sender=msg_data["sender"],
             message_type="text",
             content=msg_data["content"],
@@ -306,10 +305,11 @@ async def websocket_endpoint(
             
             response = await service.process_message(chat_uuid, message_data)
             
+            # The response now contains both the user and assistant messages
+            # We don't need to send the user message back, but we could if needed for sync
             await websocket.send_text(response.assistant_response.json())
 
     except WebSocketDisconnect:
         print(f"Client disconnected from chat {chat_uuid}")
     except Exception as e:
-        print(f"An error occurred in chat {chat_uuid}: {e}")
         await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason=str(e)) 
