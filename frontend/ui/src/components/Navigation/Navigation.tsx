@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, Menu as MenuIcon, User } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
+import { SESSION_START_KEY } from '../SessionTimeoutManager';
 // import { useLogout } from '../../restful/login';
 
 const Sidebar = styled.nav<{ isExpanded: boolean }>`
@@ -308,6 +309,7 @@ const SidebarMenu: React.FC = () => {
   const handleLogout = () => {
     // useLogout();
     localStorage.removeItem('authToken');
+    sessionStorage.removeItem(SESSION_START_KEY);
     navigate('/login');
   };
 

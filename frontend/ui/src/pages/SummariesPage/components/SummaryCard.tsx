@@ -98,22 +98,26 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ summary, onViewDetails }) => 
     <Card>
       <DateHeader>{formatDate(summary.created_at)}</DateHeader>
       <SummaryContent>
-        <BulletList>
-          {summary.bulleted_summary
-            .split(/,\s*-/)
-            .map((line, index) => (
-              <BulletItem key={index}>{line.replace(/^\s*-?\s*/, '')}</BulletItem>
-            ))}
-        </BulletList>
-        
-        
+        {summary?.bulleted_summary ? (
+          <BulletList>
+            {summary.bulleted_summary
+              .split(/,\s*-/)
+              .map((line, index) => (
+                <BulletItem key={index}>{line.replace(/^\s*-?\s*/, '')}</BulletItem>
+              ))}
+          </BulletList>
+        ) : (
+          <div style={{ color: '#888', fontStyle: 'italic', textAlign: 'center' }}>No summary for today</div>
+        )}
       </SummaryContent>
-      <ViewDetailsButton 
-        variant="primary" 
-        onClick={() => onViewDetails(summary.uuid)}
-      >
-        View Details
-      </ViewDetailsButton>
+      {summary?.bulleted_summary && (
+        <ViewDetailsButton 
+          variant="primary" 
+          onClick={() => onViewDetails(summary.uuid)}
+        >
+          View Details
+        </ViewDetailsButton>
+      )}
     </Card>
   );
 };

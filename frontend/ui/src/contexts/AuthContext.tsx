@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLogin, useCompleteNewPassword } from '../restful/login';
 import type { CompleteNewPasswordResponse, LoginResponse } from '../restful/login';
+import { SESSION_START_KEY } from '../components/SessionTimeoutManager';
 
 interface User {
   email: string;
@@ -63,6 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (result.success) {
         setUser({email: email});
+        sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
         if (result.data?.requiresPasswordChange) {
           setIsPasswordChangeRequired(true);
         }
@@ -85,7 +87,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    sessionStorage.removeItem(SESSION_START_KEY);
   };
 
   const value: AuthContextType = {
