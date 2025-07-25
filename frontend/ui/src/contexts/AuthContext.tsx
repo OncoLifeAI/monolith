@@ -70,9 +70,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         return result;
       } else {
-        throw new Error(result.message || 'Login failed');
+        // Include error code in thrown error for UI to parse
+        throw new Error(result.error);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // If error from backend, try to include error code
+      if (error?.message) {
+        throw error;
+      }
       throw new Error('Login failed');
     }
   };

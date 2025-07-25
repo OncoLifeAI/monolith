@@ -27,6 +27,7 @@ export interface CompleteNewPasswordResponse {
 export interface LoginResponse {
   success: boolean;
   message: string;
+  error?: string;
   data?: {
     user_status?: string;
     message?: string;

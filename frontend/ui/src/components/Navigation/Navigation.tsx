@@ -4,6 +4,7 @@ import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, Che
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 import { SESSION_START_KEY } from '../SessionTimeoutManager';
+import { useUser } from '../../contexts/UserContext';
 // import { useLogout } from '../../restful/login';
 
 const Sidebar = styled.nav<{ isExpanded: boolean }>`
@@ -14,7 +15,7 @@ const Sidebar = styled.nav<{ isExpanded: boolean }>`
   display: flex;
   flex-direction: column;
   transition: width 0.3s;
-  width: ${props => (props.isExpanded ? '20rem' : '6rem')};
+  width: ${props => (props.isExpanded ? '16rem' : '6rem')};
   min-width: 0;
 `;
 
@@ -37,7 +38,7 @@ const Logo = styled.img`
 `;
 
 const LogoText = styled.span`
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #2563eb;
   margin-left: 0.75rem;
@@ -71,12 +72,18 @@ const UserProfileContainer = styled.div<{ isExpanded: boolean }>`
   }
 `;
 
-const Avatar = styled.img`
+const AvatarInitials = styled.div`
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 9999px;
-  object-fit: cover;
-  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 `;
 
 const UserInfo = styled.div`
@@ -147,6 +154,7 @@ const MenuLabel = styled.span`
   margin-left: 0.75rem;
   color: #374151;
   font-weight: 500;
+  font-size: 1.1rem;
   transition: color 0.2s;
   ${MenuButton}:hover & {
     color: #2563eb;
@@ -185,32 +193,27 @@ interface MenuItem {
 }
 
 interface UserProfileProps {
-  name: string;
-  avatar: string;
   isExpanded: boolean;
   onClick?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ name, avatar, isExpanded, onClick }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ isExpanded, onClick }) => {
+  const { profile, isLoading } = useUser();
+  let displayName = 'User';
+  let initials = 'U';
+  if (profile) {
+    displayName = profile.first_name + (profile.last_name ? ' ' + profile.last_name : '');
+    const first = profile.first_name?.[0] || '';
+    const last = profile.last_name?.[0] || '';
+    initials = (first + last).toUpperCase() || 'U';
+  }
   return (
     <UserProfileContainer isExpanded={isExpanded} onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
-      <div
-        style={{
-          width: '2.5rem',
-          height: '2.5rem',
-          borderRadius: '9999px',
-          background: '#e5e7eb',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <User size={28} color="#2563eb" />
-      </div>
+      <AvatarInitials>{initials}</AvatarInitials>
       {isExpanded && (
         <UserInfo>
           <UserHello>Hello</UserHello>
-          <UserName>User</UserName>
+          <UserName>{isLoading ? 'Loading...' : displayName}</UserName>
         </UserInfo>
       )}
     </UserProfileContainer>
@@ -273,8 +276,6 @@ const SidebarContent: React.FC<{
         </ToggleButton>
       </Header>
       <UserProfile 
-        name="Floyd Miles" 
-        avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" 
         isExpanded={isExpanded}
         onClick={onProfileClick}
       />
@@ -299,7 +300,7 @@ const SidebarContent: React.FC<{
 };
 
 const SidebarMenu: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const navigate = useNavigate();
 
   const handleMenuItemClick = (href: string) => {

@@ -22,14 +22,28 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const { authenticateLogin } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async() => {
-    const result = await authenticateLogin(email, password);
-    if (result?.data?.requiresPasswordChange) {
-      navigate('/reset-password');
-    }
-    if (result?.data?.user_status === 'CONFIRMED') {
-      navigate('/');
+  const handleLogin = async () => {
+    setError(null);
+    try {
+      const result = await authenticateLogin(email, password);
+      if (result?.data?.requiresPasswordChange) {
+        navigate('/reset-password');
+      }
+      if (result?.data?.user_status === 'CONFIRMED') {
+        navigate('/');
+      }
+    } catch (err: any) {
+      let message = 'Login failed';
+        if (err.message === 'AUTHENTICATION_FAILED') {
+          message = 'Failed Authentication';
+        } else if (err.message === 'INVALID_CREDENTIALS') {
+          message = 'Invalid Credentials';
+        } else {
+          message = 'Failed Authentication';
+        }
+      setError(message);
     }
   };
 
@@ -37,6 +51,7 @@ const Login: React.FC = () => {
     <Card>
       <Title>Welcome Back to OncoLife AI <span role="img" aria-label="wave">👋🏻</span></Title>
       <Subtitle>Please enter your details to sign in to your account</Subtitle>
+      {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <StyledForm>
         <Form.Group className="mb-3" controlId="formEmail">
           <Form.Label>Email</Form.Label>
