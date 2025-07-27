@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, Menu as MenuIcon, User } from 'lucide-react';
+import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 import { SESSION_START_KEY } from '../SessionTimeoutManager';
 import { useUser } from '../../contexts/UserContext';
+import { useUserType } from '../../contexts/UserTypeContext';
 // import { useLogout } from '../../restful/login';
 
 const Sidebar = styled.nav<{ isExpanded: boolean }>`
@@ -47,7 +48,7 @@ const LogoText = styled.span`
   transition: all 0.3s;
 `;
 
-const ToggleButton = styled.button`
+const ExpandToggleButton = styled.button`
   padding: 0.5rem;
   border: none;
   background: none;
@@ -185,6 +186,62 @@ const LogoutLabel = styled.span`
   }
 `;
 
+const ToggleContainer = styled.div<{ isExpanded: boolean }>`
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: ${props => (props.isExpanded ? 'flex-start' : 'center')};
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const ToggleLabel = styled.span`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  white-space: nowrap;
+`;
+
+const SwitchContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const SwitchLabel = styled.span<{ isActive: boolean }>`
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${props => props.isActive ? '#2563eb' : '#6b7280'};
+  transition: color 0.2s;
+`;
+
+const ToggleSwitch = styled.div<{ isOn: boolean }>`
+  position: relative;
+  width: 3rem;
+  height: 1.5rem;
+  background-color: ${props => props.isOn ? '#2563eb' : '#d1d5db'};
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  
+  &:hover {
+    background-color: ${props => props.isOn ? '#1d4ed8' : '#9ca3af'};
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0.125rem;
+    left: ${props => props.isOn ? '1.625rem' : '0.125rem'};
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: white;
+    border-radius: 50%;
+    transition: left 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+`;
+
 interface MenuItem {
   id: string;
   label: string;
@@ -253,7 +310,12 @@ const SidebarContent: React.FC<{
   onToggleExpand: () => void;
   onProfileClick: () => void;
 }> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand, onProfileClick }) => {
-  const menuItems: MenuItem[] = [
+  const { isDoctor, setUserType } = useUserType();
+  const menuItems: MenuItem[] =  isDoctor ? [
+    { id: '1', label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
+    { id: '2', label: 'Patients', icon: <ShieldUser size={20} />, href: '/patients' },
+    { id: '3', label: 'Staff', icon: <Users size={20} />, href: '/staff' },
+  ] : [
     { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
     { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
     { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
@@ -267,18 +329,29 @@ const SidebarContent: React.FC<{
           alt="Company Logo"
         />
         {isExpanded && <LogoText>Oncolife AI</LogoText>}
-        <ToggleButton onClick={onToggleExpand} aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}>
+        <ExpandToggleButton onClick={onToggleExpand} aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}>
           {isExpanded ? (
             <ChevronLeft size={20} style={{ color: '#4b5563' }} />
           ) : (
             <ChevronRight size={20} style={{ color: '#4b5563' }} />
           )}
-        </ToggleButton>
+        </ExpandToggleButton>
       </Header>
       <UserProfile 
         isExpanded={isExpanded}
         onClick={onProfileClick}
       />
+      <ToggleContainer isExpanded={isExpanded}>
+        {isExpanded && <ToggleLabel>View:</ToggleLabel>}
+        <SwitchContainer>
+          {isExpanded && <SwitchLabel isActive={!isDoctor}>Patient</SwitchLabel>}
+          <ToggleSwitch 
+            isOn={isDoctor}
+            onClick={() => setUserType(isDoctor ? 'patient' : 'doctor')}
+          />
+          {isExpanded && <SwitchLabel isActive={isDoctor}>Doctor</SwitchLabel>}
+        </SwitchContainer>
+      </ToggleContainer>
       <MenuSection>
         {isExpanded && <MenuTitle>MENU</MenuTitle>}
         <MenuList isExpanded={isExpanded}>

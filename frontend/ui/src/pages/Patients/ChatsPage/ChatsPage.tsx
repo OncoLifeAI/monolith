@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { MessageBubble } from '../../components/chat/MessageBubble';
-import { MessageInput } from '../../components/chat/MessageInput';
-import { ThinkingBubble } from '../../components/chat/ThinkingBubble';
-import { useWebSocket } from '../../hooks/useWebSocket';
-import { chatService } from '../../services/chatService';
-import type { ChatSession, Message } from '../../types/chat';
-import '../../components/chat/Chat.css';
+import { MessageBubble } from '../../../components/chat/MessageBubble';
+import { MessageInput } from '../../../components/chat/MessageInput';
+import { ThinkingBubble } from '../../../components/chat/ThinkingBubble';
+import { useWebSocket } from '../../../hooks/useWebSocket';
+import { chatService } from '../../../services/chatService';
+import type { ChatSession, Message } from '../../../types/chat';
+import '../../../components/chat/Chat.css';
 
 const ChatsPage: React.FC = () => {
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);

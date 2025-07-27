@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import SummaryCard from './SummaryCard';
-import type { Summary } from '../../../restful/summaries';
+import type { Summary } from '../../../../restful/summaries';
 
 const GridContainer = styled.div`
   display: grid;

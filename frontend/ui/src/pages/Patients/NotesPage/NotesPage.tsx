@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { NotesSidebar, NoteEditor } from './components';
 import { NotesPageContainer } from './NotesPage.styles';
 import type { Note, NoteResponse } from './types';
-import { Header, Title, Container } from '../../styles/GlobalStyles';
-import SharedDatePicker from '../../components/DatePicker';
+import { Header, Title, Container } from '../../../styles/GlobalStyles';
+import SharedDatePicker from '../../../components/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
-import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../restful/notes';
+import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../../restful/notes';
 
 const NotesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());

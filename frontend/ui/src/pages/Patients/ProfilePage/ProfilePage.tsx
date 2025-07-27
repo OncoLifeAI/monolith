@@ -11,7 +11,7 @@ import {
 } from './ProfilePage.styles';
 import { ProfileHeader, PersonalInformation } from './components';
 import type { ProfileData, ProfileFormData } from './types';
-import { useFetchProfile } from '../../restful/profile';
+import { useFetchProfile } from '../../../restful/profile';
 
 const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);

@@ -132,6 +132,8 @@ export const Content = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  overflow-y: auto;
+  height: 100vh;
 `;
 
 export const PageHeader = styled.div`

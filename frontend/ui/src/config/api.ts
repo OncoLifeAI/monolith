@@ -10,6 +10,9 @@ export const API_CONFIG = {
     },
     SUMMARIES: '/summaries',
     NOTES: '/notes',
+    DASHBOARD: '/dashboard',
+    PATIENTS: '/patients',
+    STAFF: '/staff',
   },
 } as const;
 

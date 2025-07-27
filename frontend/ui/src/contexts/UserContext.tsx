@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useFetchProfile } from '../restful/profile';
-import type { ProfileData } from '../pages/ProfilePage/types';
+import type { ProfileData } from '../pages/Patients/ProfilePage/types';
 
 interface UserContextType {
   profile: ProfileData | null;

@@ -2,10 +2,11 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
+import { UserTypeProvider, useUserType } from './contexts/UserTypeContext';
 import Layout from './components/Layout';
-import ChatsPage from './pages/ChatsPage';
-import { SummariesPage, SummariesDetailsPage } from './pages/SummariesPage';
-import NotesPage from './pages/NotesPage';
+import ChatsPage from './pages/Patients/ChatsPage';
+import { SummariesPage, SummariesDetailsPage } from './pages/Patients/SummariesPage';
+import NotesPage from './pages/Patients/NotesPage';
 import LoremPage from './pages/LoremPage';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
@@ -14,10 +15,38 @@ import Acknowledgement from './pages/LoginPage/Acknowledgement';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/Patients/ProfilePage';
 import SessionTimeoutManager from './components/SessionTimeoutManager';
+import DashboardPage from './pages/Doctors/Dashboard';
+import PatientsPage from './pages/Doctors/Patients';
+import StaffPage from './pages/Doctors/Staff';
 
 const excludedRoutes = ['/login', '/signup', '/reset-password', '/acknowledgement'];
+
+// Patient-only routes
+const patientRoutes = ['/chat', '/summaries', '/notes', '/lorem'];
+// Doctor-only routes  
+const doctorRoutes = ['/dashboard', '/patients', '/staff'];
+
+const RestrictedRoute: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
+  const { isDoctor } = useUserType();
+  
+  // Check if current path is restricted based on user type
+  const isPatientRoute = patientRoutes.some(route => path.startsWith(route));
+  const isDoctorRoute = doctorRoutes.some(route => path.startsWith(route));
+  
+  if (isDoctor && isPatientRoute) {
+    // Doctor trying to access patient route - redirect to doctor default
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  if (!isDoctor && isDoctorRoute) {
+    // Patient trying to access doctor route - redirect to patient default
+    return <Navigate to="/chat" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
@@ -32,11 +61,15 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Navigate to="/chat" replace />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="chat" element={<ChatsPage />} />
-          <Route path="summaries" element={<SummariesPage />} />
-          <Route path="summaries/:summaryId" element={<SummariesDetailsPage />} />
-          <Route path="notes" element={<NotesPage />} />
-          <Route path="lorem" element={<LoremPage />} />
+          <Route path="chat" element={<RestrictedRoute path="/chat"><ChatsPage /></RestrictedRoute>} />
+          <Route path="summaries" element={<RestrictedRoute path="/summaries"><SummariesPage /></RestrictedRoute>} />
+          <Route path="summaries/:summaryId" element={<RestrictedRoute path="/summaries"><SummariesDetailsPage /></RestrictedRoute>} />
+          <Route path="notes" element={<RestrictedRoute path="/notes"><NotesPage /></RestrictedRoute>} />
+          <Route path="lorem" element={<RestrictedRoute path="/lorem"><LoremPage /></RestrictedRoute>} />
+          {/* Doctor routes */}
+          <Route path="dashboard" element={<RestrictedRoute path="/dashboard"><DashboardPage /></RestrictedRoute>} />
+          <Route path="patients" element={<RestrictedRoute path="/patients"><PatientsPage /></RestrictedRoute>} />
+          <Route path="staff" element={<RestrictedRoute path="/staff"><StaffPage /></RestrictedRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
@@ -48,11 +81,13 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <UserProvider>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </LocalizationProvider>
+        <UserTypeProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </LocalizationProvider>
+        </UserTypeProvider>
       </UserProvider>
     </AuthProvider>
   );

@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
-import { Header, Title } from "../../styles/GlobalStyles";
+import { Header, Title } from "../../../styles/GlobalStyles";
 import { Container } from "react-bootstrap";
-import { useSummaryDetails } from "../../restful/summaries";
+import { useSummaryDetails } from "../../../restful/summaries";
 
 const SummariesDetailsPage = () => {
     const { summaryId } = useParams();

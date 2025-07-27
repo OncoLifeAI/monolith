@@ -10,13 +10,13 @@ import {
   LoadingContainer,
   ErrorContainer,
 } from './SummariesPage.styles';
-import SharedDatePicker from '../../components/DatePicker';
-import { useSummaries, type Summary } from '../../restful/summaries';
+import SharedDatePicker from '../../../components/DatePicker';
+import { useSummaries, type Summary } from '../../../restful/summaries';
 import { SummaryGrid } from './components';
 import dayjs, { Dayjs } from 'dayjs';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Header, Title, Content } from '../../styles/GlobalStyles';
+import { Container, Header, Title, Content } from '../../../styles/GlobalStyles';
 
 const SummariesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());

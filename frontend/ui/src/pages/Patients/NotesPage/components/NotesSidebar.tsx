@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { AddNewButton } from '../NotesPage.styles';
 import { NoteItem } from './NoteItem';
 import { SidebarContainer, SidebarHeader, NotesList, NotesSidebarTitle } from './NotesSidebar.styles';
-import SharedDatePicker from '../../../components/DatePicker';
+import SharedDatePicker from '../../../../components/DatePicker';
 import type { Note } from '../types';
 import type { Dayjs } from 'dayjs';
 
