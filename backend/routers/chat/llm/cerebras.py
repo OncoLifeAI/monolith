@@ -9,7 +9,7 @@ class CerebrasProvider(LLMProvider):
     """
     def __init__(self):
         self.client = Cerebras(api_key=os.environ.get("CEREBRAS_API_KEY"))
-        self.model = "llama-3.3-70b"
+        self.model = "qwen-3-32b"
 
     def query(self, system_prompt: str, user_prompt: str) -> Generator[str, None, None]:
         """

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { MessageBubble } from '../../../components/chat/MessageBubble';
 import { MessageInput } from '../../../components/chat/MessageInput';
 import { ThinkingBubble } from '../../../components/chat/ThinkingBubble';
@@ -14,25 +14,45 @@ const ChatsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const { isConnected, lastMessage, sendMessage, connectionError } = useWebSocket(
-    chatSession?.chat_uuid || null
+
+  const handleNewMessage = useCallback((wsMessage: any) => {
+    console.log('Received WebSocket message:', wsMessage);
+
+    setMessages(prevMessages => {
+      if (wsMessage.type === 'message_chunk') {
+        setIsThinking(false);
+        const messageIndex = prevMessages.findIndex(m => m.id === wsMessage.message_id);
+        if (messageIndex !== -1) {
+          const updatedMessages = [...prevMessages];
+          updatedMessages[messageIndex].content += wsMessage.content;
+          return updatedMessages;
+        } else {
+          const newMessage: Message = {
+            id: wsMessage.message_id,
+            chat_uuid: chatSession!.chat_uuid,
+            sender: 'assistant',
+            message_type: 'text',
+            content: wsMessage.content,
+            created_at: new Date().toISOString(),
+          };
+          return [...prevMessages, newMessage];
+        }
+      } else if (wsMessage.type === 'message_end') {
+        setIsThinking(false);
+        return prevMessages;
+      } else if (wsMessage.id) {
+        setIsThinking(false);
+        return [...prevMessages.filter(m => m.id !== -1 && m.id !== wsMessage.id), wsMessage];
+      }
+      return prevMessages;
+    });
+  }, [chatSession]);
+
+  const { isConnected, sendMessage, connectionError } = useWebSocket(
+    chatSession?.chat_uuid || null,
+    handleNewMessage
   );
 
-  // Load today's session on component mount
-  useEffect(() => {
-    loadTodaySession();
-  }, []);
-
-  // Handle incoming WebSocket messages
-  useEffect(() => {
-    if (lastMessage) {
-      setIsThinking(false);
-      setMessages(prev => [...prev, lastMessage]);
-    }
-  }, [lastMessage]);
-
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -42,7 +62,6 @@ const ChatsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await chatService.getTodaySession();
-      // The actual session data is in the `data` property of the response
       const sessionData = response.data;
       setChatSession(sessionData);
       setMessages(sessionData.messages || []);
@@ -54,28 +73,44 @@ const ChatsPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    loadTodaySession();
+  }, []);
+
+  const handleStartNewConversation = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const sessionData = await chatService.startNewSession();
+      setChatSession(sessionData);
+      setMessages(sessionData.messages || []);
+    } catch (error) {
+      setError('Failed to start a new chat session');
+      console.error('Failed to start a new chat session:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSendMessage = (content: string) => {
-    // Optimistically add the user's text message to the UI
     const userMessage: Message = {
-      id: -1, // A temporary ID for the key, will be replaced by the server's ID
+      id: -1,
       chat_uuid: chatSession!.chat_uuid,
       sender: 'user',
-      message_type: 'text', // This is a standard text message
+      message_type: 'text',
       content: content,
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, userMessage]);
-
     if (isConnected) {
       setIsThinking(true);
-      sendMessage(content);
+      sendMessage(content, 'text');
     }
   };
 
   const handleButtonClick = (option: string) => {
-    // Optimistically add the user's response to the UI
     const userMessage: Message = {
-      id: -1, // A temporary ID for the key
+      id: -1,
       chat_uuid: chatSession!.chat_uuid,
       sender: 'user',
       message_type: 'button_response',
@@ -83,57 +118,62 @@ const ChatsPage: React.FC = () => {
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, userMessage]);
-
     if (isConnected) {
       setIsThinking(true);
-      sendMessage(option);
-    } else {
-      console.log(`Button clicked with option: "${option}". Connection is NOT active.`);
+      sendMessage(option, 'button_response');
     }
   };
 
   const handleMultiSelectSubmit = (selections: string[]) => {
-    // Optimistically add the user's response to the UI
+    const formattedSelections = selections.join(', ');
     const userMessage: Message = {
-      id: -1, // A temporary ID for the key
+      id: -1,
       chat_uuid: chatSession!.chat_uuid,
       sender: 'user',
       message_type: 'multi_select_response',
-      content: selections.join(', '),
+      content: formattedSelections,
       created_at: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, userMessage]);
+    
+    setMessages(prev => {
+        const newMessages = [...prev];
+        let latestAssistantMsgIndex = -1;
+        for (let i = newMessages.length - 1; i >= 0; i--) {
+            if (newMessages[i].sender === 'assistant') {
+                latestAssistantMsgIndex = i;
+                break;
+            }
+        }
+        
+        if (latestAssistantMsgIndex > -1) {
+            newMessages[latestAssistantMsgIndex] = {
+                ...newMessages[latestAssistantMsgIndex],
+                structured_data: {
+                    ...newMessages[latestAssistantMsgIndex].structured_data,
+                    selected_options: selections
+                }
+            };
+        }
+        return [...newMessages, userMessage];
+    });
 
     if (isConnected) {
       setIsThinking(true);
-      const formattedSelections = selections.join(', ');
-      sendMessage(formattedSelections);
+      sendMessage(formattedSelections, 'multi_select_response');
     }
   };
 
-  // Determine if text input should be shown
   const shouldShowTextInput = () => {
-    if (messages.length === 0) return true;
-    
+    if (!messages || messages.length === 0) return true;
     const lastMessage = messages[messages.length - 1];
+    if (isThinking) return false;
     if (lastMessage.sender === 'user') return false;
-    
     return lastMessage.message_type === 'text';
   };
 
-  // Get the latest assistant message for interactive elements
-  const getLatestAssistantMessage = (): Message | null => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].sender === 'assistant') {
-        return messages[i];
-      }
-    }
-    return null;
-  };
-
-  if (loading) {
-    return <div className="loading">Loading chat...</div>;
-  }
+  const latestAssistantMessage = messages.filter(m => m.sender === 'assistant').pop();
+  
+  if (loading) return <div className="loading">Loading chat...</div>;
 
   if (error) {
     return (
@@ -144,15 +184,15 @@ const ChatsPage: React.FC = () => {
     );
   }
 
-  const latestAssistantMessage = getLatestAssistantMessage();
-
   return (
     <div className="chat-container">
       <div className="chat-header">
         Chat with Ruby
+        <button onClick={handleStartNewConversation} className="new-chat-button">
+          New Conversation
+        </button>
       </div>
       
-      {/* Connection status indicator */}
       {!isConnected && (
         <div className="connection-status">
           {connectionError ? connectionError : 'Connecting...'}
@@ -162,11 +202,11 @@ const ChatsPage: React.FC = () => {
       <div className="messages-container">
         {messages.map((message) => (
           <MessageBubble
-            key={message.id}
+            key={`${message.id}-${message.content.length}`}
             message={message}
             onButtonClick={handleButtonClick}
             onMultiSelectSubmit={handleMultiSelectSubmit}
-            isLatestAssistantMessage={message.id === latestAssistantMessage?.id && !isThinking}
+            isLatestAssistantMessage={message.id === latestAssistantMessage?.id}
           />
         ))}
         {isThinking && <ThinkingBubble />}

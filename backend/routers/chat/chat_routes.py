@@ -99,6 +99,35 @@ def get_or_create_session(
     )
 
 @router.post(
+    "/session/new",
+    response_model=TodaySessionResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Force create a new chat session for the current day"
+)
+def force_create_new_session(
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    This endpoint forces the creation of a new chat session for the current day,
+    bypassing the check for an existing session. This is useful for allowing
+    a user to start a fresh conversation at any time.
+    """
+    service = ConversationService(db)
+    patient_uuid = UUID(current_user.sub)
+    
+    chat, messages, is_new = service.force_create_today_session(patient_uuid)
+    
+    pydantic_messages = [Message.from_orm(msg) for msg in messages]
+    
+    return TodaySessionResponse(
+        chat_uuid=chat.uuid,
+        conversation_state=chat.conversation_state,
+        messages=pydantic_messages,
+        is_new_session=is_new
+    )
+
+@router.post(
     "/create-dummy",
     response_model=FullChatResponse,
     status_code=status.HTTP_201_CREATED,
@@ -273,27 +302,25 @@ async def websocket_endpoint(
     Handles real-time, bidirectional communication for a single chat session.
     The connection is authenticated and authorized using a JWT token from query params.
     """
-    # 1. Authenticate the user from the token
+    # 1. Authenticate the user
     current_user = await get_user_from_token(token)
     if not current_user:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid or expired token.")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token.")
         return
 
-    # 2. Authorize the user for the specific chat room
+    # 2. Authorize the user for the chat
     chat = db.query(ChatModel).filter(
         ChatModel.uuid == chat_uuid,
         ChatModel.patient_uuid == UUID(current_user.sub)
     ).first()
-    
     if not chat:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Chat not found or access denied.")
         return
 
-    # 3. If authentication and authorization succeed, proceed
     await websocket.accept()
-    
     service = ConversationService(db)
     
+    # Send connection acknowledgment
     ack_message = service.get_connection_ack(chat_uuid)
     if ack_message:
         await websocket.send_text(ack_message.json())
@@ -303,13 +330,18 @@ async def websocket_endpoint(
             data = await websocket.receive_text()
             message_data = WebSocketMessageIn(**json.loads(data))
             
-            response = await service.process_message(chat_uuid, message_data)
+            # This now returns a generator, so we iterate over it without awaiting it first
+            response_generator = service.process_message_stream(chat_uuid, message_data)
             
-            # The response now contains both the user and assistant messages
-            # We don't need to send the user message back, but we could if needed for sync
-            await websocket.send_text(response.assistant_response.json())
+            async for chunk in response_generator:
+                json_payload = chunk.json()
+                print(f"--> Sending WebSocket message | Type: {chunk.type if hasattr(chunk, 'type') else 'Unknown'} | Size: {len(json_payload)} bytes")
+                await websocket.send_text(json_payload)
 
     except WebSocketDisconnect:
         print(f"Client disconnected from chat {chat_uuid}")
     except Exception as e:
-        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason=str(e)) 
+        print(f"An error occurred in chat {chat_uuid}: {e}")
+        # Truncate the error reason to prevent WebSocket protocol errors
+        reason = str(e)[:120] + "..." if len(str(e)) > 120 else str(e)
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason=reason) 

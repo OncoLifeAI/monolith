@@ -319,7 +319,7 @@ const SidebarContent: React.FC<{
     { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
     { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
     { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
-    { id: '4', label: 'Lorem Ipsum', icon: <Grid3X3 size={20} />, href: '/lorem' },
+    { id: '4', label: 'Education', icon: <Grid3X3 size={20} />, href: '/education' },
   ];
   return (
     <>

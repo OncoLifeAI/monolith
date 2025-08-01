@@ -20,6 +20,7 @@ import uuid
 from database import get_patient_db
 from routers.db.patient_models import Conversations
 from routers.auth.dependencies import get_current_user, TokenData
+from routers.chat.constants import ConversationState
 from .models import ConversationSummarySchema, ConversationDetailSchema
 
 router = APIRouter(prefix="/summaries", tags=["Conversation Summaries"])
@@ -38,13 +39,14 @@ async def get_summaries_by_month(
 ):
     """
     Fetches a list of conversation summaries for the logged-in user
-    for a specific year and month.
+    for a specific year and month. Only returns completed conversations.
     """
     if not 1 <= month <= 12:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Month must be between 1 and 12.")
 
     summaries = db.query(Conversations).filter(
         Conversations.patient_uuid == current_user.sub,
+        Conversations.conversation_state == ConversationState.COMPLETED,
         extract('year', Conversations.created_at) == year,
         extract('month', Conversations.created_at) == month
     ).order_by(Conversations.created_at.desc()).all()
@@ -64,11 +66,12 @@ async def get_conversation_details(
 ):
     """
     Fetches the full details for a single conversation by its UUID.
-    Ensures the conversation belongs to the logged-in user.
+    Ensures the conversation belongs to the logged-in user and is completed.
     """
     conversation = db.query(Conversations).filter(
         Conversations.uuid == conversation_uuid,
-        Conversations.patient_uuid == current_user.sub
+        Conversations.patient_uuid == current_user.sub,
+        Conversations.conversation_state == ConversationState.COMPLETED
     ).first()
 
     if not conversation:

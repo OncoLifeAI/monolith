@@ -19,7 +19,7 @@ router.get('/session/today', async (req, res) => {
 
 router.post('/message', async (req, res) => {
   try {
-    const data = await api.post('/chat/message', req.body, {
+    const data = await api.post('/chat/message', req.body, { 
       headers: { 'Authorization': req.headers.authorization }
     });
     res.status(200).json(data);
@@ -30,6 +30,21 @@ router.post('/message', async (req, res) => {
       details: error.message
     });
   }
+});
+
+router.post('/session/new', async (req, res) => {
+    try {
+        const { data } = await api.post('/chat/session/new', {}, {
+            headers: { 'Authorization': req.headers.authorization }
+        });
+        res.status(201).json(data);
+    } catch (error) {
+        console.error('New session error:', error);
+        res.status(error.response?.status || 500).json({
+            error: 'Failed to create new session',
+            details: error.message
+        });
+    }
 });
 
 module.exports = router; 

@@ -13,7 +13,7 @@ class Message(BaseModel):
     id: int
     chat_uuid: UUID
     sender: Literal["user", "assistant", "system"]
-    message_type: Literal["text", "button_response", "multi_select", "system", "button_prompt"]
+    message_type: Literal["text", "button_response", "multi_select_response", "multi_select", "system", "button_prompt"]
     content: str
     structured_data: Optional[Dict[str, Any]] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -98,23 +98,35 @@ class UpdateStateRequest(BaseModel):
 # ===============================================================================
 
 class WebSocketMessageIn(BaseModel):
+    """A message received from the client over WebSocket."""
     type: Literal["user_message"]
-    message_type: Literal["text", "button_response", "multi_select"]
+    message_type: Literal["text", "button_response", "multi_select_response"]
     content: str
     structured_data: Optional[Dict[str, Any]] = None
 
 class WebSocketMessageOut(BaseModel):
-    type: Literal["assistant_message", "system_notification", "connection_established"]
-    message_type: Literal["text", "button_prompt", "multi_select", "system"]
+    """A message sent from the server over WebSocket."""
+    type: Literal["assistant_message", "system_message"]
+    message_type: str
     content: str
-    options: Optional[List[str]] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    options: Optional[List[str]] = []
 
-class ConnectionEstablished(WebSocketMessageOut):
+class ConnectionEstablished(BaseModel):
+    """Message sent to the client upon successful WebSocket connection."""
     type: Literal["connection_established"] = "connection_established"
-    message_type: Literal["system"] = "system"
-    content: str = "Connection established."
+    content: str
     chat_state: Dict[str, Any]
+
+class WebSocketMessageChunk(BaseModel):
+    """A chunk of a streaming message from the server."""
+    type: Literal["message_chunk"] = "message_chunk"
+    message_id: int
+    content: str
+
+class WebSocketStreamEnd(BaseModel):
+    """Signals the end of a streaming message."""
+    type: Literal["message_end"] = "message_end"
+    message_id: int
 
 # ===============================================================================
 # Conversation Processing Models
@@ -139,7 +151,7 @@ class ProcessResponse(BaseModel):
     conversation_updated: Optional[ConversationUpdate] = None 
 
     class Config:
-        from_attributes = True
+        from_attributes = True 
         json_encoders = {
             UUID: str
         } 

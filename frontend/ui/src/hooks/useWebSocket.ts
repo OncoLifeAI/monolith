@@ -1,60 +1,74 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import type { Message } from '../types/chat';
 
-export const useWebSocket = (chatUuid: string | null) => {
+export const useWebSocket = (
+  chatUuid: string | null,
+  onMessage: (message: any) => void
+) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<any>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
+  const onMessageCallback = useCallback(onMessage, [onMessage]);
+
   useEffect(() => {
     if (!chatUuid) return;
-    
+
     const token = localStorage.getItem('authToken');
+    if (!token) {
+      setConnectionError("Authentication token not found.");
+      return;
+    }
+
     const wsUrl = `ws://localhost:8000/chat/ws/${chatUuid}?token=${token}`;
-    
     wsRef.current = new WebSocket(wsUrl);
-    
+
     wsRef.current.onopen = () => {
+      console.log('WebSocket connection established.');
       setIsConnected(true);
       setConnectionError(null);
     };
-    
+
     wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      // Intercept and handle system messages, don't show them in the UI
-      if (data.type === 'connection_established') {
-        console.log('System Message:', data.content, 'State:', data.chat_state);
-        return; // Don't pass this to the component state
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type !== 'connection_established') {
+            onMessageCallback(data);
+        } else {
+            console.log("System Message: Connection acknowledged. State:", data.chat_state);
+        }
+      } catch (error) {
+        console.error("Failed to parse WebSocket message:", error);
       }
-      setLastMessage(data);
     };
-    
+
     wsRef.current.onclose = () => {
+      console.log('WebSocket connection closed.');
       setIsConnected(false);
     };
-    
-    wsRef.current.onerror = () => {
+
+    wsRef.current.onerror = (event) => {
+      console.error('WebSocket error:', event);
       setConnectionError('WebSocket connection failed');
     };
-    
+
     return () => {
       wsRef.current?.close();
     };
-  }, [chatUuid]);
+  }, [chatUuid, onMessageCallback]);
 
-  const sendMessage = (message: string) => {
+  const sendMessage = (content: string, message_type: 'text' | 'button_response' | 'multi_select_response') => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      // Determine message type based on whether it came from a button or text input
-      const isButtonResponse = ['Yes', 'No', "I had it recently, but didn't record it"].includes(message) || message.includes(',');
-
       const payload = {
-        type: "user_message",
-        message_type: isButtonResponse ? "button_response" : "text",
-        content: message,
+        type: "user_message", // This is the wrapper type for the backend
+        message_type: message_type,
+        content: content,
       };
       wsRef.current.send(JSON.stringify(payload));
+    } else {
+      console.error("Cannot send message, WebSocket is not open.");
     }
   };
 
-  return { isConnected, lastMessage, sendMessage, connectionError };
+  return { isConnected, sendMessage, connectionError };
 }; 

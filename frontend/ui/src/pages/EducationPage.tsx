@@ -1,9 +1,9 @@
 import React from 'react';
 
-const LoremPage: React.FC = () => (
+const EducationPage: React.FC = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <h1>LoremPage</h1>
+    <h1>EducationPage</h1>
   </div>
 );
 
-export default LoremPage; 
+export default EducationPage; 

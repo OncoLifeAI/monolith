@@ -7,7 +7,7 @@ import Layout from './components/Layout';
 import ChatsPage from './pages/Patients/ChatsPage';
 import { SummariesPage, SummariesDetailsPage } from './pages/Patients/SummariesPage';
 import NotesPage from './pages/Patients/NotesPage';
-import LoremPage from './pages/LoremPage';
+import EducationPage from './pages/EducationPage';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
 import ResetPassword from './pages/LoginPage/ResetPassword';
@@ -24,7 +24,7 @@ import StaffPage from './pages/Doctors/Staff';
 const excludedRoutes = ['/login', '/signup', '/reset-password', '/acknowledgement'];
 
 // Patient-only routes
-const patientRoutes = ['/chat', '/summaries', '/notes', '/lorem'];
+const patientRoutes = ['/chat', '/summaries', '/notes', '/education'];
 // Doctor-only routes  
 const doctorRoutes = ['/dashboard', '/patients', '/staff'];
 
@@ -65,7 +65,7 @@ const AppRoutes: React.FC = () => {
           <Route path="summaries" element={<RestrictedRoute path="/summaries"><SummariesPage /></RestrictedRoute>} />
           <Route path="summaries/:summaryId" element={<RestrictedRoute path="/summaries"><SummariesDetailsPage /></RestrictedRoute>} />
           <Route path="notes" element={<RestrictedRoute path="/notes"><NotesPage /></RestrictedRoute>} />
-          <Route path="lorem" element={<RestrictedRoute path="/lorem"><LoremPage /></RestrictedRoute>} />
+          <Route path="education" element={<RestrictedRoute path="/education"><EducationPage /></RestrictedRoute>} />
           {/* Doctor routes */}
           <Route path="dashboard" element={<RestrictedRoute path="/dashboard"><DashboardPage /></RestrictedRoute>} />
           <Route path="patients" element={<RestrictedRoute path="/patients"><PatientsPage /></RestrictedRoute>} />
