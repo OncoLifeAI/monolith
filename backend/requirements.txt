@@ -13,3 +13,7 @@ cerebras-cloud-sdk
 openai
 python-docx
 pypdf
+numpy
+pytz
+sentence_transformers
+faiss-cpu
