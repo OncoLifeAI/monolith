@@ -1,18 +1,20 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
-import uuid
 
 class DiaryEntrySchema(BaseModel):
     id: int
     created_at: datetime
+    last_updated_at: datetime
+    patient_uuid: str
     title: Optional[str] = None
     diary_entry: str
-    entry_uuid: uuid.UUID
+    entry_uuid: str
     marked_for_doctor: bool
-    
+    is_deleted: bool
+
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class DiaryEntryCreate(BaseModel):
     title: Optional[str] = None
@@ -20,5 +22,6 @@ class DiaryEntryCreate(BaseModel):
     marked_for_doctor: bool = False
 
 class DiaryEntryUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1)
-    diary_entry: Optional[str] = Field(None, min_length=1) 
+    title: Optional[str] = None
+    diary_entry: Optional[str] = None
+    marked_for_doctor: Optional[bool] = None 

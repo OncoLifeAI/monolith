@@ -12,6 +12,7 @@ from routers.diary.diary_routes import router as diary_router
 from routers.chat.chat_routes import router as chat_router
 from routers.staff.staff_routes import router as staff_router
 from routers.profile.profile_routes import router as profile_router
+from routers.chemo.chemo_routes import router as chemo_router
 
 # Load environment variables
 load_dotenv()
@@ -40,6 +41,7 @@ app.include_router(diary_router)
 app.include_router(chat_router)
 app.include_router(staff_router)
 app.include_router(profile_router)
+app.include_router(chemo_router)
 
 # Root endpoint
 @app.get("/")

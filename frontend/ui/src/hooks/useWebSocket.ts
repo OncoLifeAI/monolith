@@ -20,7 +20,10 @@ export const useWebSocket = (
       return;
     }
 
+    // Use localhost for local development
     const wsUrl = `ws://localhost:8000/chat/ws/${chatUuid}?token=${token}`;
+
+    console.log('Connecting to WebSocket:', wsUrl);
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
@@ -57,7 +60,7 @@ export const useWebSocket = (
     };
   }, [chatUuid, onMessageCallback]);
 
-  const sendMessage = (content: string, message_type: 'text' | 'button_response' | 'multi_select_response') => {
+  const sendMessage = (content: string, message_type: 'text' | 'button_response' | 'multi_select_response' | 'feeling_response') => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       const payload = {
         type: "user_message", // This is the wrapper type for the backend

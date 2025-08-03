@@ -1,0 +1,18 @@
+version: "2"
+authtoken: YOUR_NGROK_AUTHTOKEN_HERE
+
+tunnels:
+  frontend-ui:
+    addr: 5173
+    proto: http
+    subdomain: patient-portal-ui
+    
+  frontend-server:
+    addr: 3000
+    proto: http
+    subdomain: patient-portal-server
+    
+  backend-api:
+    addr: 8000
+    proto: http
+    subdomain: patient-portal-api 

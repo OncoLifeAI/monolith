@@ -13,6 +13,7 @@ interface NotesSidebarProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onNoteSelect: (noteId: string) => void;
+  onNoteDeselect: () => void;
   onAddNote: () => void;
   onDeleteNote?: (noteId: string) => void;
   selectedDate: Dayjs;
@@ -25,11 +26,21 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
   searchTerm,
   onSearchChange,
   onNoteSelect,
+  onNoteDeselect,
   onAddNote,
   onDeleteNote,
   selectedDate,
   setSelectedDate
 }) => {
+  const handleNoteClick = (noteId: string) => {
+    if (noteId === selectedNoteId) {
+      // If clicking on the already selected note, deselect it
+      onNoteDeselect();
+    } else {
+      // Otherwise, select the note
+      onNoteSelect(noteId);
+    }
+  };
   return (
     <SidebarContainer>
       <SidebarHeader>
@@ -68,7 +79,7 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
               key={note.id}
               note={note}
               isSelected={note.id === selectedNoteId}
-              onSelect={() => onNoteSelect(note.id || '')}
+              onSelect={() => handleNoteClick(note.id || '')}
               onDelete={onDeleteNote}
             />
           );

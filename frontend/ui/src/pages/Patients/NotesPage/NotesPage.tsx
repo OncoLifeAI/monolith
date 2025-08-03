@@ -25,11 +25,14 @@ const NotesPage: React.FC = () => {
   const deleteNoteMutation = useDeleteNote(selectedDate.year(), selectedDate.month() + 1);
   // On initial load, select the first note if available
   useEffect(() => {
+    // Only auto-select if we have a selectedNoteId that no longer exists in the notes
     if (
-      notes.length > 0 &&
-      (!selectedNoteId || !notes.some(note => note.id === selectedNoteId))
+      selectedNoteId && 
+      notes.length > 0 && 
+      !notes.some(note => note.id === selectedNoteId)
     ) {
-      setSelectedNoteId(notes[0].id || '');
+      // The previously selected note no longer exists, clear the selection
+      setSelectedNoteId('');
     }
   }, [notes, selectedNoteId]);
 
@@ -40,10 +43,15 @@ const NotesPage: React.FC = () => {
       )
     : notes;
   
-  const selectedNote = draftNote || notes.find(note => note.id === selectedNoteId) || notes[0] || null;
+  const selectedNote = draftNote || (selectedNoteId ? notes.find(note => note.id === selectedNoteId) : null);
 
   const handleNoteSelect = (noteId: string) => {
     setSelectedNoteId(noteId);
+    setDraftNote(null);
+  };
+
+  const handleNoteDeselect = () => {
+    setSelectedNoteId('');
     setDraftNote(null);
   };
 
@@ -91,10 +99,7 @@ const NotesPage: React.FC = () => {
 
   const handleCancelDraft = () => {
     setDraftNote(null);
-    // Select the first available note
-    if (notes.length > 0) {
-      setSelectedNoteId(notes[0].id || '');
-    }
+    // Don't auto-select any note - let the user choose
   };
 
   return (
@@ -109,13 +114,14 @@ const NotesPage: React.FC = () => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onNoteSelect={handleNoteSelect}
+          onNoteDeselect={handleNoteDeselect}
           onAddNote={handleAddNote}
           onDeleteNote={handleDeleteNote}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
         />
         <div style={{ flex: 1, height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
-          {selectedNote && (
+          {selectedNote ? (
             <NoteEditor
               key={selectedNote?.id}
               note={selectedNote}
@@ -127,6 +133,23 @@ const NotesPage: React.FC = () => {
               forceEdit={forceEdit}
               onForceEditHandled={() => setForceEdit(false)}
             />
+          ) : (
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              height: '100%',
+              color: '#6C757D',
+              fontSize: '1.1rem'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
+              <h3 style={{ marginBottom: '0.5rem', color: '#495057' }}>No Note Selected</h3>
+              <p style={{ margin: 0, textAlign: 'center' }}>
+                Select a note from the sidebar to view and edit it,<br />
+                or click "Add New" to create a new note.
+              </p>
+            </div>
           )}
         </div>
       </NotesPageContainer>

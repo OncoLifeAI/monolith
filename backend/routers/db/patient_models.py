@@ -33,7 +33,12 @@ class Conversations(Base):
     overall_feeling = Column(String, nullable=True)
 
     # Relationship to the Messages table
-    messages = relationship("Messages", back_populates="conversation", cascade="all, delete-orphan")
+    messages = relationship(
+        "Messages", 
+        back_populates="conversation", 
+        cascade="all, delete-orphan",
+        order_by="Messages.created_at"
+    )
 
 class Messages(Base):
     __tablename__ = 'messages'

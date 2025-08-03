@@ -22,6 +22,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [message]);
 
+  // Auto-focus the textarea when the component becomes visible
+  useEffect(() => {
+    if (shouldShow && textareaRef.current && !disabled) {
+      textareaRef.current.focus();
+    }
+  }, [shouldShow, disabled]);
+
   if (!shouldShow) {
     return null;
   }

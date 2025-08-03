@@ -1,21 +1,31 @@
 from pydantic import BaseModel
-from typing import List
 from datetime import datetime
-import uuid
+from typing import List, Optional
 
 class ConversationSummarySchema(BaseModel):
-    uuid: uuid.UUID
+    uuid: str
     created_at: datetime
-    bulleted_summary: str | None = None
-    overall_feeling: str | None = None
+    conversation_state: str
+    symptom_list: Optional[List[str]] = None
+    severity_list: Optional[dict] = None
+    longer_summary: Optional[str] = None
+    medication_list: Optional[List] = None
+    bulleted_summary: Optional[str] = None
+    overall_feeling: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-class ConversationDetailSchema(ConversationSummarySchema):
-    longer_summary: str | None = None
-    messages: List | None = None # Assuming messages are a list of dicts
-    # Add other fields you want to expose from the Conversations model
-    symptom_list: List | None = None
-    severity_list: dict | None = None
-    medication_list: List[str] | None = None 
+class ConversationDetailSchema(BaseModel):
+    uuid: str
+    created_at: datetime
+    conversation_state: str
+    symptom_list: Optional[List[str]] = None
+    severity_list: Optional[dict] = None
+    longer_summary: Optional[str] = None
+    medication_list: Optional[List] = None
+    bulleted_summary: Optional[str] = None
+    overall_feeling: Optional[str] = None
+
+    class Config:
+        from_attributes = True 

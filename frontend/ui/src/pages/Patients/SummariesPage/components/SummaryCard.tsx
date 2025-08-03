@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from 'react-bootstrap';
 import styled from 'styled-components';
 import type { Summary } from '../../../../restful/summaries';
+import { formatDateForDisplay } from '../../../../utils/timezone';
 
 const Card = styled.div`
   background: #FFFFFF;
@@ -86,12 +87,7 @@ interface SummaryCardProps {
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ summary, onViewDetails }) => {
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return formatDateForDisplay(dateString);
   };
 
   return (

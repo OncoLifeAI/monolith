@@ -13,7 +13,17 @@ class Message(BaseModel):
     id: int
     chat_uuid: UUID
     sender: Literal["user", "assistant", "system"]
-    message_type: Literal["text", "button_response", "multi_select_response", "multi_select", "system", "button_prompt"]
+    message_type: Literal[
+        "text", 
+        "button_response", 
+        "multi_select_response", 
+        "multi_select",
+        "system", 
+        "button_prompt", 
+        "single_select",
+        "feeling_select", 
+        "feeling_response"
+    ]
     content: str
     structured_data: Optional[Dict[str, Any]] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -29,7 +39,7 @@ class Chat(BaseModel):
     patient_uuid: UUID
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    conversation_state: ConversationState = ConversationState.INITIAL
+    conversation_state: ConversationState
     symptom_list: Optional[List[str]] = []
     severity_list: Optional[Dict[str, int]] = {}
     medication_list: Optional[List[Dict[str, Any]]] = []
@@ -100,7 +110,7 @@ class UpdateStateRequest(BaseModel):
 class WebSocketMessageIn(BaseModel):
     """A message received from the client over WebSocket."""
     type: Literal["user_message"]
-    message_type: Literal["text", "button_response", "multi_select_response"]
+    message_type: Literal["text", "button_response", "multi_select_response", "feeling_response"]
     content: str
     structured_data: Optional[Dict[str, Any]] = None
 

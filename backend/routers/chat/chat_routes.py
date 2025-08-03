@@ -25,8 +25,31 @@ from .models import (
 )
 from .services import ConversationService
 from routers.db.patient_models import Conversations as ChatModel, Messages as MessageModel
+from utils.timezone_utils import utc_to_user_timezone
 
 router = APIRouter(prefix="/chat", tags=["Chat Conversation"])
+
+def convert_message_for_frontend(message: Message) -> Message:
+    """
+    Converts message types from database format (underscore) to frontend format (hyphen)
+    for display in the UI. Also handles converting back for any data sent to the backend.
+    """
+    if hasattr(message, 'message_type') and isinstance(message.message_type, str):
+        message.message_type = message.message_type.replace('_', '-')
+    return message
+
+def convert_chat_to_user_timezone(chat, messages, user_timezone: str = "America/Los_Angeles"):
+    """Convert chat and message timestamps to user timezone for display."""
+    if chat.created_at:
+        chat.created_at = utc_to_user_timezone(chat.created_at, user_timezone)
+    if chat.updated_at:
+        chat.updated_at = utc_to_user_timezone(chat.updated_at, user_timezone)
+    
+    for message in messages:
+        if message.created_at:
+            message.created_at = utc_to_user_timezone(message.created_at, user_timezone)
+    
+    return chat, messages
 
 # ===============================================================================
 # WebSocket Authentication and Authorization Helper
@@ -74,7 +97,8 @@ async def get_user_from_token(token: str) -> Optional[TokenData]:
 )
 def get_or_create_session(
     db: Session = Depends(get_patient_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
+    timezone: str = Query(default="America/Los_Angeles", description="User's timezone")
 ):
     """
     This is the primary endpoint for starting or resuming a conversation.
@@ -85,11 +109,14 @@ def get_or_create_session(
     service = ConversationService(db)
     patient_uuid = UUID(current_user.sub)
     
-    chat, messages, is_new = service.get_or_create_today_session(patient_uuid)
+    chat, messages, is_new = service.get_or_create_today_session(patient_uuid, timezone)
     
     # Manually convert the list of SQLAlchemy MessageModel objects to Pydantic Message models.
     # This is the crucial step that fixes the validation error.
-    pydantic_messages = [Message.from_orm(msg) for msg in messages]
+    pydantic_messages = [convert_message_for_frontend(Message.from_orm(msg)) for msg in messages]
+    
+    # Convert timestamps to user timezone
+    convert_chat_to_user_timezone(chat, pydantic_messages, timezone)
     
     return TodaySessionResponse(
         chat_uuid=chat.uuid,
@@ -106,7 +133,8 @@ def get_or_create_session(
 )
 def force_create_new_session(
     db: Session = Depends(get_patient_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
+    timezone: str = Query(default="America/Los_Angeles", description="User's timezone")
 ):
     """
     This endpoint forces the creation of a new chat session for the current day,
@@ -116,9 +144,12 @@ def force_create_new_session(
     service = ConversationService(db)
     patient_uuid = UUID(current_user.sub)
     
-    chat, messages, is_new = service.force_create_today_session(patient_uuid)
+    chat, messages, is_new = service.force_create_today_session(patient_uuid, timezone)
     
-    pydantic_messages = [Message.from_orm(msg) for msg in messages]
+    pydantic_messages = [convert_message_for_frontend(Message.from_orm(msg)) for msg in messages]
+    
+    # Convert timestamps to user timezone
+    convert_chat_to_user_timezone(chat, pydantic_messages, timezone)
     
     return TodaySessionResponse(
         chat_uuid=chat.uuid,
@@ -334,8 +365,10 @@ async def websocket_endpoint(
             response_generator = service.process_message_stream(chat_uuid, message_data)
             
             async for chunk in response_generator:
-                json_payload = chunk.json()
-                print(f"--> Sending WebSocket message | Type: {chunk.type if hasattr(chunk, 'type') else 'Unknown'} | Size: {len(json_payload)} bytes")
+                # Convert message before sending to frontend
+                frontend_chunk = convert_message_for_frontend(chunk)
+                json_payload = frontend_chunk.json()
+                print(f"--> Sending WebSocket message | Type: {frontend_chunk.type if hasattr(frontend_chunk, 'type') else 'Unknown'} | Size: {len(json_payload)} bytes")
                 await websocket.send_text(json_payload)
 
     except WebSocketDisconnect:

@@ -47,12 +47,17 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleLogin();
+  };
+
   return (
     <Card>
       <Title>Welcome Back to OncoLife AI <span role="img" aria-label="wave">👋🏻</span></Title>
       <Subtitle>Please enter your details to sign in to your account</Subtitle>
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
-      <StyledForm>
+      <StyledForm onSubmit={handleSubmit}>
         <Form.Group className="mb-3" controlId="formEmail">
           <Form.Label>Email</Form.Label>
           <StyledInputGroup>
@@ -76,7 +81,7 @@ const Login: React.FC = () => {
           placeholder="Password"
         />
         <ForgotPassword href="#">Forgot Password?</ForgotPassword>
-        <StyledButton variant="primary" type="button" onClick={handleLogin}>
+        <StyledButton variant="primary" type="submit">
           Sign In
         </StyledButton>
       </StyledForm>

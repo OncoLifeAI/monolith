@@ -18,11 +18,11 @@ router.get('/', (req, res) => {
 });
 
 
-router.use('/api', healthRoutes);
-router.use('/api', loginRoutes);
-router.use('/api', summariesRoutes);
-router.use('/api', notesRoutes);
-router.use('/api', profileRoutes);
-router.use('/api/chat', chatRoutes);
+router.use('/', healthRoutes);
+router.use('/', loginRoutes);
+router.use('/', summariesRoutes);
+router.use('/', notesRoutes);
+router.use('/', profileRoutes);
+router.use('/chat', chatRoutes);
 
 module.exports = router;

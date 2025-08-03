@@ -5,16 +5,29 @@ const routes = require('./routes');
 
 const app = express();
 
-// Configure all middleware
+// Configure basic middleware (CORS, body parsing, etc.)
+app.use(require('cors')({
+  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  credentials: true
+}));
+
+if (process.env.NODE_ENV !== 'test') {
+  app.use(require('morgan')('combined'));
+}
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Mount Express API routes FIRST (these take precedence over proxy)
+app.use('/api', routes);
+
+// Configure proxy middleware (for routes not handled by Express)
 configureMiddleware(app);
 
-// Mount all routes
-app.use('/', routes);
-
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler for API routes only
+app.use('/api/*', (req, res) => {
   res.status(404).json({
-    error: 'Route not found',
+    error: 'API route not found',
     path: req.originalUrl,
     method: req.method
   });
@@ -38,7 +51,7 @@ const gracefulShutdown = (signal) => {
   });
 };
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 module.exports = server;
