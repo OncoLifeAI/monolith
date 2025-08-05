@@ -1,0 +1,30 @@
+{
+  "name": "patient-portal",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "server"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "type-check": "turbo run type-check",
+    "install:all": "npm install && npm run build",
+    "dev:patient": "turbo run dev --filter=patient-app",
+    "dev:doctor": "turbo run dev --filter=doctor-app",
+    "dev:server": "turbo run dev --filter=server",
+    "build:patient": "turbo run build --filter=patient-app",
+    "build:doctor": "turbo run build --filter=doctor-app",
+    "build:server": "turbo run build --filter=server"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "~5.8.3"
+  },
+  "packageManager": "npm@11.5.1"
+}

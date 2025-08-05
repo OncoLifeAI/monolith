@@ -1,0 +1,18 @@
+{
+  "name": "@patient-portal/theme-lib",
+  "version": "1.0.0",
+  "description": "Shared theme library for patient portal",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "styled-components": "^6.1.8"
+  },
+  "devDependencies": {
+    "@types/styled-components": "^5.1.34",
+    "typescript": "^5.3.3"
+  }
+} 

@@ -1,0 +1,43 @@
+{
+  "name": "@patient-portal/ui-components",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && npm run copy-assets",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "copy-assets": "cp -r src/assets dist/ && cp -r src/components/chat/*.css dist/components/chat/"
+  },
+  "dependencies": {
+    "@patient-portal/auth-lib": "file:../auth-lib",
+    "@patient-portal/theme-lib": "file:../theme-lib",
+    "@mui/material": "^5.15.6",
+    "@mui/x-date-pickers": "^6.19.2",
+    "@tanstack/react-query": "^5.17.9",
+    "dayjs": "^1.11.10",
+    "lucide-react": "^0.312.0",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.10.1",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.3",
+    "styled-components": "^6.1.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "~5.8.3"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.2.0",
+    "@mui/x-date-pickers": "^8.8.0",
+    "styled-components": "^6.1.19",
+    "lucide-react": "^0.525.0"
+  }
+} 
