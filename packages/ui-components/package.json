@@ -6,7 +6,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc && npm run copy-assets",
-    "dev": "tsc --watch",
+    "dev": "tsc --watch && npm run copy-assets",
+    "watch": "tsc --watch && npm run copy-assets",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
     "copy-assets": "cp -r src/assets dist/ && cp -r src/components/chat/*.css dist/components/chat/"

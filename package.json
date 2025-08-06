@@ -10,6 +10,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:watch": "turbo run dev:watch",
+    "watch": "turbo run watch",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean",
@@ -18,9 +20,13 @@
     "dev:patient": "turbo run dev --filter=patient-app",
     "dev:doctor": "turbo run dev --filter=doctor-app",
     "dev:server": "turbo run dev --filter=server",
+    "dev:packages": "turbo run watch --filter=./packages/*",
+    "dev:all": "turbo run dev --parallel",
+    "dev:packages:watch": "turbo run watch --filter=./packages/* --parallel",
     "build:patient": "turbo run build --filter=patient-app",
     "build:doctor": "turbo run build --filter=doctor-app",
-    "build:server": "turbo run build --filter=server"
+    "build:server": "turbo run build --filter=server",
+    "build:packages": "turbo run build --filter=./packages/*"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
