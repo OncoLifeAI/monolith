@@ -20,7 +20,9 @@ const Sidebar = styled.nav<{ isExpanded: boolean }>`
   min-width: 0;
 `;
 
-const Header = styled.div<{ isExpanded: boolean }>`
+const Header = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   display: flex;
   align-items: center;
   height: 4rem;
@@ -208,14 +210,18 @@ const SwitchContainer = styled.div`
   gap: 0.5rem;
 `;
 
-const SwitchLabel = styled.span<{ isActive: boolean }>`
+const SwitchLabel = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isActive'
+})<{ isActive: boolean }>`
   font-size: 0.75rem;
   font-weight: 500;
   color: ${props => props.isActive ? '#2563eb' : '#6b7280'};
   transition: color 0.2s;
 `;
 
-const ToggleSwitch = styled.div<{ isOn: boolean }>`
+const ToggleSwitch = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isOn'
+})<{ isOn: boolean }>`
   position: relative;
   width: 3rem;
   height: 1.5rem;

@@ -23,11 +23,14 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const { data: profile, isLoading, error } = useFetchProfile();
+  const isAuthenticated = !!localStorage.getItem('authToken');
+  const { data: profile, isLoading, error } = useFetchProfile({
+    enabled: isAuthenticated
+  });
 
   const value: UserContextType = {
     profile: profile && Object.keys(profile).length > 0 ? profile : null,
-    isLoading,
+    isLoading: isAuthenticated ? isLoading : false,
     error: error ? String(error) : null,
   };
 

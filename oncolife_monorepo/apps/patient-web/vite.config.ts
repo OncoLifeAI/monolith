@@ -7,7 +7,14 @@ export default defineConfig({
   server: {
     host: 'localhost',
     port: 5173,
-    cors: true
+    cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   define: {
     global: 'globalThis',

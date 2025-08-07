@@ -23,8 +23,8 @@ function App() {
       <AuthProvider>
         <UserProvider>
           <GlobalStyles />
-          <SessionTimeoutManager />
           <BrowserRouter>
+            <SessionTimeoutManager />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />

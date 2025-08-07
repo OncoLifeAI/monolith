@@ -6,9 +6,10 @@ export const fetchProfile = async () => {
   return response.data;
 };
 
-export const useFetchProfile = () => {
+export const useFetchProfile = (options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['profile'],
     queryFn: fetchProfile,
+    enabled: options?.enabled ?? true,
   });
 };
