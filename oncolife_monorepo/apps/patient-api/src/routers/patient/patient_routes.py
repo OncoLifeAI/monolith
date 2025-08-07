@@ -17,11 +17,9 @@ import uuid
 import logging
 import os
 
-# Absolute imports
-from database import get_patient_db
-from routers.db.patient_models import (
-    PatientConfigurations,
-)
+# Database and model imports
+from db.database import get_patient_db
+from db.patient_models import PatientConfigurations
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import PatientConfigurationsUpdate, PatientConsentUpdate
 

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date
-from database import get_patient_db
+
+from db.database import get_patient_db
 from routers.auth.dependencies import get_current_user, TokenData
 from . import services, models
 

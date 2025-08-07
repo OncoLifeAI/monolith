@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-# Absolute imports
-from database import get_patient_db, get_doctor_db
-from routers.db.patient_models import PatientInfo, PatientConfigurations, PatientPhysicianAssociations
-from routers.db.doctor_models import StaffProfiles, AllClinics, StaffAssociations
+# Database and model imports
+from db.database import get_patient_db, get_doctor_db
+from db.patient_models import PatientInfo, PatientConfigurations, PatientPhysicianAssociations
+from db.doctor_models import StaffProfiles, AllClinics, StaffAssociations
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import PatientProfileResponse
 

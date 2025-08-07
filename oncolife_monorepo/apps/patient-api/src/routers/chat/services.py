@@ -16,7 +16,7 @@ from .llm.context import ContextLoader
 from .llm.gpt import GPT4oProvider
 from .llm.groq import GroqProvider
 from .llm.cerebras import CerebrasProvider
-from routers.db.patient_models import Conversations as ChatModel, Messages as MessageModel
+from db.patient_models import Conversations as ChatModel, Messages as MessageModel
 
 LLM_PROVIDER = "gpt4o"  # Options: "gpt4o", "groq", "cerebras"
 

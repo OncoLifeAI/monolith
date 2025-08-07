@@ -16,9 +16,9 @@ from sqlalchemy import extract
 from typing import List
 import uuid
 
-# Absolute imports
-from database import get_patient_db
-from routers.db.patient_models import Conversations
+# Database and model imports
+from db.database import get_patient_db
+from db.patient_models import Conversations
 from routers.auth.dependencies import get_current_user, TokenData
 from routers.chat.constants import ConversationState
 from .models import ConversationSummarySchema, ConversationDetailSchema

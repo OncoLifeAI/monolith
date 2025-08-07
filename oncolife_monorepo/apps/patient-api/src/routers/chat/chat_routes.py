@@ -14,17 +14,17 @@ from typing import List, Optional
 from datetime import date
 from jose import jwt, JWTError
 
-# Absolute imports
-from database import get_patient_db
-from routers.auth.dependencies import get_current_user, TokenData, _get_jwks # Re-use the JWKS fetcher
+# Database and model imports
+from db.database import get_patient_db
+from routers.auth.dependencies import get_current_user, TokenData, _get_jwks  # Re-use the JWKS fetcher
 import os
 from .models import (
-    CreateChatRequest, CreateChatResponse, FullChatResponse, ChatStateResponse, 
+    CreateChatRequest, CreateChatResponse, FullChatResponse, ChatStateResponse,
     UpdateStateRequest, ChatSummaryResponse, WebSocketMessageIn, TodaySessionResponse,
-    Message # Import the Message model for manual conversion
+    Message  # Import the Message model for manual conversion
 )
 from .services import ConversationService
-from routers.db.patient_models import Conversations as ChatModel, Messages as MessageModel
+from db.patient_models import Conversations as ChatModel, Messages as MessageModel
 from utils.timezone_utils import utc_to_user_timezone
 
 router = APIRouter(prefix="/chat", tags=["Chat Conversation"])
