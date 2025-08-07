@@ -17,9 +17,9 @@ from sqlalchemy import extract
 from typing import List
 import uuid
 
-# Absolute imports
-from database import get_patient_db
-from routers.db.patient_models import PatientDiaryEntries
+# Database and model imports
+from db.database import get_patient_db
+from db.patient_models import PatientDiaryEntries
 from routers.auth.dependencies import get_current_user, TokenData
 from .models import DiaryEntrySchema, DiaryEntryCreate, DiaryEntryUpdate
 from utils.timezone_utils import utc_to_user_timezone, format_datetime_for_display
