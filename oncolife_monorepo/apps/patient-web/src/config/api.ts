@@ -2,10 +2,10 @@ export const API_CONFIG = {
   BASE_URL: '/api',
   ENDPOINTS: {
     AUTH: {
-      LOGIN: '/auth/login',
-      SIGNUP: '/auth/signup',
-      COMPLETE_NEW_PASSWORD: '/auth/complete-new-password',
-      LOGOUT: '/auth/logout'
+      LOGIN: '/login',
+      SIGNUP: '/signup',
+      COMPLETE_NEW_PASSWORD: '/complete-new-password',
+      LOGOUT: '/logout'
     },
     PROFILE: '/profile',
     NOTES: '/notes',
