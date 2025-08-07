@@ -23,6 +23,7 @@ const ChatsPage: React.FC = () => {
 
     setMessages(prevMessages => {
       if (wsMessage.type === 'message_chunk') {
+        console.log('Processing message chunk:', wsMessage);
         setIsThinking(false);
         const messageIndex = prevMessages.findIndex(m => m.id === wsMessage.message_id);
         if (messageIndex !== -1) {
@@ -41,9 +42,11 @@ const ChatsPage: React.FC = () => {
           return [...prevMessages, newMessage];
         }
       } else if (wsMessage.type === 'message_end') {
+        console.log('Processing message end:', wsMessage);
         setIsThinking(false);
         return prevMessages;
       } else if (wsMessage.id) {
+        console.log('Processing complete message:', wsMessage);
         setIsThinking(false);
         
         // Check if this is a final summary message (indicates conversation completion)
@@ -54,6 +57,7 @@ const ChatsPage: React.FC = () => {
         
         return [...prevMessages.filter(m => m.id !== -1 && m.id !== wsMessage.id), wsMessage];
       }
+      console.log('No matching message type, returning previous messages');
       return prevMessages;
     });
   }, [chatSession]);
@@ -73,12 +77,18 @@ const ChatsPage: React.FC = () => {
       setError(null);
       const response = await chatService.getTodaySession();
       const sessionData = response.data.data;
+      
+      // Set chat session immediately to start WebSocket connection
       setChatSession(sessionData);
+      
+      // Set messages after session is set
       setMessages(sessionData.messages || []);
+      
+      // Stop loading once we have session data (don't wait for WebSocket)
+      setLoading(false);
     } catch (error) {
       setError('Failed to load chat session');
       console.error('Failed to load chat session:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -139,10 +149,11 @@ const ChatsPage: React.FC = () => {
           const todayInUserTz = getTodayInUserTimezone();
           console.log('[CHEMO DEBUG] Today in user timezone:', todayInUserTz.toISOString().split('T')[0]);
           
-          await chatService.logChemoDate(todayInUserTz);
-          console.log('[CHEMO DEBUG] Successfully logged chemotherapy date for today');
+          const chemoResult = await chatService.logChemoDate(todayInUserTz);
+          console.log('[CHEMO DEBUG] Successfully logged chemotherapy date for today:', chemoResult);
         } catch (error) {
           console.error('[CHEMO DEBUG] Failed to log chemotherapy date:', error);
+          // Don't throw the error, just log it and continue with the chat
         }
       } else {
         console.log('[CHEMO DEBUG] Condition not met - not logging chemo date');
@@ -328,7 +339,16 @@ const ChatsPage: React.FC = () => {
       
       {!isConnected && (
         <div className="connection-status">
-          {connectionError ? connectionError : 'Connecting...'}
+          {connectionError ? (
+            <div className="connection-error">
+              <span>⚠️ {connectionError}</span>
+              <button onClick={() => window.location.reload()}>Retry</button>
+            </div>
+          ) : (
+            <div className="connection-loading">
+              <span>Connecting to chat...</span>
+            </div>
+          )}
         </div>
       )}
       

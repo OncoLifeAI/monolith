@@ -38,6 +38,7 @@ export const useWebSocket = (
     wsRef.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('WebSocket raw message received:', data);
         if (data.type !== 'connection_established') {
             onMessageCallback(data);
         } else {
@@ -83,7 +84,7 @@ export const useWebSocket = (
     // Add a small delay to ensure authentication is complete
     const connectionTimeout = setTimeout(() => {
       connectWebSocket();
-    }, 500);
+    }, 100); // Reduced from 500ms to 100ms
 
     return () => {
       clearTimeout(connectionTimeout);
@@ -101,11 +102,12 @@ export const useWebSocket = (
         message_type: message_type,
         content: content,
       };
+      console.log('Sending WebSocket message:', payload);
       wsRef.current.send(JSON.stringify(payload));
     } else {
-      console.error("Cannot send message, WebSocket is not open.");
+      console.error("Cannot send message, WebSocket is not open. State:", wsRef.current?.readyState);
     }
   };
 
   return { isConnected, sendMessage, connectionError };
-}; 
+};

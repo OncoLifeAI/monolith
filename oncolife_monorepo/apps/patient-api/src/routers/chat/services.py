@@ -143,7 +143,7 @@ class ConversationService:
         Load relevant questions for the given symptoms.
         """
         try:
-            questions_path = os.path.join(os.path.dirname(__file__), '..', '..', 'model_inputs', 'questions.json')
+            questions_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs', 'questions.json')
             with open(questions_path, 'r') as f:
                 all_questions = json.load(f)
             
@@ -187,7 +187,7 @@ class ConversationService:
         print(f"KB_RAG: Querying {LLM_PROVIDER.upper()} with RAG context...")
         
         # 1. Load the system prompt
-        model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', 'model_inputs')
+        model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs')
         context_loader = ContextLoader(model_inputs_path)
         system_prompt = context_loader.load_system_prompt()
         
@@ -247,7 +247,7 @@ class ConversationService:
         print(f"KB_RAG_STREAM: Streaming {LLM_PROVIDER.upper()} with RAG context...")
         
         # 1. Load the system prompt
-        model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', 'model_inputs')
+        model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs')
         context_loader = ContextLoader(model_inputs_path)
         system_prompt = context_loader.load_system_prompt()
         
@@ -321,8 +321,11 @@ class ConversationService:
         """
         Processes a message and streams the response back to the client.
         """
+        print(f"🔍 Processing message for chat {chat_uuid}: {message.content}")
         chat = self.db.query(ChatModel).filter(ChatModel.uuid == chat_uuid).first()
-        if not chat: return
+        if not chat: 
+            print(f"Chat {chat_uuid} not found")
+            return
 
         # 1. Save and yield the user's message
         user_msg = MessageModel(chat_uuid=chat_uuid, sender="user", message_type=message.message_type, content=message.content)
@@ -341,12 +344,31 @@ class ConversationService:
             "history": history_for_llm
         }
 
-        # 3. Stream the LLM response and build the full JSON string
-        llm_response_generator = self._query_knowledge_base_stream_with_rag(chat, context)
-        full_response_text = ""
-        for chunk_content in llm_response_generator:
-            full_response_text += chunk_content
+        print(f"📝 Context prepared: {context}")
 
+        # 3. Stream the LLM response and build the full JSON string
+        try:
+            print("🤖 Starting LLM processing...")
+            llm_response_generator = self._query_knowledge_base_stream_with_rag(chat, context)
+            full_response_text = ""
+            for chunk_content in llm_response_generator:
+                full_response_text += chunk_content
+                print(f"📦 LLM chunk: {chunk_content}")
+
+            print(f"📄 Full LLM response: {full_response_text}")
+        except Exception as e:
+            print(f"❌ LLM processing error: {e}")
+            # Yield a fallback error message
+            yield Message(
+                id=-1,
+                chat_uuid=chat_uuid,
+                sender="assistant",
+                message_type="text",
+                content="I'm sorry, I encountered an error processing your message. Please try again.",
+                created_at=datetime.utcnow()
+            )
+            return
+            
         # 4. Parse the complete JSON response
         llm_json = self._extract_json_from_response(full_response_text)
 

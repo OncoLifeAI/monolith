@@ -8,7 +8,9 @@ import { useUser } from '../../contexts/UserContext';
 import { useUserType } from '../../contexts/UserTypeContext';
 // import { useLogout } from '../../restful/login';
 
-const Sidebar = styled.nav<{ isExpanded: boolean }>`
+const Sidebar = styled.nav.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   height: 100vh;
   background: #fff;
   box-shadow: 2px 0 8px rgba(0,0,0,0.04);
@@ -63,7 +65,9 @@ const ExpandToggleButton = styled.button`
   }
 `;
 
-const UserProfileContainer = styled.div<{ isExpanded: boolean }>`
+const UserProfileContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   display: flex;
   align-items: center;
   padding: 1rem;
@@ -121,14 +125,18 @@ const MenuTitle = styled.h3`
   margin: 0 0 1rem 1rem;
 `;
 
-const MenuList = styled.div<{ isExpanded: boolean }>`
+const MenuList = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   align-items: ${props => (props.isExpanded ? 'stretch' : 'center')};
 `;
 
-const MenuButton = styled.button<{ isExpanded: boolean }>`
+const MenuButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   width: 100%;
   display: flex;
   align-items: center;
@@ -164,7 +172,9 @@ const MenuLabel = styled.span`
   }
 `;
 
-const LogoutSection = styled.div<{ isExpanded: boolean }>`
+const LogoutSection = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   padding: 1.5rem 0;
   border-top: 1px solid #e5e7eb;
   flex-shrink: 0;
@@ -188,7 +198,9 @@ const LogoutLabel = styled.span`
   }
 `;
 
-const ToggleContainer = styled.div<{ isExpanded: boolean }>`
+const ToggleContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isExpanded'
+})<{ isExpanded: boolean }>`
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
   display: flex;

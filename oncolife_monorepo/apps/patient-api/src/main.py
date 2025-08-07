@@ -1,3 +1,9 @@
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
 from fastapi import FastAPI
 from routers.auth.auth_routes import router as auth_router
 from routers.patient.patient_routes import router as patient_router
