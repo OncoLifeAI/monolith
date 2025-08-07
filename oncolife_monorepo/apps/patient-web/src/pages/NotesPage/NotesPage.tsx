@@ -5,7 +5,7 @@ import type { Note, NoteResponse } from './types';
 import { Header, Title, Container } from '../../../styles/GlobalStyles';
 import SharedDatePicker from '../../../components/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
-import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../../restful/notes';
+import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../services/notes';
 
 const NotesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());

@@ -11,7 +11,7 @@ import {
   ErrorContainer,
 } from './SummariesPage.styles';
 import SharedDatePicker from '../../../components/DatePicker';
-import { useSummaries, type Summary } from '../../../restful/summaries';
+import { useSummaries, type Summary } from '../../services/summaries';
 import { SummaryGrid } from './components';
 import dayjs, { Dayjs } from 'dayjs';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';

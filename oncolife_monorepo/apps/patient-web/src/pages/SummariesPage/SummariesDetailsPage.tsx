@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSummaryDetails } from '../../../restful/summaries';
+import { useSummaryDetails } from '../../services/summaries';
 import { formatDateForDisplay } from '../../../utils/timezone';
 import { ArrowLeft, Calendar, Heart, FileText, List } from 'lucide-react';
 import * as S from './SummariesDetailsPage.styles';
