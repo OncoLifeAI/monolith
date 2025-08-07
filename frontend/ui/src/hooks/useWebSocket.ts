@@ -20,8 +20,8 @@ export const useWebSocket = (
       return;
     }
 
-    // Use localhost for local development
-    const wsUrl = `ws://localhost:8000/chat/ws/${chatUuid}?token=${token}`;
+    // Connect through the Express server proxy
+    const wsUrl = `ws://localhost:3000/chat/ws/${chatUuid}?token=${token}`;
 
     console.log('Connecting to WebSocket:', wsUrl);
     wsRef.current = new WebSocket(wsUrl);
