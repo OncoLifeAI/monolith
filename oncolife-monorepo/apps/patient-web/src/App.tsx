@@ -6,19 +6,19 @@ import { UserProvider } from './contexts/UserContext';
 import { UserTypeProvider } from './contexts/UserTypeContext';
 
 // Shared login from ui-components
-import LoginPage from '@oncolife/ui-components/pages/Login/LoginPage';
+import { LoginPage } from '@oncolife/ui-components';
 
 // Patient-specific pages
 import SignUpPage from './pages/SignUpPage';
 import Layout from './components/Layout';
-import ChatsPage from './pages/Chats/ChatsPage';
-import SummariesPage from './pages/Summaries/SummariesPage';
-import NotesPage from './pages/Notes/NotesPage';
-import ProfilePage from './pages/Profile/ProfilePage';
+import ChatsPage from './pages/ChatsPage';
+import { SummariesPage, SummariesDetailsPage } from './pages/SummariesPage';
+import NotesPage from './pages/NotesPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
-    <UserTypeProvider userType="patient">
+    <UserTypeProvider>
       <AuthProvider>
         <UserProvider>
           <GlobalStyles />
@@ -30,6 +30,7 @@ function App() {
               <Route element={<Layout />}>
                 <Route path="/chat" element={<ChatsPage />} />
                 <Route path="/summaries" element={<SummariesPage />} />
+                <Route path="/summaries/:id" element={<SummariesDetailsPage />} />
                 <Route path="/notes" element={<NotesPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>

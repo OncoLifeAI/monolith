@@ -2,6 +2,9 @@
 export { default as InputPassword } from './components/Login/InputPassword';
 export * from './components/Login/InputPassword.styles';
 
+// Login Pages
+export { default as LoginPage } from './pages/Login';
+
 // Navigation
 export { default as Navigation } from './components/Navigation/Navigation';
 
