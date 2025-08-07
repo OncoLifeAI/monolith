@@ -36,8 +36,8 @@ from routers.auth.models import (
     DeletePatientRequest,
 )
 # Import DB session and models
-from database import get_patient_db, get_doctor_db
-from routers.db.patient_models import (
+from db.database import get_patient_db, get_doctor_db
+from db.patient_models import (
     PatientInfo,
     PatientConfigurations,
     PatientDiaryEntries,
@@ -45,7 +45,7 @@ from routers.db.patient_models import (
     PatientChemoDates,
     PatientPhysicianAssociations
 )
-from routers.db.doctor_models import StaffProfiles
+from db.doctor_models import StaffProfiles
 # Import shared dependencies
 from routers.auth.dependencies import get_cognito_client, get_current_user, TokenData
 
