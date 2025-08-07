@@ -1,0 +1,24 @@
+{
+    "name": "@oncolife/ui-components",
+    "version": "1.0.0",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+      "type-check": "tsc --noEmit"
+    },
+    "peerDependencies": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "styled-components": "^6.0.0"
+    },
+    "dependencies": {
+      "@mui/material": "^5.14.0",
+      "@mui/x-date-pickers": "^6.0.0",
+      "lucide-react": "^0.300.0",
+      "dayjs": "^1.11.0"
+    },
+    "devDependencies": {
+      "@types/react": "^18.2.0",
+      "@types/styled-components": "^5.1.26"
+    }
+  }
