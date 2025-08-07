@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:patient": "npm run dev --workspace=@oncolife/patient-web & npm run dev --workspace=@oncolife/patient-api",
+    "dev:patient": "concurrently \"npm run dev --workspace=@oncolife/patient-web\" \"npm run dev --workspace=@oncolife/patient-server\"",
     "dev:doctor": "npm run dev --workspace=@oncolife/doctor-web & npm run dev --workspace=@oncolife/doctor-api",
     "build:all": "npm run build --workspaces",
     "build:patient": "npm run build --workspace=@oncolife/patient-web && npm run build:docker --workspace=@oncolife/patient-api",
