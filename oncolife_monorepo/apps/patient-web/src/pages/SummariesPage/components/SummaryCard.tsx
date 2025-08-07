@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from 'react-bootstrap';
 import styled from 'styled-components';
 import type { Summary } from '../../../services/summaries';
-import { formatDateForDisplay } from '../../../../utils/timezone';
+import { formatDateForDisplay } from '@oncolife/shared-utils';
 
 const Card = styled.div`
   background: #FFFFFF;

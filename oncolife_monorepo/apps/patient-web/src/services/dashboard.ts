@@ -1,6 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../utils/apiClient';
-import { API_CONFIG } from '../config/api';
 
 export interface PatientSummary {
   id: string;
@@ -120,8 +118,6 @@ const fetchPatientSummaries = async (
 ): Promise<DashboardResponse> => {
   // For now, return mock data
   // In production, this would be:
-  // const response = await apiClient.get<DashboardResponse>(
-  //   `${API_CONFIG.ENDPOINTS.DASHBOARD}/patients?page=${page}&search=${search}&filter=${filter}`
   // );
   // return response.data;
   
@@ -171,8 +167,6 @@ export const usePatientSummaries = (
 const fetchPatientDetails = async (patientId: string): Promise<PatientSummary> => {
   // For now, return mock data
   // In production, this would be:
-  // const response = await apiClient.get<PatientSummary>(
-  //   `${API_CONFIG.ENDPOINTS.DASHBOARD}/patients/${patientId}`
   // );
   // return response.data;
   

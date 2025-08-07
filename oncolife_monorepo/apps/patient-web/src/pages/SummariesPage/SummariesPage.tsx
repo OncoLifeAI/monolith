@@ -10,13 +10,12 @@ import {
   LoadingContainer,
   ErrorContainer,
 } from './SummariesPage.styles';
-import SharedDatePicker from '../../../components/DatePicker';
+import { DatePicker as SharedDatePicker, Container, Header, Title, Content } from '@oncolife/ui-components';
 import { useSummaries, type Summary } from '../../services/summaries';
 import { SummaryGrid } from './components';
 import dayjs, { Dayjs } from 'dayjs';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Header, Title, Content } from '../../../styles/GlobalStyles';
 
 const SummariesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
@@ -49,9 +48,6 @@ const SummariesPage: React.FC = () => {
     navigate(`/summaries/${summaryId}`);
   };
 
-  const formatCurrentDate = (date: Dayjs) => {
-    return date.format('MMMM YYYY');
-  };
 
   return (
     <Container>

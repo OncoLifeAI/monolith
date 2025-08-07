@@ -18,7 +18,7 @@ const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState<ProfileFormData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { data: profileData, isLoading: isProfileLoading, error: profileError } = useFetchProfile();
+  const { data: profileData, isLoading: isProfileLoading } = useFetchProfile();
 
   useEffect(() => {
     if (profileData) {

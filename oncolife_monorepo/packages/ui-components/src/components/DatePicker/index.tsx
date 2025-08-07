@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DatePicker as MUIDatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs, { Dayjs } from 'dayjs';
+import { Dayjs } from 'dayjs';
 import { Calendar } from 'lucide-react';
 import { DatePickerContainer, DateDisplayButton } from './DatePicker.styles';
 

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { Message } from '../types/chat';
 
 export const useWebSocket = (
   chatUuid: string | null,

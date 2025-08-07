@@ -1,16 +1,16 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSummaryDetails } from '../../services/summaries';
-import { formatDateForDisplay } from '../../../utils/timezone';
-import { ArrowLeft, Calendar, Heart, FileText, List } from 'lucide-react';
+import { formatDateForDisplay } from '@oncolife/shared-utils';
+import { ArrowLeft, Calendar, FileText, List } from 'lucide-react';
 import * as S from './SummariesDetailsPage.styles';
 
 // Import images correctly
-import veryHappyImg from '../../../assets/VeryHappy.png';
-import happyImg from '../../../assets/Happy.png';
-import neutralImg from '../../../assets/Neutral.png';
-import sadImg from '../../../assets/Sad.png';
-import verySadImg from '../../../assets/VerySad.png';
+import veryHappyImg from '../../assets/VeryHappy.png';
+import happyImg from '../../assets/Happy.png';
+import neutralImg from '../../assets/Neutral.png';
+import sadImg from '../../assets/Sad.png';
+import verySadImg from '../../assets/VerySad.png';
 
 
 const SummariesDetailsPage: React.FC = () => {

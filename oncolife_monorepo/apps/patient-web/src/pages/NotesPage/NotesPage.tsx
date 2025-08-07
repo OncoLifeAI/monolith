@@ -2,22 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { NotesSidebar, NoteEditor } from './components';
 import { NotesPageContainer } from './NotesPage.styles';
 import type { Note, NoteResponse } from './types';
-import { Header, Title, Container } from '../../../styles/GlobalStyles';
-import SharedDatePicker from '../../../components/DatePicker';
+import { Header, Title, Container } from '@oncolife/ui-components';
 import dayjs, { Dayjs } from 'dayjs';
 import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../services/notes';
 
 const NotesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   // Fetch notes from API
-  const { data: notesResponse, isLoading, error } = useFetchNotes(selectedDate.year(), selectedDate.month() + 1);
+  const { data: notesResponse } = useFetchNotes(selectedDate.year(), selectedDate.month() + 1);
   const notes: Note[] = (notesResponse as NoteResponse)?.data ?? [];
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
   
   const [draftNote, setDraftNote] = useState<Note | null>(null);
-  const [forceEdit, setForceEdit] = useState(true);
 
   // Hooks for API mutations
   const saveNewNotesMutation = useSaveNewNotes(selectedDate.year(), selectedDate.month() + 1);
@@ -130,8 +128,6 @@ const NotesPage: React.FC = () => {
               onDeleteNote={handleDeleteNote}
               onCancelDraft={handleCancelDraft}
               isDraft={!!draftNote}
-              forceEdit={forceEdit}
-              onForceEditHandled={() => setForceEdit(false)}
             />
           ) : (
             <div style={{ 

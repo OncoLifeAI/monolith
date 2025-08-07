@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { Form } from 'react-bootstrap';
 import { EditorContainer, EditorHeader, EditorContent, EditorHeading, SaveButton, DeleteButton, CancelButton, EditorInput, EditorTextarea } from './NoteEditor.styles';
 import type { Note } from '../types';
 
@@ -10,11 +9,9 @@ interface NoteEditorProps {
   onDeleteNote: (noteId: string) => void;
   isDraft?: boolean;
   onCancelDraft?: () => void;
-  forceEdit?: boolean;
-  onForceEditHandled?: () => void;
 }
 
-export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSaveNote, onDeleteNote, isDraft, onCancelDraft, forceEdit, onForceEditHandled }) => {
+export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSaveNote, onDeleteNote, isDraft, onCancelDraft }) => {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.diary_entry);
   const [isEditing, setIsEditing] = useState(false);

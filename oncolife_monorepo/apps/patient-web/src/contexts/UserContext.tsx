@@ -1,10 +1,9 @@
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useFetchProfile } from '../services/profile';
-import type { ProfileData } from '../pages/Patients/ProfilePage/types';
 
 interface UserContextType {
-  profile: ProfileData | null;
+  profile: any;
   isLoading: boolean;
   error: string | null;
 }
@@ -27,7 +26,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const { data: profile, isLoading, error } = useFetchProfile();
 
   const value: UserContextType = {
-    profile: profile && Object.keys(profile).length > 0 ? profile as ProfileData : null,
+    profile: profile && Object.keys(profile).length > 0 ? profile : null,
     isLoading,
     error: error ? String(error) : null,
   };
@@ -37,4 +36,4 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       {children}
     </UserContext.Provider>
   );
-}; 
+};

@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { MessageBubble } from '../../../components/chat/MessageBubble';
-import { MessageInput } from '../../../components/chat/MessageInput';
-import { ThinkingBubble } from '../../../components/chat/ThinkingBubble';
-import { CalendarModal } from '../../../components/chat/CalendarModal';
-import { useWebSocket } from '../../../hooks/useWebSocket';
-import { chatService } from '../../../services/chatService';
-import { getTodayInUserTimezone } from '../../../utils/timezone';
-import type { ChatSession, Message } from '../../../types/chat';
-import '../../../components/chat/Chat.css';
+import { MessageBubble } from '../../components/chat/MessageBubble';
+import { MessageInput } from '../../components/chat/MessageInput';
+import { ThinkingBubble } from '../../components/chat/ThinkingBubble';
+import { CalendarModal } from '../../components/chat/CalendarModal';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { chatService } from '../../services/chatService';
+import { getTodayInUserTimezone } from '@oncolife/shared-utils';
+import type { ChatSession, Message } from '../../types/chat';
+import '../../components/chat/Chat.css';
 
 const ChatsPage: React.FC = () => {
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
@@ -304,7 +304,6 @@ const ChatsPage: React.FC = () => {
     return true;
   };
 
-  const latestAssistantMessage = messages.filter(m => m.sender === 'assistant').pop();
   
   if (loading) return <div className="loading">Loading chat...</div>;
 
@@ -341,7 +340,6 @@ const ChatsPage: React.FC = () => {
             onButtonClick={handleButtonClick}
             onMultiSelectSubmit={handleMultiSelectSubmit}
             onFeelingSelect={handleFeelingSelect}
-            isLatestAssistantMessage={message.id === latestAssistantMessage?.id}
             shouldShowInteractiveElements={shouldShowInteractiveElements(message, index)}
           />
         ))}

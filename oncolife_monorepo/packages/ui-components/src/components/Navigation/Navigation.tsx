@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
-import { SESSION_START_KEY } from '../SessionTimeoutManager';
+import { SESSION_START_KEY } from '../SessionTimeout/SessionTimeoutManager';
 import { useUser } from '../../contexts/UserContext';
 import { useUserType } from '../../contexts/UserTypeContext';
 // import { useLogout } from '../../restful/login';

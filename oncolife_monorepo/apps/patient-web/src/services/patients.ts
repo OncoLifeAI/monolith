@@ -1,6 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../utils/apiClient';
-import { API_CONFIG } from '../config/api';
 
 export interface Patient {
   id: string;
@@ -336,8 +334,6 @@ const fetchPatients = async (
 ): Promise<PatientsResponse> => {
   // For now, return mock data
   // In production, this would be:
-  // const response = await apiClient.get<PatientsResponse>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}?page=${page}&search=${search}&rowsPerPage=${rowsPerPage}`
   // );
   // return response.data;
   
@@ -383,8 +379,6 @@ export const usePatients = (
 const fetchPatientDetails = async (patientId: string): Promise<Patient> => {
   // For now, return mock data
   // In production, this would be:
-  // const response = await apiClient.get<Patient>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}/${patientId}`
   // );
   // return response.data;
   
@@ -410,8 +404,6 @@ export const usePatientDetails = (patientId: string) => {
 const addPatient = async (patientData: Omit<Patient, 'id'>): Promise<Patient> => {
   // For now, return mock data
   // In production, this would be:
-  // const response = await apiClient.post<Patient>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}`,
   //   patientData
   // );
   // return response.data;
@@ -442,8 +434,6 @@ export const useAddPatient = () => {
 const updatePatient = async ({ id, ...patientData }: Patient): Promise<Patient> => {
   // For now, return mock data
   // In production, this would be:
-  // const response = await apiClient.put<Patient>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}/${id}`,
   //   patientData
   // );
   // return response.data;
