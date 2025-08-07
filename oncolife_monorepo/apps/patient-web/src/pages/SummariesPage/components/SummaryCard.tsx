@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from 'react-bootstrap';
 import styled from 'styled-components';
-import type { Summary } from '../../../../restful/summaries';
+import type { Summary } from '../../../services/summaries';
 import { formatDateForDisplay } from '../../../../utils/timezone';
 
 const Card = styled.div`

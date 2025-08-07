@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSignUp } from '../restful/signup';
+import { useSignUp } from '../services/signup';
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
