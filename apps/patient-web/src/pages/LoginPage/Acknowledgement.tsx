@@ -1,9 +1,27 @@
 import logo from '../../assets/logo.png';
-import React from 'react';
+import React, { useState } from 'react';
 import { Background, WrapperStyle, Logo, Card } from '@oncolife/ui-components';
 import { MainContent, StyledButton, LoginTitle, LoginHeader } from './LoginPage.styles';
+import { useNavigate } from 'react-router-dom';
+import { patientService } from '../../services/patient';
 
 const Acknowledgement: React.FC<{ onAgree?: () => void }> = ({ onAgree }) => {
+  const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleAgree = async () => {
+    try {
+      setSubmitting(true);
+      await patientService.updateConsent();
+      onAgree?.();
+      navigate('/chat');
+    } catch (error) {
+      console.error('Failed to update consent acknowledgement:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Background>
         <WrapperStyle>
@@ -32,8 +50,8 @@ const Acknowledgement: React.FC<{ onAgree?: () => void }> = ({ onAgree }) => {
                         Sincerely,<br />
                         The OncoLife AI Team
                     </p>
-                    <StyledButton variant="primary" type="button" onClick={onAgree}>
-                        I Agree
+                    <StyledButton variant="primary" type="button" onClick={handleAgree} disabled={submitting}>
+                        {submitting ? 'Processing...' : 'I Agree'}
                     </StyledButton>
                 </Card>
             </MainContent>
