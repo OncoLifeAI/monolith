@@ -338,18 +338,17 @@ const ChatsPage: React.FC = () => {
       </div>
       
       {!isConnected && (
-        <div className="connection-status">
-          {connectionError ? (
-            <div className="connection-error">
-              <span>⚠️ {connectionError}</span>
-              <button onClick={() => window.location.reload()}>Retry</button>
-            </div>
-          ) : (
-            <div className="connection-loading">
-              <span>Connecting to chat...</span>
-            </div>
-          )}
-        </div>
+        connectionError ? (
+          <div className="connection-error-banner">
+            <span>⚠️ {connectionError}</span>
+            <button onClick={() => window.location.reload()} className="retry-button">Retry</button>
+          </div>
+        ) : (
+          <div className="connection-loading-inline" aria-live="polite">
+            <div className="spinner" aria-label="Connecting" />
+            <span>Connecting to chat...</span>
+          </div>
+        )
       )}
       
       <div className="messages-container">
