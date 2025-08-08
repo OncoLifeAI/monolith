@@ -14,9 +14,10 @@ import verySadImg from '../../assets/VerySad.png';
 
 
 const SummariesDetailsPage: React.FC = () => {
-  const { summaryId } = useParams<{ summaryId: string }>();
+  // Fix: route is defined as /summaries/:id, so read `id` not `summaryId`
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: summary, isLoading, error } = useSummaryDetails(summaryId || '');
+  const { data: summary, isLoading, error } = useSummaryDetails(id || '');
 
   if (isLoading) {
     return (

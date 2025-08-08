@@ -198,68 +198,6 @@ const LogoutLabel = styled.span`
   }
 `;
 
-const ToggleContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>`
-  padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: ${props => (props.isExpanded ? 'flex-start' : 'center')};
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const ToggleLabel = styled.span`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  white-space: nowrap;
-`;
-
-const SwitchContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const SwitchLabel = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isActive'
-})<{ isActive: boolean }>`
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: ${props => props.isActive ? '#2563eb' : '#6b7280'};
-  transition: color 0.2s;
-`;
-
-const ToggleSwitch = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isOn'
-})<{ isOn: boolean }>`
-  position: relative;
-  width: 3rem;
-  height: 1.5rem;
-  background-color: ${props => props.isOn ? '#2563eb' : '#d1d5db'};
-  border-radius: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  
-  &:hover {
-    background-color: ${props => props.isOn ? '#1d4ed8' : '#9ca3af'};
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0.125rem;
-    left: ${props => props.isOn ? '1.625rem' : '0.125rem'};
-    width: 1.25rem;
-    height: 1.25rem;
-    background-color: white;
-    border-radius: 50%;
-    transition: left 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-`;
-
 interface MenuItem {
   id: string;
   label: string;
@@ -333,7 +271,6 @@ const SidebarContent: React.FC<{
   onProfileClick: () => void;
   userType: 'patient' | 'doctor';
 }> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand, onProfileClick, userType }) => {
-  const { isDoctor, setUserType } = useUserType();
   
   // Define menu items based on user type
   const menuItems: MenuItem[] = userType === 'patient' 
@@ -369,17 +306,6 @@ const SidebarContent: React.FC<{
         isExpanded={isExpanded}
         onClick={onProfileClick}
       />
-      <ToggleContainer isExpanded={isExpanded}>
-        {isExpanded && <ToggleLabel>View:</ToggleLabel>}
-        <SwitchContainer>
-          {isExpanded && <SwitchLabel isActive={!isDoctor}>Patient</SwitchLabel>}
-          <ToggleSwitch 
-            isOn={isDoctor}
-            onClick={() => setUserType(isDoctor ? 'patient' : 'doctor')}
-          />
-          {isExpanded && <SwitchLabel isActive={isDoctor}>Doctor</SwitchLabel>}
-        </SwitchContainer>
-      </ToggleContainer>
       <MenuSection>
         {isExpanded && <MenuTitle>MENU</MenuTitle>}
         <MenuList isExpanded={isExpanded}>

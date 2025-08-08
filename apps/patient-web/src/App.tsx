@@ -15,6 +15,7 @@ import Layout from './components/Layout';
 import ChatsPage from './pages/ChatsPage';
 import { SummariesPage, SummariesDetailsPage } from './pages/SummariesPage';
 import NotesPage from './pages/NotesPage';
+import EducationPage from './pages/EducationPage';
 import ProfilePage from './pages/ProfilePage';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/summaries" element={<SummariesPage />} />
                 <Route path="/summaries/:id" element={<SummariesDetailsPage />} />
                 <Route path="/notes" element={<NotesPage />} />
+                <Route path="/education" element={<EducationPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
               <Route path="/" element={<Navigate to="/chat" />} />
