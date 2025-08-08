@@ -15,6 +15,9 @@ export const API_CONFIG = {
       MESSAGE: '/chat/message',
       SESSION_NEW: '/chat/session/new',
       CHEMO_LOG: '/chemo/log'
+    },
+    PATIENT: {
+      UPDATE_CONSENT: '/patient/update-consent'
     }
   }
 };
