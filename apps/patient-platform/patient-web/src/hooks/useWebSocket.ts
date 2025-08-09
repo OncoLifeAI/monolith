@@ -22,8 +22,10 @@ export const useWebSocket = (
       return;
     }
 
-    // Connect through the Express server proxy
-    const wsUrl = `ws://localhost:3000/chat/ws/${chatUuid}?token=${token}`;
+    // Build WS URL from current origin so it works in prod (wss) and dev (ws)
+    const { protocol, host } = window.location;
+    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${host}/chat/ws/${chatUuid}?token=${token}`;
 
     console.log('Connecting to WebSocket:', wsUrl);
     wsRef.current = new WebSocket(wsUrl);

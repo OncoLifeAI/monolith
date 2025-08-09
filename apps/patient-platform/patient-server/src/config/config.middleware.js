@@ -21,22 +21,35 @@ function configureMiddleware(app) {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  app.use(express.static(path.join(__dirname, '../../public')));
-
-  // Proxy WebSocket connections to FastAPI backend
+  // Always proxy WebSocket connections to FastAPI backend
+  const backendBase = process.env.BACKEND_URL || 'http://localhost:8000';
   app.use('/chat/ws', createProxyMiddleware({
-    target: 'http://localhost:8000',
+    target: backendBase,
     changeOrigin: true,
-    ws: true, // Enable WebSocket proxy
+    ws: true,
     onProxyReq: (proxyReq, req, res) => {
-      console.log(`Proxying WebSocket: ${req.method} ${req.url} to backend`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Proxying WebSocket: ${req.method} ${req.url} -> ${backendBase}`);
+      }
     },
     onError: (err, req, res) => {
       console.error('WebSocket proxy error:', err);
     }
   }));
 
-  // Proxy frontend requests to Vite dev server (ONLY for non-API routes)
+  if (process.env.NODE_ENV === 'production') {
+    const webDist = path.join(__dirname, '../../../patient-web/dist');
+    app.use(express.static(webDist));
+
+    // Single Page App fallback to index.html (excluding API and WS routes)
+    app.get('*', (req, res, next) => {
+      if (req.url.startsWith('/api') || req.url.startsWith('/chat/ws')) return next();
+      return res.sendFile(path.join(webDist, 'index.html'));
+    });
+    return; // No Vite proxy in production
+  }
+
+  // ---- Development mode only: proxy frontend requests to Vite dev server ----
   app.use('/', createProxyMiddleware({
     target: 'http://localhost:5173',
     changeOrigin: true,
@@ -44,12 +57,12 @@ function configureMiddleware(app) {
       '^/api': '/api'  // Don't rewrite API calls
     },
     onProxyReq: (proxyReq, req, res) => {
-      // Only proxy non-API requests to Vite
+      // Only proxy non-API routes to Vite
       if (!req.url.startsWith('/api') && !req.url.startsWith('/chat/ws')) {
         console.log(`Proxying frontend request: ${req.method} ${req.url} to Vite`);
       }
     },
-    // Skip proxying for API routes
+    // Skip proxying for API routes and WebSocket
     filter: (req, res) => {
       return !req.url.startsWith('/api') && !req.url.startsWith('/chat/ws');
     }

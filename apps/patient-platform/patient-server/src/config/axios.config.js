@@ -1,7 +1,9 @@
 const axios = require('axios');
 
+const apiBase = process.env.BACKEND_URL || 'http://localhost:8000';
+
 const apiClient = axios.create({
-  baseURL: process.env.BACKEND_URL || 'http://localhost:8000',
+  baseURL: apiBase,
   timeout: 10000, // 10 seconds
   headers: {
     'Content-Type': 'application/json',
