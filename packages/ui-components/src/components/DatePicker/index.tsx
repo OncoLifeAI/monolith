@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { DatePicker as MUIDatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Dayjs } from 'dayjs';
 import { Calendar } from 'lucide-react';
 import { DatePickerContainer, DateDisplayButton } from './DatePicker.styles';
@@ -31,36 +33,38 @@ const SharedDatePicker: React.FC<SharedDatePickerProps> = ({
   const formatCurrentDate = (date: Dayjs) => date.format('MMMM YYYY');
 
   return (
-    <DatePickerContainer $fullWidth={fullWidth}>
-      {open ? (
-        <MUIDatePicker
-          label={label}
-          views={views}
-          value={value}
-          onChange={handleDateChange}
-          open={true}
-          onClose={() => setOpen(false)}
-          slotProps={{
-            textField: {
-              size: 'small',
-              sx: {
-                '& .MuiInputBase-root': { 
-                  height: '40px',
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <DatePickerContainer $fullWidth={fullWidth}>
+        {open ? (
+          <MUIDatePicker
+            label={label}
+            views={views}
+            value={value}
+            onChange={handleDateChange}
+            open={true}
+            onClose={() => setOpen(false)}
+            slotProps={{
+              textField: {
+                size: 'small',
+                sx: {
+                  '& .MuiInputBase-root': { 
+                    height: '40px',
+                    width: fullWidth ? '100%' : 'auto'
+                  },
+                  '& .MuiInputLabel-root': { fontSize: '14px' },
                   width: fullWidth ? '100%' : 'auto'
                 },
-                '& .MuiInputLabel-root': { fontSize: '14px' },
-                width: fullWidth ? '100%' : 'auto'
               },
-            },
-          }}
-        />
-      ) : (
-        <DateDisplayButton onClick={() => setOpen(true)} $fullWidth={fullWidth}>
-          <span>{formatCurrentDate(value)}</span>
-          <Calendar />
-        </DateDisplayButton>
-      )}
-    </DatePickerContainer>
+            }}
+          />
+        ) : (
+          <DateDisplayButton onClick={() => setOpen(true)} $fullWidth={fullWidth}>
+            <span>{formatCurrentDate(value)}</span>
+            <Calendar />
+          </DateDisplayButton>
+        )}
+      </DatePickerContainer>
+    </LocalizationProvider>
   );
 };
 

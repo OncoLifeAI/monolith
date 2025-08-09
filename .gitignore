@@ -298,3 +298,8 @@ cython_debug/
 #  be added to the global gitignore or merged into this project gitignore.  For a PyCharm
 #  project, it is recommended to ignore the entire idea folder.
 .idea/
+
+.turbo/
+
+newenv/
+torch_env/
