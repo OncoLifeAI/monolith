@@ -8,6 +8,7 @@ import { chatService } from '../../services/chatService';
 import { getTodayInUserTimezone } from '@oncolife/shared-utils';
 import type { ChatSession, Message } from '../../types/chat';
 import '../../components/chat/Chat.css';
+import { API_CONFIG } from '../../config/api';
 
 const ChatsPage: React.FC = () => {
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
@@ -76,13 +77,18 @@ const ChatsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await chatService.getTodaySession();
-      const sessionData = response.data.data;
+      // Gateway now returns the backend payload directly under response.data
+      const sessionData = response.data;
+      
+      if (!sessionData) {
+        throw new Error('No session data returned');
+      }
       
       // Set chat session immediately to start WebSocket connection
       setChatSession(sessionData);
       
-      // Set messages after session is set
-      setMessages(sessionData.messages || []);
+      // Set messages after session is set (guard against undefined)
+      setMessages(Array.isArray(sessionData.messages) ? sessionData.messages : []);
       
       // Stop loading once we have session data (don't wait for WebSocket)
       setLoading(false);
@@ -103,7 +109,7 @@ const ChatsPage: React.FC = () => {
       setError(null);
       const sessionData = await chatService.startNewSession();
       setChatSession(sessionData);
-      setMessages(sessionData.messages || []);
+      setMessages(Array.isArray(sessionData.messages) ? sessionData.messages : []);
     } catch (error) {
       setError('Failed to start a new chat session');
       console.error('Failed to start a new chat session:', error);
@@ -227,7 +233,17 @@ const ChatsPage: React.FC = () => {
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Send the feeling to the backend
+    // Persist overall feeling to backend
+    fetch(`${API_CONFIG.BASE_URL}/chat/${chatSession!.chat_uuid}/feeling`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+      },
+      body: JSON.stringify({ feeling })
+    }).catch(() => {});
+
+    // Send the feeling to the backend via WS to continue flow
     if (isConnected) {
       setIsThinking(true);
       sendMessage(feeling, 'feeling_response');

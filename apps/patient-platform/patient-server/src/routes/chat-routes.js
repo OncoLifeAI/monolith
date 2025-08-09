@@ -9,10 +9,11 @@ router.get('/session/today', async (req, res) => {
         'Authorization': req.headers.authorization
       }
     });
-    res.status(200).json(data);
+    // Unwrap helper response and return backend payload only for consistency
+    return res.status(200).json(data.data);
   } catch (error) {
     console.error('Chat session error:', error);
-    res.status(error.response?.status || 500).json({
+    return res.status(error.response?.status || 500).json({
       error: 'Failed to fetch chat session',
       details: error.message
     });

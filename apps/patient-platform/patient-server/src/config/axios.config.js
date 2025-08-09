@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const apiBase = process.env.BACKEND_URL || 'http://localhost:8000';
+const apiBase = process.env.API_BASE || 'http://localhost:8000';
 
 const apiClient = axios.create({
   baseURL: apiBase,

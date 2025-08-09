@@ -23,9 +23,14 @@ export const useWebSocket = (
     }
 
     // Build WS URL from current origin so it works in prod (wss) and dev (ws)
-    const { protocol, host } = window.location;
+    const { protocol, hostname, port } = window.location as any;
     const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${host}/chat/ws/${chatUuid}?token=${token}`;
+    let wsHost = hostname;
+    // In local dev, vite runs on 5173 and gateway on 3000
+    if (port === '5173') {
+      wsHost = `${hostname}:3000`;
+    }
+    const wsUrl = `${wsProtocol}//${wsHost}/chat/ws/${chatUuid}?token=${token}`;
 
     console.log('Connecting to WebSocket:', wsUrl);
     wsRef.current = new WebSocket(wsUrl);

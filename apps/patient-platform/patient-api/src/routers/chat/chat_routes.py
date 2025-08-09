@@ -10,9 +10,10 @@ import json
 from uuid import UUID
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import date
 from jose import jwt, JWTError
+from pydantic import BaseModel
 
 # Database and model imports
 from db.database import get_patient_db
@@ -28,6 +29,9 @@ from db.patient_models import Conversations as ChatModel, Messages as MessageMod
 from utils.timezone_utils import utc_to_user_timezone
 
 router = APIRouter(prefix="/chat", tags=["Chat Conversation"])
+
+class OverallFeelingUpdate(BaseModel):
+    feeling: Literal['Very Happy', 'Happy', 'Neutral', 'Bad', 'Very Bad']
 
 def convert_message_for_frontend(message: Message) -> Message:
     """
@@ -316,6 +320,29 @@ def delete_chat(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     
     return # Returns a 204 No Content response on success
+
+@router.post(
+    "/{chat_uuid}/feeling",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Update overall feeling for a chat"
+)
+def update_overall_feeling(
+    chat_uuid: UUID,
+    payload: OverallFeelingUpdate,
+    db: Session = Depends(get_patient_db),
+    current_user: TokenData = Depends(get_current_user)
+):
+    chat = db.query(ChatModel).filter(
+        ChatModel.uuid == chat_uuid,
+        ChatModel.patient_uuid == UUID(current_user.sub)
+    ).first()
+
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found or access denied.")
+
+    chat.overall_feeling = payload.feeling
+    db.commit()
+    return
 
 
 # ===============================================================================
