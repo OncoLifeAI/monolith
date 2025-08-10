@@ -29,23 +29,35 @@ FRONTEND_ECR_REPO=${FRONTEND_ECR_REPO:?Set FRONTEND_ECR_REPO in deploy.env}
 IMAGE_TAG=latest
 IMAGE_URI="$FRONTEND_ECR_REPO:$IMAGE_TAG"
 
+# Build args for frontend
+BUILD_ARGS=()
+if [[ -n "${VITE_API_BASE:-}" ]]; then BUILD_ARGS+=(--build-arg VITE_API_BASE="$VITE_API_BASE"); fi
+if [[ -n "${VITE_WS_BASE:-}" ]]; then BUILD_ARGS+=(--build-arg VITE_WS_BASE="$VITE_WS_BASE"); fi
+
 echo "Building frontend/gateway image: $IMAGE_URI (platform=$BUILD_PLATFORM)"
 docker buildx build --platform "$BUILD_PLATFORM" \
   -t "$IMAGE_URI" \
   -f apps/patient-platform/patient-server/Dockerfile \
+  ${BUILD_ARGS[@]:-} \
   --push .
 
 # Trigger App Runner deploy
-if [[ -n "${FRONTEND_APP_RUNNER_SERVICE_ARN:-}" ]]; then
-  SERVICE_ARN="$FRONTEND_APP_RUNNER_SERVICE_ARN"
-else
+SERVICE_ARN="${FRONTEND_APP_RUNNER_SERVICE_ARN:-}"
+if [[ -z "$SERVICE_ARN" ]]; then
   echo "Resolving App Runner service ARN for name: $FRONTEND_APP_RUNNER_SERVICE_NAME in $FRONTEND_APP_RUNNER_REGION"
+  set +e
   SERVICE_ARN=$(aws apprunner list-services --region "$FRONTEND_APP_RUNNER_REGION" \
-    --query "ServiceSummaryList[?ServiceName=='$FRONTEND_APP_RUNNER_SERVICE_NAME'].ServiceArn | [0]" --output text)
+    --query "ServiceSummaryList[?ServiceName=='$FRONTEND_APP_RUNNER_SERVICE_NAME'].ServiceArn | [0]" --output text 2>/dev/null)
+  LIST_EXIT=$?
+  set -e
+  if [[ $LIST_EXIT -ne 0 || -z "$SERVICE_ARN" || "$SERVICE_ARN" == "None" ]]; then
+    echo "Could not auto-resolve service ARN (permission or not found)."
+    read -r -p "Enter App Runner service ARN for frontend/gateway: " SERVICE_ARN
+  fi
 fi
 
 if [[ -z "$SERVICE_ARN" || "$SERVICE_ARN" == "None" ]]; then
-  echo "Failed to resolve App Runner service ARN. Set FRONTEND_APP_RUNNER_SERVICE_ARN in deploy.env or ensure the service exists." >&2
+  echo "Service ARN not provided. Aborting." >&2
   exit 1
 fi
 

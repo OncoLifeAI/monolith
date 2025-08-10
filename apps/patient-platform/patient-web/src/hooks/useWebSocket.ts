@@ -23,16 +23,19 @@ export const useWebSocket = (
       return;
     }
 
-    // Build WS URL from API base if absolute; else from same-origin + BASE_URL
-    const base = API_CONFIG.BASE_URL;
+    // Prefer explicit WS_BASE if provided (absolute URL supported), else base URL
+    const base = API_CONFIG.WS_BASE || API_CONFIG.BASE_URL;
     let wsUrl: string;
 
-    if (/^https?:\/\//i.test(base)) {
-      // Absolute API base → convert http(s) → ws(s)
+    if (/^wss?:\/\//i.test(base)) {
+      // Absolute ws(s) base provided directly
+      wsUrl = `${base.replace(/\/$/, '')}/chat/ws/${chatUuid}?token=${token}`;
+    } else if (/^https?:\/\//i.test(base)) {
+      // Absolute API/WS base → convert http(s) → ws(s)
       const wsBase = base.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
       wsUrl = `${wsBase.replace(/\/$/, '')}/chat/ws/${chatUuid}?token=${token}`;
     } else {
-      // Relative API base → same-origin
+      // Relative base → same-origin
       const { protocol, host } = window.location as any;
       const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
       const prefix = base === '/' ? '' : base.replace(/\/$/, '');
@@ -52,76 +55,58 @@ export const useWebSocket = (
     wsRef.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket raw message received:', data);
-        if (data.type !== 'connection_established') {
-            onMessageCallback(data);
-        } else {
-            console.log("System Message: Connection acknowledged. State:", data.chat_state);
-        }
-      } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
+        onMessageCallback(data);
+      } catch (e) {
+        console.error('Failed to parse WS message', e);
       }
     };
 
-    wsRef.current.onclose = (event) => {
-      console.log('WebSocket connection closed.', event.code, event.reason);
+    wsRef.current.onerror = () => {
+      setConnectionError('WebSocket error occurred.');
+    };
+
+    wsRef.current.onclose = () => {
       setIsConnected(false);
-      
-      // Only retry if it's not a normal closure and we haven't exceeded max retries
-      if (event.code !== 1000 && retryCountRef.current < maxRetries) {
-        retryCountRef.current++;
-        console.log(`WebSocket connection failed, retrying... (${retryCountRef.current}/${maxRetries})`);
-        retryTimeoutRef.current = setTimeout(() => {
-          connectWebSocket();
-        }, 1000 * retryCountRef.current); // Exponential backoff
+      if (retryCountRef.current < maxRetries) {
+        retryCountRef.current += 1;
+        retryTimeoutRef.current = setTimeout(connectWebSocket, 1000 * retryCountRef.current);
+      } else {
+        setConnectionError('Failed to connect to chat.');
       }
-    };
-
-    wsRef.current.onerror = (event) => {
-      console.error('WebSocket error:', event);
-      setConnectionError('WebSocket connection failed');
     };
   }, [chatUuid, onMessageCallback]);
 
+  const sendMessage = useCallback((
+    content: string,
+    message_type: 'text' | 'button_response' | 'multi_select_response' | 'feeling_response'
+  ) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const payload = {
+        type: 'user_message',
+        message_type,
+        content,
+      };
+      wsRef.current.send(JSON.stringify(payload));
+    } else {
+      console.error('Cannot send message, WebSocket is not open.');
+    }
+  }, []);
+
   useEffect(() => {
-    // Clear any existing retry timeout
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-    }
-
-    if (!chatUuid) {
-      setIsConnected(false);
-      setConnectionError(null);
-      return;
-    }
-
-    // Add a small delay to ensure authentication is complete
-    const connectionTimeout = setTimeout(() => {
-      connectWebSocket();
-    }, 100); // Reduced from 500ms to 100ms
-
+    connectWebSocket();
     return () => {
-      clearTimeout(connectionTimeout);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
-      wsRef.current?.close();
     };
-  }, [chatUuid, connectWebSocket]);
+  }, [connectWebSocket]);
 
-  const sendMessage = (content: string, message_type: 'text' | 'button_response' | 'multi_select_response' | 'feeling_response') => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      const payload = {
-        type: "user_message", // This is the wrapper type for the backend
-        message_type: message_type,
-        content: content,
-      };
-      console.log('Sending WebSocket message:', payload);
-      wsRef.current.send(JSON.stringify(payload));
-    } else {
-      console.error("Cannot send message, WebSocket is not open. State:", wsRef.current?.readyState);
-    }
+  return {
+    isConnected,
+    connectionError,
+    sendMessage,
   };
-
-  return { isConnected, sendMessage, connectionError };
 };

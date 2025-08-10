@@ -24,6 +24,12 @@ FROM deps AS build
 COPY apps/patient-platform/patient-web ./apps/patient-platform/patient-web
 COPY apps/patient-platform/patient-server ./apps/patient-platform/patient-server
 
+# Accept frontend build-time config (defaults used if unset)
+ARG VITE_API_BASE
+ARG VITE_WS_BASE
+ENV VITE_API_BASE=${VITE_API_BASE}
+ENV VITE_WS_BASE=${VITE_WS_BASE}
+
 # Build the patient web (outputs to apps/patient-platform/patient-web/dist)
 RUN npm run build --workspace=@oncolife/patient-web
 

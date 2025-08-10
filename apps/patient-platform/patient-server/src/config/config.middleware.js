@@ -5,15 +5,48 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+// Helper to build WS proxies
+function createWsProxies() {
+  const rawBackendBase = process.env.BACKEND_URL;
+  const backendBase = (typeof rawBackendBase === 'string' ? rawBackendBase.trim() : '') || 'http://localhost:8000';
+
+  const common = {
+    target: backendBase,
+    changeOrigin: true,
+    ws: true,
+    xfwd: true,
+    onProxyReq: (proxyReq, req, res) => {
+      console.log(`[WS Proxy] ${req.method} ${req.url} -> ${backendBase}`);
+    },
+    onError: (err, req, res) => {
+      console.error('[WS Proxy] error:', err);
+    }
+  };
+
+  const wsProxyNoRewrite = createProxyMiddleware(common);
+  const wsProxyWithRewrite = createProxyMiddleware({
+    ...common,
+    pathRewrite: {
+      '^/api/chat/ws': '/chat/ws'
+    }
+  });
+
+  return { wsProxyNoRewrite, wsProxyWithRewrite };
+}
+
 // Main configuration function
 function configureMiddleware(app) {
+  const connectSrc = process.env.NODE_ENV === 'production'
+    ? ["'self'", 'https:', 'wss:']
+    : ["'self'", 'http:', 'https:', 'ws:', 'wss:'];
+
   app.use(helmet({
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
         "default-src": ["'self'"],
-        "img-src": ["'self'", "data:", "https://cdn.jsdelivr.net"],
-        "connect-src": ["'self'", "https:", "wss:"],
+        "img-src": ["'self'", 'data:', 'https://cdn.jsdelivr.net'],
+        "connect-src": connectSrc,
       }
     }
   }));
@@ -31,26 +64,11 @@ function configureMiddleware(app) {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Always proxy WebSocket connections to FastAPI backend
-  const rawBackendBase = process.env.BACKEND_URL;
-  const backendBase = (typeof rawBackendBase === 'string' ? rawBackendBase.trim() : '') || 'http://localhost:8000';
+  const { wsProxyNoRewrite, wsProxyWithRewrite } = createWsProxies();
 
   // Support both '/chat/ws' and '/api/chat/ws' so BASE_URL can be '/api'
-  const wsProxy = createProxyMiddleware({
-    target: backendBase,
-    changeOrigin: true,
-    ws: true,
-    onProxyReq: (proxyReq, req, res) => {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`Proxying WebSocket: ${req.method} ${req.url} -> ${backendBase}`);
-      }
-    },
-    onError: (err, req, res) => {
-      console.error('WebSocket proxy error:', err);
-    }
-  });
-
-  app.use('/chat/ws', wsProxy);
-  app.use('/api/chat/ws', wsProxy);
+  app.use('/chat/ws', wsProxyNoRewrite);
+  app.use('/api/chat/ws', wsProxyWithRewrite);
 
   if (process.env.NODE_ENV === 'production') {
     const webDist = path.join(__dirname, '../../../patient-web/dist');
@@ -85,3 +103,4 @@ function configureMiddleware(app) {
 }
 
 module.exports = configureMiddleware;
+module.exports.createWsProxies = createWsProxies;

@@ -12,7 +12,8 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_GATEWAY_URL || 'http://localhost:3000',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        ws: true,
       }
     }
   },

@@ -61,7 +61,9 @@ def convert_chat_to_user_timezone(chat, messages, user_timezone: str = "America/
 async def get_user_from_token(token: str) -> Optional[TokenData]:
     """
     Validates a JWT token passed to a WebSocket and returns the user's data.
-    This is a modified, non-dependency version of `get_current_user`.
+    Accepts both Cognito ID tokens and Access tokens.
+    - ID token: contains 'aud' claim and is validated with audience=COGNITO_CLIENT_ID
+    - Access token: lacks 'aud'; validate issuer and 'client_id' instead, skipping audience verification
     """
     if not token:
         return None
@@ -78,11 +80,34 @@ async def get_user_from_token(token: str) -> Optional[TokenData]:
         if not rsa_key:
             return None
 
-        payload = jwt.decode(
-            token, rsa_key, algorithms=["RS256"],
-            audience=os.getenv("COGNITO_CLIENT_ID"),
-            issuer=f"https://cognito-idp.{os.getenv('AWS_REGION')}.amazonaws.com/{os.getenv('COGNITO_USER_POOL_ID')}"
-        )
+        issuer = f"https://cognito-idp.{os.getenv('AWS_REGION')}.amazonaws.com/{os.getenv('COGNITO_USER_POOL_ID')}"
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+
+        # Peek at unverified claims to branch logic
+        claims = jwt.get_unverified_claims(token)
+        token_use = claims.get("token_use")
+
+        if token_use == "access":
+            # Access tokens do not include 'aud'; verify issuer and optionally client_id
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=["RS256"],
+                issuer=issuer,
+                options={"verify_aud": False}
+            )
+            if client_id and payload.get("client_id") != client_id:
+                return None
+        else:
+            # Assume ID token or other → requires audience check
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=["RS256"],
+                audience=client_id,
+                issuer=issuer,
+            )
+
         user_id: str = payload.get("sub")
         if user_id is None:
             return None

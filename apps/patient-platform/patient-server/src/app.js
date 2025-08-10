@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const configureMiddleware = require('./config/config.middleware');
+const { createWsProxies } = require('./config/config.middleware');
 const routes = require('./routes');
 
 const app = express();
@@ -40,6 +41,19 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 URL: http://localhost:${PORT}`);
+});
+
+// Ensure WS upgrade requests are proxied when hitting this gateway directly
+const { wsProxyNoRewrite, wsProxyWithRewrite } = createWsProxies();
+server.on('upgrade', (req, socket, head) => {
+  const url = req.url || '';
+  if (url.startsWith('/api/chat/ws')) {
+    // Manually rewrite path for upgrade requests to match FastAPI route
+    req.url = url.replace(/^\/api\/chat\/ws/, '/chat/ws');
+    wsProxyWithRewrite.upgrade(req, socket, head);
+  } else if (url.startsWith('/chat/ws')) {
+    wsProxyNoRewrite.upgrade(req, socket, head);
+  }
 });
 
 // Graceful shutdown
