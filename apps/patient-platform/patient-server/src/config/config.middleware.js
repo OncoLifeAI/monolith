@@ -7,7 +7,16 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 // Main configuration function
 function configureMiddleware(app) {
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "img-src": ["'self'", "data:", "https://cdn.jsdelivr.net"],
+        "connect-src": ["'self'", "https:", "wss:"],
+      }
+    }
+  }));
 
   app.use(cors({
     origin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'http://localhost:5173'],
