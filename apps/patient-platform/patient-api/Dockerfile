@@ -8,13 +8,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
 
 # ----- Install Python dependencies -----
-COPY requirements.txt ./requirements.txt
+COPY apps/patient-platform/patient-api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ----- Copy application code -----
-COPY src ./src
+COPY apps/patient-platform/patient-api/src ./src
 
 EXPOSE 8000
 
 # Start FastAPI with uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"] 
+# - Honor PORT env (default 8000) for App Runner
+# - Enable proxy headers so WS works behind reverse proxies
+CMD ["sh","-c","uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000} --app-dir src --proxy-headers --forwarded-allow-ips='*'"]

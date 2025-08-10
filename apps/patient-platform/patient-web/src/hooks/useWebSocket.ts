@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { API_CONFIG } from '../config/api';
 
 export const useWebSocket = (
   chatUuid: string | null,
@@ -22,15 +23,21 @@ export const useWebSocket = (
       return;
     }
 
-    // Build WS URL from current origin so it works in prod (wss) and dev (ws)
-    const { protocol, hostname, port } = window.location as any;
-    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-    let wsHost = hostname;
-    // In local dev, vite runs on 5173 and gateway on 3000
-    if (port === '5173') {
-      wsHost = `${hostname}:3000`;
+    // Build WS URL from API base if absolute; else from same-origin + BASE_URL
+    const base = API_CONFIG.BASE_URL;
+    let wsUrl: string;
+
+    if (/^https?:\/\//i.test(base)) {
+      // Absolute API base → convert http(s) → ws(s)
+      const wsBase = base.replace(/^http:/i, 'ws:').replace(/^https:/i, 'wss:');
+      wsUrl = `${wsBase.replace(/\/$/, '')}/chat/ws/${chatUuid}?token=${token}`;
+    } else {
+      // Relative API base → same-origin
+      const { protocol, host } = window.location as any;
+      const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+      const prefix = base === '/' ? '' : base.replace(/\/$/, '');
+      wsUrl = `${wsProtocol}//${host}${prefix}/chat/ws/${chatUuid}?token=${token}`;
     }
-    const wsUrl = `${wsProtocol}//${wsHost}/chat/ws/${chatUuid}?token=${token}`;
 
     console.log('Connecting to WebSocket:', wsUrl);
     wsRef.current = new WebSocket(wsUrl);

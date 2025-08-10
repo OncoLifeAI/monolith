@@ -22,8 +22,11 @@ function configureMiddleware(app) {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Always proxy WebSocket connections to FastAPI backend
-  const backendBase = process.env.BACKEND_URL || 'http://localhost:8000';
-  app.use('/chat/ws', createProxyMiddleware({
+  const rawBackendBase = process.env.BACKEND_URL;
+  const backendBase = (typeof rawBackendBase === 'string' ? rawBackendBase.trim() : '') || 'http://localhost:8000';
+
+  // Support both '/chat/ws' and '/api/chat/ws' so BASE_URL can be '/api'
+  const wsProxy = createProxyMiddleware({
     target: backendBase,
     changeOrigin: true,
     ws: true,
@@ -35,7 +38,10 @@ function configureMiddleware(app) {
     onError: (err, req, res) => {
       console.error('WebSocket proxy error:', err);
     }
-  }));
+  });
+
+  app.use('/chat/ws', wsProxy);
+  app.use('/api/chat/ws', wsProxy);
 
   if (process.env.NODE_ENV === 'production') {
     const webDist = path.join(__dirname, '../../../patient-web/dist');

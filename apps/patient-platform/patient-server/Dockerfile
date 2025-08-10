@@ -15,8 +15,8 @@ COPY packages ./packages
 # Optional build arg to force cache busting when needed
 ARG FORCE_DEV_DEPS=0
 
-# Install all workspaces deps including devDependencies for build
-RUN echo "FORCE_DEV_DEPS=$FORCE_DEV_DEPS" && npm ci --include=dev
+# Install all workspaces deps including devDependencies for build (use install instead of ci)
+RUN echo "FORCE_DEV_DEPS=$FORCE_DEV_DEPS" && npm install --include=dev
 
 # -------- Build web --------
 FROM deps AS build
