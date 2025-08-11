@@ -414,12 +414,6 @@ const ChatsPage: React.FC = () => {
           New Conversation
         </button>
       </div>
-      {/* Debug: Show current symptom list (moved out of header to avoid overlap) */}
-      {symptomList.length > 0 && (
-        <div className="symptom-list-debug" style={{ margin: '8px auto', maxWidth: '90%' }}>
-          <small>Current Symptoms: {symptomList.join(', ')}</small>
-        </div>
-      )}
       
       {!isConnected && (
         connectionError ? (
