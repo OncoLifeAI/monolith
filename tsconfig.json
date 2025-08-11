@@ -19,7 +19,8 @@
         "@oncolife/ui-components": ["packages/ui-components/src"],
         "@oncolife/shared-types": ["packages/shared-types/src"],
         "@oncolife/api-client": ["packages/api-client/src"],
-        "@oncolife/auth-utils": ["packages/auth-utils/src"]
+        "@oncolife/auth-utils": ["packages/auth-utils/src"],
+        "@oncolife/shared-assets": ["packages/shared-assets"]
       }
     },
     "exclude": ["node_modules", "dist", "build"]

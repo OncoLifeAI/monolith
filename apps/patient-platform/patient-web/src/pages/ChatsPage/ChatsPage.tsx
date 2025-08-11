@@ -313,51 +313,35 @@ const ChatsPage: React.FC = () => {
 
   const handleCalendarDateSelect = async (selectedDate: Date) => {
     if (!chatSession) return;
+    // Format the date for display in user's timezone
+    const dateString = selectedDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // Optimistically add the message so the UI updates immediately
+    const userMessage: Message = {
+      id: -1,
+      chat_uuid: chatSession.chat_uuid,
+      sender: 'user',
+      message_type: 'button_response',
+      content: `Yes, I got chemotherapy on ${dateString}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    if (isConnected) {
+      setIsThinking(true);
+      sendMessage(`Yes, I got chemotherapy on ${dateString}`, 'button_response');
+    }
+
+    // Fire-and-forget the API persistence (log errors but don't block the UI)
     try {
-      // Log the selected chemo date
       await chatService.logChemoDate(selectedDate);
       console.log('Logged chemotherapy date:', selectedDate);
-
-      // Format the date for display in user's timezone
-      const dateString = selectedDate.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-
-      // Create a message showing the selected date
-      const userMessage: Message = {
-        id: -1,
-        chat_uuid: chatSession.chat_uuid,
-        sender: 'user',
-        message_type: 'button_response',
-        content: `Yes, I got chemotherapy on ${dateString}`,
-        created_at: new Date().toISOString(),
-      };
-      
-      setMessages(prev => [...prev, userMessage]);
-      
-      if (isConnected) {
-        setIsThinking(true);
-        sendMessage(`Yes, I got chemotherapy on ${dateString}`, 'button_response');
-      }
     } catch (error) {
       console.error('Failed to log chemotherapy date:', error);
-      // Still add the message even if logging fails
-      const userMessage: Message = {
-        id: -1,
-        chat_uuid: chatSession.chat_uuid,
-        sender: 'user',
-        message_type: 'button_response',
-        content: `Yes, I got chemotherapy on ${selectedDate.toLocaleDateString()}`,
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, userMessage]);
-      
-      if (isConnected) {
-        setIsThinking(true);
-        sendMessage(`Yes, I got chemotherapy on ${selectedDate.toLocaleDateString()}`, 'button_response');
-      }
     }
   };
 
@@ -414,6 +398,14 @@ const ChatsPage: React.FC = () => {
           New Conversation
         </button>
       </div>
+
+      {/* Full-page overlay while connecting (blocks interactions) */}
+      {!isConnected && !connectionError && (
+        <div className="page-overlay" aria-live="polite" aria-busy="true" role="status">
+          <div className="overlay-spinner" />
+          <span>Connecting to chat...</span>
+        </div>
+      )}
       
       {!isConnected && (
         connectionError ? (
