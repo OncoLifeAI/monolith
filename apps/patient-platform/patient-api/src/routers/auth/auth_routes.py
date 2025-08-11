@@ -167,6 +167,7 @@ async def signup_user(
         # Step 3: Associate a physician for all new patients
         # Prefer the physician by email if provided; otherwise use the default UUID
         default_physician_uuid = 'bea3fce0-42f9-4a00-ae56-4e2591ca17c5'
+        default_clinic_uuid = 'ab4dac8e-f9dc-4399-b9bd-781a9d540139'
         associated_physician_uuid = None
 
         if request.physician_email:
@@ -187,7 +188,8 @@ async def signup_user(
 
         new_association = PatientPhysicianAssociations(
             patient_uuid=user_sub,
-            physician_uuid=associated_physician_uuid
+            physician_uuid=associated_physician_uuid,
+            clinic_uuid=default_clinic_uuid
         )
         patient_db.add(new_association)
         
