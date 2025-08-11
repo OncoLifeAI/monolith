@@ -11,9 +11,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, status, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Literal
-from datetime import date
+from datetime import date, datetime, time
 from jose import jwt, JWTError
 from pydantic import BaseModel
+import logging
+import pytz
 
 # Database and model imports
 from db.database import get_patient_db
@@ -29,6 +31,7 @@ from db.patient_models import Conversations as ChatModel, Messages as MessageMod
 from utils.timezone_utils import utc_to_user_timezone
 
 router = APIRouter(prefix="/chat", tags=["Chat Conversation"])
+logger = logging.getLogger(__name__)
 
 class OverallFeelingUpdate(BaseModel):
     feeling: Literal['Very Happy', 'Happy', 'Neutral', 'Bad', 'Very Bad']
@@ -137,21 +140,36 @@ def get_or_create_session(
     """
     service = ConversationService(db)
     patient_uuid = UUID(current_user.sub)
+    logger.info(f"[CHAT] [/chat/session/today] patient={patient_uuid} tz={timezone}")
     
     chat, messages, is_new = service.get_or_create_today_session(patient_uuid, timezone)
+    logger.info(f"[CHAT] [/chat/session/today] chat_uuid={chat.uuid} state={chat.conversation_state} is_new={is_new} messages={len(messages)}")
+    
+    # Preview first few messages
+    for m in messages[:5]:
+        try:
+            logger.info(f"  msg id={m.id} sender={m.sender} type={getattr(m, 'message_type', None)} created_at={getattr(m, 'created_at', None)}")
+        except Exception:
+            pass
     
     # Manually convert the list of SQLAlchemy MessageModel objects to Pydantic Message models.
-    # This is the crucial step that fixes the validation error.
     pydantic_messages = [convert_message_for_frontend(Message.from_orm(msg)) for msg in messages]
     
     # Convert timestamps to user timezone
     convert_chat_to_user_timezone(chat, pydantic_messages, timezone)
     
+    # Log after conversion/coercion
+    if pydantic_messages:
+        logger.info(f"[CHAT] [/chat/session/today] first_message sender={pydantic_messages[0].sender} type={pydantic_messages[0].message_type} len={len(pydantic_messages)}")
+    else:
+        logger.info(f"[CHAT] [/chat/session/today] no messages in session")
+    
     return TodaySessionResponse(
         chat_uuid=chat.uuid,
         conversation_state=chat.conversation_state,
         messages=pydantic_messages,
-        is_new_session=is_new
+        is_new_session=is_new,
+        symptom_list=chat.symptom_list or []
     )
 
 @router.post(
@@ -173,7 +191,29 @@ def force_create_new_session(
     service = ConversationService(db)
     patient_uuid = UUID(current_user.sub)
     
-    chat, messages, is_new = service.force_create_today_session(patient_uuid, timezone)
+    # Delete any existing conversations for today
+    user_tz = pytz.timezone(timezone)
+    user_now = datetime.now(user_tz)
+    today_start = datetime.combine(user_now.date(), time.min)
+    today_end = datetime.combine(user_now.date(), time.max)
+    
+    # Convert to UTC for database query
+    utc_today_start = user_tz.localize(today_start).astimezone(pytz.UTC)
+    utc_today_end = user_tz.localize(today_end).astimezone(pytz.UTC)
+    
+    existing_chats = db.query(ChatModel).filter(
+        ChatModel.patient_uuid == patient_uuid,
+        ChatModel.created_at >= utc_today_start,
+        ChatModel.created_at <= utc_today_end
+    ).all()
+    
+    for chat in existing_chats:
+        db.delete(chat)
+    
+    db.commit()
+    
+    # Create a completely new chat with reset symptom list
+    chat, messages, is_new = service.get_or_create_today_session(patient_uuid, timezone)
     
     pydantic_messages = [convert_message_for_frontend(Message.from_orm(msg)) for msg in messages]
     
@@ -184,7 +224,8 @@ def force_create_new_session(
         chat_uuid=chat.uuid,
         conversation_state=chat.conversation_state,
         messages=pydantic_messages,
-        is_new_session=is_new
+        is_new_session=is_new,
+        symptom_list=chat.symptom_list or []
     )
 
 @router.post(
@@ -420,13 +461,13 @@ async def websocket_endpoint(
                 # Convert message before sending to frontend
                 frontend_chunk = convert_message_for_frontend(chunk)
                 json_payload = frontend_chunk.json()
-                print(f"--> Sending WebSocket message | Type: {frontend_chunk.type if hasattr(frontend_chunk, 'type') else 'Unknown'} | Size: {len(json_payload)} bytes")
+                logger.info(f"[CHAT] --> Sending WebSocket message | Type: {frontend_chunk.type if hasattr(frontend_chunk, 'type') else 'Unknown'} | Size: {len(json_payload)} bytes")
                 await websocket.send_text(json_payload)
 
     except WebSocketDisconnect:
-        print(f"Client disconnected from chat {chat_uuid}")
+        logger.info(f"[CHAT] Client disconnected from chat {chat_uuid}")
     except Exception as e:
-        print(f"An error occurred in chat {chat_uuid}: {e}")
+        logger.error(f"[CHAT] An error occurred in chat {chat_uuid}: {e}")
         # Truncate the error reason to prevent WebSocket protocol errors
         reason = str(e)[:120] + "..." if len(str(e)) > 120 else str(e)
         await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason=reason) 

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import logging
 
 # Database and model imports
 from db.database import get_patient_db, get_doctor_db
@@ -9,6 +10,7 @@ from routers.auth.dependencies import get_current_user, TokenData
 from .models import PatientProfileResponse
 
 router = APIRouter(prefix="/profile", tags=["Patient Profile"])
+logger = logging.getLogger(__name__)
 
 @router.get("/", response_model=PatientProfileResponse, summary="Get complete patient profile")
 async def get_patient_profile(
@@ -21,10 +23,12 @@ async def get_patient_profile(
     from both the patient and doctor databases.
     """
     patient_uuid = current_user.sub
+    logger.info(f"[PROFILE] Fetch profile patient={patient_uuid}")
 
     # 1. Fetch base patient info and configuration from patient_db
     patient_info = patient_db.query(PatientInfo).filter(PatientInfo.uuid == patient_uuid).first()
     if not patient_info:
+        logger.error(f"[PROFILE] Patient not found patient={patient_uuid}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found.")
 
     patient_config = patient_db.query(PatientConfigurations).filter(PatientConfigurations.uuid == patient_uuid).first()
@@ -39,15 +43,12 @@ async def get_patient_profile(
     ).first()
 
     if association:
-        # Fetch physician profile from doctor_db
         physician_profile = doctor_db.query(StaffProfiles).filter(
             StaffProfiles.staff_uuid == association.physician_uuid
         ).first()
         if physician_profile:
             doctor_name = f"{physician_profile.first_name} {physician_profile.last_name}"
 
-            # To get the clinic name, we need to find the physician's clinic association
-            # in the staff_associations table in the doctor_db
             staff_association = doctor_db.query(StaffAssociations).filter(
                 StaffAssociations.physician_uuid == association.physician_uuid
             ).first()
@@ -59,7 +60,8 @@ async def get_patient_profile(
                 if clinic_profile:
                     clinic_name = clinic_profile.clinic_name
 
-    # 3. Assemble the final response
+    logger.info(f"[PROFILE] Profile fetched patient={patient_uuid} doctor={doctor_name} clinic={clinic_name}")
+
     return PatientProfileResponse(
         first_name=patient_info.first_name,
         last_name=patient_info.last_name,

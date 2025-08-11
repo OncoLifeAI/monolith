@@ -16,6 +16,7 @@ from .llm.context import ContextLoader
 from .llm.gpt import GPT4oProvider
 from .llm.groq import GroqProvider
 from .llm.cerebras import CerebrasProvider
+from .llm.retrieval import retrieve_for_symptoms, cached_retrieve
 from db.patient_models import Conversations as ChatModel, Messages as MessageModel
 
 LLM_PROVIDER = "gpt4o"  # Options: "gpt4o", "groq", "cerebras"
@@ -63,7 +64,7 @@ class ConversationService:
         new_chat = ChatModel(
             patient_uuid=patient_uuid,
             conversation_state=ConversationState.CHEMO_CHECK_SENT,
-            symptom_list=[]  # Initialize empty symptom list
+            symptom_list=[]  # Always start with empty symptom list
         )
         self.db.add(new_chat)
         
@@ -92,18 +93,38 @@ class ConversationService:
         
         elif current_state == ConversationState.CHEMO_CHECK_SENT:
             next_state = ConversationState.SYMPTOM_SELECTION_SENT
-            response_content = "Thank you. What symptoms are you experiencing? You can select multiple."
+            response_content = "Please select any symptoms you're experiencing today."
             response_type = "multi_select"
             response_options = [
-                "Fever", "Nausea", "Vomiting", "Diarrhea", "Constipation", "Fatigue",
-                "Headache", "Mouth Sores", "Rash", "Shortness of Breath", "Other"
+                "Fever",
+                "Diarrhea",
+                "Pain",
+                "Nausea",
+                "Vomiting",
+                "Cough",
+                "Fatigue",
+                "Swelling",
+                "Numbness or Tingling",
+                "Constipation",
+                "Mouth or Throat Sores",
+                "Rash",
+                "Urinary Issues",
+                "Other",
+                "None"
             ]
 
         elif current_state == ConversationState.SYMPTOM_SELECTION_SENT:
             next_state = ConversationState.FOLLOWUP_QUESTIONS
-            symptoms = [s.strip() for s in message.content.split(',')]
-            chat.symptom_list = list(set((chat.symptom_list or []) + symptoms))  # Add unique symptoms
-            self.db.commit()
+            # Parse symptoms from multi-select response
+            symptoms = [s.strip() for s in message.content.split(',') if s.strip()]
+            # Filter out "None" if it's selected
+            symptoms = [s for s in symptoms if s.lower() != "none"]
+            
+            # Update the chat's symptom list in the database
+            if symptoms:
+                chat.symptom_list = list(set((chat.symptom_list or []) + symptoms))
+                print(f"Updated symptom list in database: {chat.symptom_list}")
+                self.db.commit()
             
             context = {"patient_state": {"current_symptoms": chat.symptom_list}}
             response_content = self._query_knowledge_base_with_rag(chat, context)
@@ -138,84 +159,29 @@ class ConversationService:
         )
         return next_state, assistant_response
 
-    def _load_questions_context(self, symptoms: List[str]) -> str:
-        """
-        Load relevant questions for the given symptoms.
-        """
-        try:
-            questions_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs', 'questions.json')
-            with open(questions_path, 'r') as f:
-                all_questions = json.load(f)
-            
-            relevant_questions = []
-            for question in all_questions:
-                if question.get('symptom') in symptoms:
-                    relevant_questions.append(question)
-            
-            if not relevant_questions:
-                return ""
-            
-            # Format questions by symptom
-            questions_by_symptom = {}
-            for question in relevant_questions:
-                symptom = question['symptom']
-                if symptom not in questions_by_symptom:
-                    questions_by_symptom[symptom] = []
-                questions_by_symptom[symptom].append(question)
-            
-            # Format the context
-            context_parts = []
-            for symptom, questions in questions_by_symptom.items():
-                context_parts.append(f"\n--- {symptom.upper()} QUESTIONS ---")
-                for question in questions:
-                    phase = question.get('phase', 'unknown')
-                    context_parts.append(f"\n[{phase.upper()}] {question['text']}")
-                    if question.get('data_attribute'):
-                        context_parts.append(f"Data attribute: {question['data_attribute']}")
-            
-            return "\n".join(context_parts)
-            
-        except Exception as e:
-            print(f"Error loading questions context: {e}")
-            return ""
-
     def _query_knowledge_base_with_rag(self, chat: ChatModel, context: Dict[str, Any]) -> str:
         """
-        Query knowledge base with RAG context from both CTCAE documents and questions.
-        Performs RAG on every message using the patient's symptom list.
+        Query knowledge base with complete context including base documents and RAG results.
         """
-        print(f"KB_RAG: Querying {LLM_PROVIDER.upper()} with RAG context...")
+        print(f"KB_RAG: Querying {LLM_PROVIDER.upper()} with complete context...")
         
-        # 1. Load the system prompt
-        model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs')
+        # 1. Load complete system prompt (base documents + RAG results)
+        model_inputs_path = "/app/model_inputs"
+        if not os.path.exists(model_inputs_path):
+            model_inputs_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs'))
         context_loader = ContextLoader(model_inputs_path)
-        system_prompt = context_loader.load_system_prompt()
         
-        # 2. Get patient symptoms for RAG
+        # Get patient symptoms for RAG
         patient_symptoms = context.get('patient_state', {}).get('current_symptoms', [])
         
-        # 3. Perform RAG for the patient's symptoms (CTCAE documents)
-        ctcae_context = context_loader.load_context(symptoms=patient_symptoms)
+        # Load complete context (base documents + RAG results)
+        system_prompt = context_loader.load_context(patient_symptoms)
         
-        # 4. Get questions context for the patient's symptoms
-        questions_context = self._load_questions_context(patient_symptoms)
-        
-        # 5. Combine contexts
-        knowledge_base_context_parts = []
-        if ctcae_context:
-            knowledge_base_context_parts.append(f"### CTCAE Criteria for {', '.join(patient_symptoms) if patient_symptoms else 'General'} ###\n{ctcae_context}")
-        if questions_context:
-            knowledge_base_context_parts.append(f"### Assessment Questions for {', '.join(patient_symptoms) if patient_symptoms else 'General'} ###\n{questions_context}")
-        
-        knowledge_base_context = "\n\n".join(knowledge_base_context_parts) if knowledge_base_context_parts else "No specific symptom context available."
-        
-        print(f"Performed RAG for symptoms: {patient_symptoms}")
+        print(f"Loaded complete context for symptoms: {patient_symptoms}")
 
-        # 6. Construct the user prompt for the LLM
+        # 2. Construct the user prompt for the LLM
         user_prompt_parts = [
-            "### Knowledge Base Context (CTCAE Criteria + Assessment Questions) ###",
-            knowledge_base_context,
-            "\n### Conversation Context ###",
+            "### Conversation Context ###",
             f"Current Symptoms: {context.get('patient_state', {}).get('current_symptoms', [])}",
             f"Chat History (most recent messages): {json.dumps(context.get('history', []), indent=2)}",
             f"\n### User's Latest Message ###",
@@ -226,14 +192,14 @@ class ConversationService:
         ]
         user_prompt = "\n".join(user_prompt_parts)
 
-        # 7. Call the LLM provider
+        # 3. Call the LLM provider
         llm_provider = get_llm_provider()
         response_generator = llm_provider.query(
             system_prompt=system_prompt,
             user_prompt=user_prompt
         )
 
-        # 8. Consume the streaming generator to get a single string response
+        # 4. Consume the streaming generator to get a single string response
         full_response = "".join([chunk for chunk in response_generator])
         
         print(f"KB_RAG: Received response from {LLM_PROVIDER.upper()}: '{full_response[:100]}...'")
@@ -241,41 +207,25 @@ class ConversationService:
 
     def _query_knowledge_base_stream_with_rag(self, chat: ChatModel, context: Dict[str, Any]) -> Generator[str, None, None]:
         """
-        Streaming version of knowledge base query with RAG context.
-        Performs RAG on every message using the patient's symptom list.
+        Streaming version of knowledge base query with complete context.
         """
-        print(f"KB_RAG_STREAM: Streaming {LLM_PROVIDER.upper()} with RAG context...")
+        print(f"KB_RAG_STREAM: Streaming {LLM_PROVIDER.upper()} with complete context...")
         
-        # 1. Load the system prompt
+        # 1. Load complete system prompt (base documents + RAG results)
         model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs')
         context_loader = ContextLoader(model_inputs_path)
-        system_prompt = context_loader.load_system_prompt()
         
-        # 2. Get patient symptoms for RAG
+        # Get patient symptoms for RAG
         patient_symptoms = context.get('patient_state', {}).get('current_symptoms', [])
         
-        # 3. Perform RAG for the patient's symptoms (CTCAE documents)
-        ctcae_context = context_loader.load_context(symptoms=patient_symptoms)
+        # Load complete context (base documents + RAG results)
+        system_prompt = context_loader.load_context(patient_symptoms)
         
-        # 4. Get questions context for the patient's symptoms
-        questions_context = self._load_questions_context(patient_symptoms)
-        
-        # 5. Combine contexts
-        knowledge_base_context_parts = []
-        if ctcae_context:
-            knowledge_base_context_parts.append(f"### CTCAE Criteria for {', '.join(patient_symptoms) if patient_symptoms else 'General'} ###\n{ctcae_context}")
-        if questions_context:
-            knowledge_base_context_parts.append(f"### Assessment Questions for {', '.join(patient_symptoms) if patient_symptoms else 'General'} ###\n{questions_context}")
-        
-        knowledge_base_context = "\n\n".join(knowledge_base_context_parts) if knowledge_base_context_parts else "No specific symptom context available."
-        
-        print(f"Performed RAG for symptoms: {patient_symptoms}")
+        print(f"Loaded complete context for symptoms: {patient_symptoms}")
 
-        # 6. Construct the user prompt for the LLM
+        # 2. Construct the user prompt for the LLM
         user_prompt_parts = [
-            "### Knowledge Base Context (CTCAE Criteria + Assessment Questions) ###",
-            knowledge_base_context,
-            "\n### Conversation Context ###",
+            "### Conversation Context ###",
             f"Current Symptoms: {context.get('patient_state', {}).get('current_symptoms', [])}",
             f"Chat History (most recent messages): {json.dumps(context.get('history', []), indent=2)}",
             f"\n### User's Latest Message ###",
@@ -286,14 +236,14 @@ class ConversationService:
         ]
         user_prompt = "\n".join(user_prompt_parts)
 
-        # 7. Call the LLM provider
+        # 3. Call the LLM provider
         llm_provider = get_llm_provider()
         response_generator = llm_provider.query(
             system_prompt=system_prompt,
             user_prompt=user_prompt
         )
 
-        # 8. Yield chunks directly from the generator
+        # 4. Yield chunks directly from the generator
         for chunk in response_generator:
             yield chunk
 
@@ -334,9 +284,66 @@ class ConversationService:
         self.db.refresh(user_msg)
         yield Message.from_orm(user_msg)
 
-        # 2. Get the full conversation history to send to the LLM
+        # 2. If we are in an early deterministic state, use the state machine
+        # Only CHEMO_CHECK_SENT is deterministic. SYMPTOM_SELECTION_SENT should fall through to LLM after updating symptoms.
+        if chat.conversation_state in [
+            ConversationState.CHEMO_CHECK_SENT,
+        ]:
+            try:
+                next_state, assistant_response = self._determine_next_state_and_response(chat, message)
+            except Exception as e:
+                # Fail safe: do not drop the socket; provide a simple fallback response
+                print(f"State machine error: {e}")
+                next_state = ConversationState.FOLLOWUP_QUESTIONS
+                assistant_response = WebSocketMessageOut(
+                    type="assistant_message",
+                    message_type="button_prompt",
+                    content="I understand. Would you like to discuss any other health-related concerns?",
+                    options=["Yes", "No"],
+                )
+            # Persist next state
+            chat.conversation_state = next_state
+            self.db.commit()
+
+            # Normalize and save assistant message
+            db_message_type = assistant_response.message_type.replace('-', '_')
+            assistant_msg = MessageModel(
+                chat_uuid=chat_uuid,
+                sender="assistant",
+                message_type=db_message_type,
+                content=assistant_response.content,
+                structured_data={"options": assistant_response.options} if getattr(assistant_response, 'options', None) else None,
+            )
+            self.db.add(assistant_msg)
+            self.db.commit()
+            self.db.refresh(assistant_msg)
+
+            # Yield with frontend message type preserved
+            frontend_message = Message.from_orm(assistant_msg)
+            frontend_message.message_type = assistant_response.message_type
+            yield frontend_message
+            return
+
+        # 2b. If we are expecting symptom selection, update the symptom list and advance state, then continue to LLM
+        if chat.conversation_state == ConversationState.SYMPTOM_SELECTION_SENT and message.message_type == 'multi_select_response':
+            # Parse selections (comma separated string)
+            selections = [s.strip() for s in (message.content or '').split(',') if s.strip()]
+            selections = [s for s in selections if s.lower() != 'none']
+            if selections:
+                chat.symptom_list = list(set((chat.symptom_list or []) + selections))
+                print(f"[SYMPTOMS] Updated symptom_list after multi-select: {chat.symptom_list}")
+            # Advance state to follow-up
+            chat.conversation_state = ConversationState.FOLLOWUP_QUESTIONS
+            self.db.commit()
+
+        # 3. Get the full conversation history to send to the LLM
         chat_history = self.db.query(MessageModel).filter(MessageModel.chat_uuid == chat.uuid).order_by(MessageModel.id.asc()).all()
         history_for_llm = [Message.from_orm(m).model_dump(mode='json') for m in chat_history]
+        # Debug: print history size and preview last few messages
+        try:
+            print(f"[HISTORY] messages_in_history={len(history_for_llm)}")
+        except Exception:
+            pass
 
         context = {
             "patient_state": {"current_symptoms": chat.symptom_list},
@@ -344,9 +351,9 @@ class ConversationService:
             "history": history_for_llm
         }
 
-        print(f"📝 Context prepared: {context}")
+        print(f"📝 Context prepared: patient_state={context.get('patient_state')} history_len={len(history_for_llm)}")
 
-        # 3. Stream the LLM response and build the full JSON string
+        # 4. Stream the LLM response and build the full JSON string
         try:
             print("🤖 Starting LLM processing...")
             llm_response_generator = self._query_knowledge_base_stream_with_rag(chat, context)
@@ -369,7 +376,7 @@ class ConversationService:
             )
             return
             
-        # 4. Parse the complete JSON response
+        # 5. Parse the complete JSON response
         llm_json = self._extract_json_from_response(full_response_text)
 
         if not llm_json:
@@ -385,7 +392,7 @@ class ConversationService:
             )
             return
             
-        # 5. Process the structured response
+        # 6. Process the structured response
         response_type = llm_json.get("response_type", "text")
         content = llm_json.get("content", "I'm not sure how to respond.")
         options = llm_json.get("options")
@@ -408,7 +415,7 @@ class ConversationService:
         if response_type.lower() in ["summary", "end"]:
             db_message_type = 'text'
 
-        # 6. Save and yield the assistant's message
+        # 7. Save and yield the assistant's message
         # If this is the summary, format the content for the user
         if response_type == "summary":
             summary_data = llm_json.get("summary_data", {})
@@ -454,7 +461,7 @@ class ConversationService:
         
         yield frontend_message
 
-        # 7. If the conversation is done, update the chat with the summary and mark as completed
+        # 8. If the conversation is done, update the chat with the summary and mark as completed
         if response_type in ["summary", "end"]:
             summary_data = llm_json.get("summary_data", {})
             
@@ -528,26 +535,3 @@ class ConversationService:
             self.db.refresh(first_message)
             
             return new_chat, [first_message], True
-
-    def force_create_today_session(self, patient_uuid: UUID, user_timezone: str = "America/Los_Angeles") -> Tuple[ChatModel, List[MessageModel], bool]:
-        """
-        Forces the creation of a new chat session for today, bypassing any existing sessions.
-        Uses user's timezone to determine what "today" means.
-        """
-        new_chat, initial_question = self.create_chat(patient_uuid, commit=True)  # Commit the chat first
-        
-        # Create the first assistant message
-        first_message = MessageModel(
-            chat_uuid=new_chat.uuid,
-            sender="assistant",
-            message_type=initial_question["type"],
-            content=initial_question["text"],
-            structured_data={"options": initial_question["options"]} if initial_question.get("options") else None
-        )
-        
-        # Add the message to the database
-        self.db.add(first_message)
-        self.db.commit()
-        self.db.refresh(first_message)
-        
-        return new_chat, [first_message], True

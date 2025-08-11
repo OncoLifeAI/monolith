@@ -12,7 +12,6 @@ class GPT4oProvider(LLMProvider):
         if not api_key:
             print("OPENAI_API_KEY environment variable is not set!")
             raise ValueError("OPENAI_API_KEY environment variable is required")
-        print(f"OpenAI API key found: {api_key[:10]}...")
         self.client = OpenAI(api_key=api_key)
         self.model = "gpt-4o"
 

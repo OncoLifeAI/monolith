@@ -5,9 +5,17 @@ import numpy as np
 from pypdf import PdfReader
 from typing import List, Dict, Any
 
+# Force CPU-only inference by default (Fly machines are CPU by default)
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+
 # Lazy-load sentence-transformers and faiss to avoid loading them on every import
 sentence_transformers = None
 faiss = None
+
+
+def _vector_store_enabled() -> bool:
+    return os.getenv("VECTOR_RAG_ENABLED", "false").lower() in ("1", "true", "yes", "on")
+
 
 def _import_embedding_libraries():
     global sentence_transformers, faiss
@@ -18,10 +26,12 @@ def _import_embedding_libraries():
         import faiss as f
         faiss = f
 
+
 class ContextLoader:
     """
     Loads context from files and pre-computed vector stores.
     """
+
     def __init__(self, directory: str, model_name='all-MiniLM-L6-v2'):
         self.directory = directory
         self.model_name = model_name
@@ -30,6 +40,9 @@ class ContextLoader:
         self.model = None
         self.index = None
         self.documents = []
+        print(f"[CTX] Initializing ContextLoader with directory: {self.directory}")
+        print(f"[CTX] Expecting vector store at: {self.vector_store_path}")
+        print(f"[CTX] Expecting documents at: {self.documents_path}")
         self._load_vector_store()
 
     def _initialize_model(self):
@@ -39,78 +52,132 @@ class ContextLoader:
 
     def _load_vector_store(self):
         """Loads the pre-computed FAISS vector store from disk."""
+        if not _vector_store_enabled():
+            print("[CTX] VECTOR_RAG_ENABLED=false → Skipping FAISS/documents load.")
+            self.index = None
+            self.documents = []
+            return
         if os.path.exists(self.vector_store_path) and os.path.exists(self.documents_path):
-            print("Loading existing FAISS index and documents.")
+            print("[CTX] Loading existing FAISS index and documents.")
             _import_embedding_libraries()
             self.index = faiss.read_index(self.vector_store_path)
             with open(self.documents_path, 'r') as f:
                 self.documents = json.load(f)
+            print(f"[CTX] Loaded documents count: {len(self.documents)}")
         else:
-            print("Warning: Pre-built vector store not found. Symptom context will be disabled.")
-            print(f"Please run `python backend/scripts/build_vector_store.py` to generate it.")
+            print("[CTX] Warning: Pre-built vector store not found. Symptom context will be disabled.")
+            if not os.path.exists(self.vector_store_path):
+                print(f"[CTX] Missing: {self.vector_store_path}")
+            if not os.path.exists(self.documents_path):
+                print(f"[CTX] Missing: {self.documents_path}")
+            print("[CTX] Please run `python backend/scripts/build_vector_store.py` to generate it.")
             self.index = None
             self.documents = []
 
-    def retrieve_symptom_context_from_vector_store(self, symptoms: List[str], k: int = 5) -> str:
-        """
-        Retrieves the top-k relevant CTCAE criteria from the vector store based on symptoms.
-        """
-        if not self.index or not symptoms:
-            return ""
-
-        self._initialize_model()
-        query = ", ".join(symptoms)
-        query_embedding = self.model.encode([query])[0]
+    def _load_base_documents(self) -> str:
+        """Loads all base documents and returns them as a single string."""
+        print("[CTX] Loading base documents...")
         
-        # FAISS expects a 2D array for searching
-        query_embedding_np = np.array([query_embedding], dtype='float32')
-
-        distances, indices = self.index.search(query_embedding_np, k)
+        documents = []
         
-        relevant_docs = [self.documents[i] for i in indices[0]]
+        # Load text files
+        text_files = [
+            "oncolife_alerts_configuration.txt",
+            "oncolifebot_instructions.txt", 
+            "written_chatbot_docs.txt"
+        ]
         
-        if not relevant_docs:
-            return ""
-
-        formatted_context = "### Relevant CTCAE v5 Criteria (from knowledge base)\n"
-        formatted_context += "\n---\n".join(relevant_docs)
+        for filename in text_files:
+            file_path = os.path.join(self.directory, filename)
+            if os.path.exists(file_path):
+                try:
+                    content = self._load_txt(file_path)
+                    documents.append(f"=== {filename} ===\n{content}")
+                    print(f"[CTX] Loaded {filename} (chars={len(content)})")
+                except Exception as e:
+                    print(f"[CTX] Error loading {filename}: {e}")
+            else:
+                print(f"[CTX] Warning: {filename} not found")
         
-        print("\n==================== CTCAE Context Retrieved ====================")
-        print(formatted_context)
-        print("=================================================================\n")
+        # Load PDF file
+        pdf_file = "ukons_triage_toolkit_v3_final.pdf"
+        pdf_path = os.path.join(self.directory, pdf_file)
+        if os.path.exists(pdf_path):
+            try:
+                content = self._load_pdf(pdf_path)
+                documents.append(f"=== {pdf_file} ===\n{content}")
+                print(f"[CTX] Loaded {pdf_file} (chars={len(content)})")
+            except Exception as e:
+                print(f"[CTX] Error loading {pdf_file}: {e}")
+        else:
+            print(f"[CTX] Warning: {pdf_file} not found")
+        
+        # Combine all documents
+        combined = "\n\n".join(documents)
+        print(f"[CTX] Total base documents length: {len(combined)}")
+        return combined
 
-        return formatted_context
+    def _append_rag_results(self, base_prompt: str, symptoms: List[str]) -> str:
+        """Appends RAG results to the base prompt using Redis caching."""
+        if not symptoms:
+            print("[CTX] No symptoms provided, skipping RAG")
+            return base_prompt
+        
+        try:
+            # Import here to avoid circular imports
+            from .retrieval import cached_retrieve
+            
+            print(f"[CTX] Performing RAG for symptoms: {symptoms}")
+            
+            # Get CTCAE results (cached)
+            ctcae_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=10, k_questions=0)
+            ctcae_chunks = [h.get("text", "") for h in ctcae_results.get("ctcae", []) if h.get("text")]
+            
+            # Get questions results (cached)
+            questions_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=0, k_questions=12)
+            questions_chunks = [h.get("text", "") for h in questions_results.get("questions", []) if h.get("text")]
+            
+            # Build RAG section
+            rag_sections = []
+            
+            if ctcae_chunks:
+                ctcae_text = "\n---\n".join(ctcae_chunks[:6])
+                rag_sections.append(f"=== Relevant CTCAE Criteria for {', '.join(symptoms)} ===\n{ctcae_text}")
+            
+            if questions_chunks:
+                questions_text = "\n---\n".join(questions_chunks[:8])
+                rag_sections.append(f"=== Assessment Questions for {', '.join(symptoms)} ===\n{questions_text}")
+            
+            if rag_sections:
+                rag_content = "\n\n".join(rag_sections)
+                full_prompt = f"{base_prompt}\n\n=== RAG Results ===\n{rag_content}"
+                print(f"[CTX] RAG results appended, total length: {len(full_prompt)}")
+                return full_prompt
+            else:
+                print("[CTX] No RAG results found")
+                return base_prompt
+                
+        except Exception as e:
+            print(f"[CTX] Error during RAG: {e}")
+            return base_prompt
 
     def load_context(self, symptoms: List[str] = None) -> str:
         """
-        Loads general documents and retrieves symptom-specific context using the vector store.
+        Loads all context including base documents and RAG results.
+        This is the main method that returns the complete system prompt.
         """
-        full_context = []
-        for filename in os.listdir(self.directory):
-            if filename.endswith((".faiss", ".json", "system_prompt.txt")):
-                continue
-            
-            file_path = os.path.join(self.directory, filename)
-            content = ""
-            if filename.endswith(".pdf"):
-                content = self._load_pdf(file_path)
-            elif filename.endswith(".docx"):
-                content = self._load_docx(file_path)
-            elif filename.endswith(".txt"):
-                content = self._load_txt(file_path)
-            
-            if content:
-                full_context.append(content)
-
-        # Add symptom-specific context if symptoms are provided
-        if symptoms:
-            symptom_context = self.retrieve_symptom_context_from_vector_store(symptoms)
-            if symptom_context:
-                full_context.insert(0, symptom_context) # Prepend for importance
+        print(f"[CTX] Building complete system prompt for symptoms: {symptoms}")
         
-        return "\n\n---\n\n".join(full_context)
+        # Step 1: Load base documents
+        base_prompt = self._load_base_documents()
+        
+        # Step 2: Append RAG results (with Redis caching)
+        complete_prompt = self._append_rag_results(base_prompt, symptoms)
+        
+        print(f"[CTX] Complete system prompt built, total length: {len(complete_prompt)}")
+        return complete_prompt
 
-    # Keep the existing loader methods (_load_docx, _load_pdf, _load_txt, _load_json, load_system_prompt)
+    # Keep the existing loader methods (_load_docx, _load_pdf, _load_txt, _load_json)
     def _load_docx(self, file_path: str) -> str:
         """Loads text from a .docx file."""
         doc = docx.Document(file_path)
@@ -133,12 +200,3 @@ class ContextLoader:
         """Loads data from a .json file."""
         with open(file_path, 'r') as f:
             return json.load(f)
-
-    def load_system_prompt(self) -> str:
-        """
-        Loads the system prompt from 'system_prompt.txt'.
-        """
-        system_prompt_path = os.path.join(self.directory, "system_prompt.txt")
-        if os.path.exists(system_prompt_path):
-            return self._load_txt(system_prompt_path)
-        return ""

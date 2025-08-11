@@ -3,6 +3,7 @@ import { GlobalStyles, SessionTimeoutManager } from '@oncolife/ui-components';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { UserTypeProvider } from './contexts/UserTypeContext';
+import { useAuth } from './contexts/AuthContext';
 
 // Shared login from ui-components
 import LoginPage from './pages/LoginPage';
@@ -17,6 +18,12 @@ import { SummariesPage, SummariesDetailsPage } from './pages/SummariesPage';
 import NotesPage from './pages/NotesPage';
 import EducationPage from './pages/EducationPage';
 import ProfilePage from './pages/ProfilePage';
+
+function RootRedirect() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  return <Navigate to={isAuthenticated ? '/chat' : '/login'} />;
+}
 
 function App() {
   return (
@@ -39,7 +46,7 @@ function App() {
                 <Route path="/education" element={<EducationPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
-              <Route path="/" element={<Navigate to="/chat" />} />
+              <Route path="/" element={<RootRedirect />} />
             </Routes>
           </BrowserRouter>
         </UserProvider>

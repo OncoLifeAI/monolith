@@ -12,10 +12,19 @@ export const useWebSocket = (
   const retryCountRef = useRef(0);
   const maxRetries = 3;
 
-  const onMessageCallback = useCallback(onMessage, [onMessage]);
+  // Keep the latest onMessage in a ref so we don't recreate the socket on every re-render
+  const onMessageRef = useRef(onMessage);
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   const connectWebSocket = useCallback(() => {
     if (!chatUuid) return;
+
+    // Guard: do not create another socket if one already exists
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
 
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -55,7 +64,8 @@ export const useWebSocket = (
     wsRef.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        onMessageCallback(data);
+        // Always use the latest handler without forcing a reconnect
+        onMessageRef.current?.(data);
       } catch (e) {
         console.error('Failed to parse WS message', e);
       }
@@ -74,7 +84,7 @@ export const useWebSocket = (
         setConnectionError('Failed to connect to chat.');
       }
     };
-  }, [chatUuid, onMessageCallback]);
+  }, [chatUuid]);
 
   const sendMessage = useCallback((
     content: string,
@@ -96,7 +106,12 @@ export const useWebSocket = (
     connectWebSocket();
     return () => {
       if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onclose = null;
         wsRef.current.close();
+        wsRef.current = null;
       }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);

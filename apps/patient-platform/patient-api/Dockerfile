@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # ----- Copy application code -----
 COPY apps/patient-platform/patient-api/src ./src
+# Include model inputs (prompts, CTCAE docs/vector store) at /app/model_inputs
+COPY apps/patient-platform/patient-api/model_inputs ./model_inputs
 
 EXPOSE 8000
 

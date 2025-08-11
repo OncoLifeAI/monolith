@@ -11,10 +11,15 @@ if ! command -v fly >/dev/null 2>&1; then
   exit 1
 fi
 
-APP_NAME=${FLY_APP_NAME:-oncolife-patient-api}
+APP_NAME=${FLY_APP_NAME:-oncolife-patient-api-backend}
 
-if ! fly apps list | grep -q "^$APP_NAME\b"; then
+# Create only if it truly doesn't exist
+if fly apps show "$APP_NAME" >/dev/null 2>&1; then
+  echo "Using existing app: $APP_NAME"
+else
+  echo "Creating app: $APP_NAME"
   fly apps create "$APP_NAME"
 fi
 
-fly deploy --config fly.patient-api.toml --remote-only --build-only=false --now 
+# Deploy explicitly to the app to avoid name mismatches in TOML
+fly deploy --config fly.patient-api.toml --app "$APP_NAME" --remote-only --build-only=false --now 

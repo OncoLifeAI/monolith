@@ -86,6 +86,7 @@ class TodaySessionResponse(BaseModel):
     conversation_state: str
     messages: List[Message]
     is_new_session: bool
+    symptom_list: Optional[List[str]] = []  # Include symptom list for localStorage
 
     class Config:
         from_attributes = True

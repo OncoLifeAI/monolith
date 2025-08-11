@@ -82,6 +82,7 @@ async def logout():
     Client-side logout. The real action is the client deleting the token.
     This endpoint is a formality.
     """
+    logger.info("[AUTH] /logout called")
     return {"message": "Logout successful"}
 
 
@@ -97,6 +98,7 @@ async def signup_user(
     and patient_configurations tables.
     If a physician_email is provided, it links the patient to the physician.
     """
+    logger.info(f"[AUTH] /signup email={request.email} physician_email={getattr(request, 'physician_email', None)}")
     # Check if a non-deleted user with this email already exists in the local DB
     existing_patient = patient_db.query(PatientInfo).filter(
         PatientInfo.email_address == request.email,
@@ -104,6 +106,7 @@ async def signup_user(
     ).first()
 
     if existing_patient:
+        logger.warning(f"[AUTH] /signup conflict email={request.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"A user with email {request.email} already exists and is active."
@@ -112,6 +115,7 @@ async def signup_user(
     try:
         user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
         if not user_pool_id:
+            logger.error("[AUTH] /signup missing COGNITO_USER_POOL_ID")
             raise HTTPException(
                 status_code=500, detail="COGNITO_USER_POOL_ID not configured"
             )
@@ -131,6 +135,7 @@ async def signup_user(
             UserAttributes=user_attributes,
             ForceAliasCreation=False,
         )
+        logger.info(f"[AUTH] /signup created in Cognito email={request.email}")
 
         # Extract the UUID (sub) that Cognito automatically generates
         user_sub = None
@@ -140,12 +145,11 @@ async def signup_user(
                 break
         
         if not user_sub:
-            # This is a critical failure, should be investigated if it occurs
-            logger.error(f"Could not find UUID in Cognito response for {request.email}")
+            logger.error(f"[AUTH] /signup missing sub in Cognito response email={request.email}")
             raise HTTPException(status_code=500, detail="User created in Cognito, but failed to retrieve UUID.")
 
         logger.info(
-            f"Successfully created user in Cognito: {request.email}. User UUID (sub): {user_sub}"
+            f"[AUTH] /signup success email={request.email} uuid={user_sub}"
         )
 
         # Now, create the corresponding records in our own database
@@ -160,31 +164,35 @@ async def signup_user(
         patient_db.add(new_patient_info)
         patient_db.add(new_patient_config)
 
-        # Step 3: If physician_email is provided, find and associate the physician
+        # Step 3: Associate a physician for all new patients
+        # Prefer the physician by email if provided; otherwise use the default UUID
+        default_physician_uuid = 'bea3fce0-42f9-4a00-ae56-4e2591ca17c5'
+        associated_physician_uuid = None
+
         if request.physician_email:
             physician_profile = doctor_db.query(StaffProfiles).filter(
                 StaffProfiles.email_address == request.physician_email,
                 StaffProfiles.role == 'physician'
             ).first()
 
-            if not physician_profile:
-                # Decide on error handling: either fail signup or just log a warning.
-                # Failing is safer to ensure data integrity.
-                patient_db.rollback() # Rollback patient creation
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Physician with email {request.physician_email} not found."
+            if physician_profile:
+                associated_physician_uuid = physician_profile.staff_uuid
+            else:
+                logger.warning(
+                    f"[AUTH] /signup physician email not found '{request.physician_email}', falling back to default physician"
                 )
-            
-            new_association = PatientPhysicianAssociations(
-                patient_uuid=user_sub,
-                physician_uuid=physician_profile.staff_uuid
-            )
-            patient_db.add(new_association)
+
+        if not associated_physician_uuid:
+            associated_physician_uuid = default_physician_uuid
+
+        new_association = PatientPhysicianAssociations(
+            patient_uuid=user_sub,
+            physician_uuid=associated_physician_uuid
+        )
+        patient_db.add(new_association)
         
         patient_db.commit()
-        
-        logger.info(f"Successfully created database records for user {user_sub}")
+        logger.info(f"[AUTH] /signup DB records created uuid={user_sub}")
 
         return SignupResponse(
             message=f"User {request.email} created successfully. A temporary password has been sent to their email.",
@@ -195,19 +203,12 @@ async def signup_user(
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         error_message = e.response["Error"]["Message"]
-
-        if error_code == "UsernameExistsException":
-            raise HTTPException(
-                status_code=400, detail=f"User with email {request.email} already exists"
-            )
-        else:
-            logger.error(f"Cognito error: {error_code} - {error_message}")
-            raise HTTPException(
-                status_code=500, detail=f"AWS Cognito error: {error_message}"
-            )
-
+        logger.error(f"[AUTH] /signup Cognito error code={error_code} message='{error_message}' email={request.email}")
+        raise HTTPException(
+            status_code=500, detail=f"AWS Cognito error: {error_message}"
+        )
     except Exception as e:
-        logger.error(f"Unexpected error creating user: {str(e)}")
+        logger.error(f"[AUTH] /signup unexpected error email={request.email}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -217,13 +218,14 @@ async def validate_login(request: LoginRequest):
     Validate if a user's email and password is valid for login.
     If a temporary password is used, it returns a session token for the password change flow.
     """
+    logger.info(f"[AUTH] /login email={request.email}")
     try:
         user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
         client_id = os.getenv("COGNITO_CLIENT_ID")
         client_secret = os.getenv("COGNITO_CLIENT_SECRET")
 
         if not user_pool_id or not client_id:
-            logger.error("Cognito environment variables not configured.")
+            logger.error("[AUTH] /login missing Cognito envs")
             raise HTTPException(
                 status_code=500,
                 detail="COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID not configured",
@@ -245,10 +247,10 @@ async def validate_login(request: LoginRequest):
             AuthParameters=auth_parameters,
         )
 
-        logger.info(f"Cognito auth response for {request.email}: {auth_response}")
+        logger.info(f"[AUTH] /login Cognito response keys={list(auth_response.keys())}")
 
         if "AuthenticationResult" in auth_response:
-            logger.info(f"Successful login for: {request.email}")
+            logger.info(f"[AUTH] /login success email={request.email}")
             auth_result = auth_response["AuthenticationResult"]
             tokens = AuthTokens(
                 access_token=auth_result["AccessToken"],
@@ -266,9 +268,7 @@ async def validate_login(request: LoginRequest):
         elif "ChallengeName" in auth_response:
             challenge_name = auth_response["ChallengeName"]
             session = auth_response.get("Session")
-            logger.info(
-                f"Login for {request.email} requires challenge: {challenge_name}"
-            )
+            logger.info(f"[AUTH] /login challenge email={request.email} name={challenge_name}")
 
             if challenge_name == "NEW_PASSWORD_REQUIRED":
                 return LoginResponse(
@@ -285,30 +285,23 @@ async def validate_login(request: LoginRequest):
                     session=session,
                 )
         else:
-            logger.warning(f"Unexpected Cognito response for {request.email}: {auth_response}")
+            logger.warning(f"[AUTH] /login unexpected response email={request.email}")
             return LoginResponse(valid=False, message="Unexpected authentication response")
 
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
         error_message = e.response["Error"]["Message"]
-        logger.error(f"Cognito ClientError for {request.email}: Code={error_code}, Message='{error_message}'")
-
+        logger.error(f"[AUTH] /login Cognito error email={request.email} code={error_code} msg='{error_message}'")
         if error_code == "NotAuthorizedException":
-            logger.info(f"Invalid login attempt for: {request.email} (NotAuthorizedException)")
             return LoginResponse(valid=False, message="Invalid email or password")
         elif error_code == "UserNotFoundException":
-            logger.info(f"User not found: {request.email}")
             return LoginResponse(valid=False, message="User not found")
         else:
-            logger.error(
-                f"Unhandled Cognito error during login validation: {error_code} - {error_message}"
-            )
             raise HTTPException(
                 status_code=500, detail=f"AWS Cognito error: {error_message}"
             )
-
     except Exception as e:
-        logger.error(f"Unexpected server error during login validation for {request.email}: {str(e)}", exc_info=True)
+        logger.error(f"[AUTH] /login unexpected error email={request.email}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -317,12 +310,14 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
     """
     Complete the new password setup for a user who was created with a temporary password.
     """
+    logger.info(f"[AUTH] /complete-new-password email={request.email}")
     try:
         user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
         client_id = os.getenv("COGNITO_CLIENT_ID")
         client_secret = os.getenv("COGNITO_CLIENT_SECRET")
 
         if not user_pool_id or not client_id:
+            logger.error("[AUTH] /complete-new-password missing Cognito envs")
             raise HTTPException(
                 status_code=500,
                 detail="COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID not configured",
@@ -349,6 +344,7 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
         )
 
         if "AuthenticationResult" in response:
+            logger.info(f"[AUTH] /complete-new-password success email={request.email}")
             auth_result = response["AuthenticationResult"]
             tokens = AuthTokens(
                 access_token=auth_result["AccessToken"],
@@ -356,17 +352,12 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
                 id_token=auth_result["IdToken"],
                 token_type=auth_result["TokenType"],
             )
-            logger.info(
-                f"Successfully set new password and authenticated user: {request.email}"
-            )
             return CompleteNewPasswordResponse(
                 message="Password successfully changed and user authenticated.",
                 tokens=tokens,
             )
         else:
-            logger.error(
-                f"Unexpected response from Cognito for {request.email} while setting new password: {response}"
-            )
+            logger.error(f"[AUTH] /complete-new-password unexpected response email={request.email}")
             raise HTTPException(
                 status_code=400,
                 detail="Could not set new password. Unexpected response from authentication service.",
@@ -376,7 +367,7 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
         error_code = e.response["Error"]["Code"]
         error_message = e.response["Error"]["Message"]
         logger.error(
-            f"Cognito error setting new password for {request.email}: {error_code} - {error_message}"
+            f"[AUTH] /complete-new-password Cognito error email={request.email} code={error_code} msg='{error_message}'"
         )
         if error_code in [
             "NotAuthorizedException",
@@ -398,7 +389,7 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
 
     except Exception as e:
         logger.error(
-            f"Unexpected error setting new password for {request.email}: {str(e)}"
+            f"[AUTH] /complete-new-password unexpected error email={request.email}: {str(e)}"
         )
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -413,16 +404,18 @@ async def delete_patient(
     and then permanently deletes the user from the Cognito user pool.
     This is an irreversible action.
     """
+    logger.warning(f"[AUTH] /delete-patient start email={request.email}")
     # First, find the user by email to get their UUID
     patient_info = db.query(PatientInfo).filter(PatientInfo.email_address == request.email).first()
     if not patient_info:
+        logger.error(f"[AUTH] /delete-patient patient not found email={request.email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
             detail=f"Patient with email {request.email} not found"
         )
     
     user_id = patient_info.uuid
-    logger.warning(f"Initiating account deletion for user {user_id} (email: {request.email})")
+    logger.warning(f"[AUTH] /delete-patient deleting uuid={user_id} email={request.email}")
 
     # --- Step 1: Soft-delete all related data in the database ---
     try:
@@ -432,10 +425,10 @@ async def delete_patient(
         db.query(Conversations).filter(Conversations.patient_uuid == user_id).delete()
         db.query(PatientConfigurations).filter(PatientConfigurations.uuid == user_id).update({"is_deleted": True})
         db.query(PatientInfo).filter(PatientInfo.uuid == user_id).update({"is_deleted": True})
-        logger.info(f"Database records marked for deletion for user {user_id}")
+        logger.info(f"[AUTH] /delete-patient DB soft-deletes completed uuid={user_id}")
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to delete database records for user {user_id}. Error: {e}")
+        logger.error(f"[AUTH] /delete-patient DB cleanup failed uuid={user_id} error={e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not delete user data. Please try again.")
 
     # --- Step 2: Delete the user from Cognito ---
@@ -445,14 +438,14 @@ async def delete_patient(
             UserPoolId=os.getenv("COGNITO_USER_POOL_ID"),
             Username=request.email
         )
-        logger.info(f"Successfully deleted user {user_id} from Cognito.")
+        logger.info(f"[AUTH] /delete-patient deleted from Cognito uuid={user_id}")
     except ClientError as e:
         db.rollback()
-        logger.error(f"Failed to delete user {user_id} from Cognito. Error: {e.response['Error']['Message']}")
+        logger.error(f"[AUTH] /delete-patient Cognito delete failed uuid={user_id} error={e.response['Error']['Message']}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete user from authentication service.")
     
     # --- Step 3: Commit the transaction ---
     db.commit()
-    logger.warning(f"Account deletion complete for user {user_id} (email: {request.email})")
+    logger.warning(f"[AUTH] /delete-patient complete uuid={user_id} email={request.email}")
     
     return

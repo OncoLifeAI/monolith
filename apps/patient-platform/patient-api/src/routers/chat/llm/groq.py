@@ -9,7 +9,7 @@ class GroqProvider(LLMProvider):
     """
     def __init__(self):
         self.client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-        self.model = "llama-3.3-70b-versatile"
+        self.model = "openai/gpt-oss-120b"
 
     def query(self, system_prompt: str, user_prompt: str) -> Generator[str, None, None]:
         """

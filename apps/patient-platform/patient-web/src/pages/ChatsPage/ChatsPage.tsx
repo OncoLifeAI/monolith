@@ -4,6 +4,7 @@ import { MessageInput } from '../../components/chat/MessageInput';
 import { ThinkingBubble } from '../../components/chat/ThinkingBubble';
 import { CalendarModal } from '../../components/chat/CalendarModal';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { useSymptomList } from '../../hooks/useSymptomList';
 import { chatService } from '../../services/chatService';
 import { getTodayInUserTimezone } from '@oncolife/shared-utils';
 import type { ChatSession, Message } from '../../types/chat';
@@ -18,6 +19,14 @@ const ChatsPage: React.FC = () => {
   const [isThinking, setIsThinking] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Use the symptom list hook for localStorage management
+  const { 
+    symptomList, 
+    updateSymptomList, 
+    addSymptoms, 
+    resetSymptomList 
+  } = useSymptomList();
 
   const handleNewMessage = useCallback((wsMessage: any) => {
     console.log('Received WebSocket message:', wsMessage);
@@ -34,7 +43,7 @@ const ChatsPage: React.FC = () => {
         } else {
           const newMessage: Message = {
             id: wsMessage.message_id,
-            chat_uuid: chatSession!.chat_uuid,
+            chat_uuid: chatSession?.chat_uuid || '',
             sender: 'assistant',
             message_type: 'text',
             content: wsMessage.content,
@@ -56,12 +65,31 @@ const ChatsPage: React.FC = () => {
           setChatSession(prev => prev ? { ...prev, conversation_state: 'COMPLETED' } : null);
         }
         
+        // Check for new symptoms in the LLM response
+        if (wsMessage.content && typeof wsMessage.content === 'string') {
+          try {
+            // Try to parse the content as JSON to extract new_symptoms
+            const contentStr = wsMessage.content.trim();
+            if (contentStr.startsWith('{') && contentStr.endsWith('}')) {
+              const parsedContent = JSON.parse(contentStr);
+              if (parsedContent.new_symptoms && Array.isArray(parsedContent.new_symptoms)) {
+                console.log('New symptoms detected from LLM:', parsedContent.new_symptoms);
+                // Add new symptoms to localStorage
+                addSymptoms(parsedContent.new_symptoms);
+              }
+            }
+          } catch (error) {
+            // Content is not JSON, continue normally
+            console.log('Message content is not JSON, processing as normal text');
+          }
+        }
+        
         return [...prevMessages.filter(m => m.id !== -1 && m.id !== wsMessage.id), wsMessage];
       }
       console.log('No matching message type, returning previous messages');
       return prevMessages;
     });
-  }, [chatSession]);
+  }, [chatSession, addSymptoms]);
 
   const { isConnected, sendMessage, connectionError } = useWebSocket(
     chatSession?.chat_uuid || null,
@@ -90,6 +118,15 @@ const ChatsPage: React.FC = () => {
       // Set messages after session is set (guard against undefined)
       setMessages(Array.isArray(sessionData.messages) ? sessionData.messages : []);
       
+      // Update symptom list in localStorage based on backend response
+      if (sessionData.symptom_list && Array.isArray(sessionData.symptom_list)) {
+        console.log('Loading symptom list from backend:', sessionData.symptom_list);
+        updateSymptomList(sessionData.symptom_list);
+      } else {
+        console.log('No symptom list from backend, resetting to empty');
+        resetSymptomList();
+      }
+      
       // Stop loading once we have session data (don't wait for WebSocket)
       setLoading(false);
     } catch (error) {
@@ -107,9 +144,18 @@ const ChatsPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Reset symptom list in localStorage for new conversation
+      resetSymptomList();
+      
       const sessionData = await chatService.startNewSession();
       setChatSession(sessionData);
       setMessages(Array.isArray(sessionData.messages) ? sessionData.messages : []);
+      
+      // Ensure symptom list is empty for new conversation
+      if (sessionData.symptom_list && Array.isArray(sessionData.symptom_list)) {
+        updateSymptomList(sessionData.symptom_list);
+      }
     } catch (error) {
       setError('Failed to start a new chat session');
       console.error('Failed to start a new chat session:', error);
@@ -119,9 +165,10 @@ const ChatsPage: React.FC = () => {
   };
 
   const handleSendMessage = (content: string) => {
+    if (!chatSession) return;
     const userMessage: Message = {
       id: -1,
-      chat_uuid: chatSession!.chat_uuid,
+      chat_uuid: chatSession.chat_uuid,
       sender: 'user',
       message_type: 'text',
       content: content,
@@ -135,6 +182,7 @@ const ChatsPage: React.FC = () => {
   };
 
   const handleButtonClick = async (option: string) => {
+    if (!chatSession) return;
     // Handle special chemo date responses
     if (option === "I had it recently, but didn't record it") {
       setIsCalendarModalOpen(true);
@@ -169,7 +217,7 @@ const ChatsPage: React.FC = () => {
     // Regular message handling
     const userMessage: Message = {
       id: -1,
-      chat_uuid: chatSession!.chat_uuid,
+      chat_uuid: chatSession.chat_uuid,
       sender: 'user',
       message_type: 'button_response',
       content: option,
@@ -183,10 +231,22 @@ const ChatsPage: React.FC = () => {
   };
 
   const handleMultiSelectSubmit = (selections: string[]) => {
+    if (!chatSession) return;
+    
+    // Filter out "None" selection and store symptoms in localStorage
+    const validSelections = selections.filter(s => s.toLowerCase() !== 'none');
+    if (validSelections.length > 0) {
+      console.log('Storing selected symptoms:', validSelections);
+      updateSymptomList(validSelections);
+    } else {
+      console.log('No valid symptoms selected, resetting symptom list');
+      resetSymptomList();
+    }
+    
     const formattedSelections = selections.join(', ');
     const userMessage: Message = {
       id: -1,
-      chat_uuid: chatSession!.chat_uuid,
+      chat_uuid: chatSession.chat_uuid,
       sender: 'user',
       message_type: 'multi_select_response',
       content: formattedSelections,
@@ -222,10 +282,11 @@ const ChatsPage: React.FC = () => {
   };
 
   const handleFeelingSelect = (feeling: string) => {
+    if (!chatSession) return;
     // Optimistically add the user's feeling selection as a message
     const userMessage: Message = {
       id: -1,
-      chat_uuid: chatSession!.chat_uuid,
+      chat_uuid: chatSession.chat_uuid,
       sender: 'user',
       message_type: 'feeling_response',
       content: feeling,
@@ -234,7 +295,7 @@ const ChatsPage: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
 
     // Persist overall feeling to backend
-    fetch(`${API_CONFIG.BASE_URL}/chat/${chatSession!.chat_uuid}/feeling`, {
+    fetch(`${API_CONFIG.BASE_URL}/chat/${chatSession.chat_uuid}/feeling`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -251,6 +312,7 @@ const ChatsPage: React.FC = () => {
   };
 
   const handleCalendarDateSelect = async (selectedDate: Date) => {
+    if (!chatSession) return;
     try {
       // Log the selected chemo date
       await chatService.logChemoDate(selectedDate);
@@ -266,7 +328,7 @@ const ChatsPage: React.FC = () => {
       // Create a message showing the selected date
       const userMessage: Message = {
         id: -1,
-        chat_uuid: chatSession!.chat_uuid,
+        chat_uuid: chatSession.chat_uuid,
         sender: 'user',
         message_type: 'button_response',
         content: `Yes, I got chemotherapy on ${dateString}`,
@@ -284,7 +346,7 @@ const ChatsPage: React.FC = () => {
       // Still add the message even if logging fails
       const userMessage: Message = {
         id: -1,
-        chat_uuid: chatSession!.chat_uuid,
+        chat_uuid: chatSession.chat_uuid,
         sender: 'user',
         message_type: 'button_response',
         content: `Yes, I got chemotherapy on ${selectedDate.toLocaleDateString()}`,
@@ -346,12 +408,18 @@ const ChatsPage: React.FC = () => {
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <span>Chat with Ruby</span>
+        <div className="chat-title">Chat with Ruby</div>
         <button onClick={handleStartNewConversation} className="new-conversation-button">
           <span className="new-conversation-icon">+</span>
           New Conversation
         </button>
       </div>
+      {/* Debug: Show current symptom list (moved out of header to avoid overlap) */}
+      {symptomList.length > 0 && (
+        <div className="symptom-list-debug" style={{ margin: '8px auto', maxWidth: '90%' }}>
+          <small>Current Symptoms: {symptomList.join(', ')}</small>
+        </div>
+      )}
       
       {!isConnected && (
         connectionError ? (

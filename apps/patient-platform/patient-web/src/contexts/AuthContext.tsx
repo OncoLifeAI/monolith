@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useLogin, useCompleteNewPassword } from '../services/login';
 import type { CompleteNewPasswordResponse, LoginResponse } from '../services/login';
 import { SESSION_START_KEY } from '@oncolife/ui-components';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface User {
   email: string;
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isPasswordChangeRequired, setIsPasswordChangeRequired] = useState(false);
   const loginMutation = useLogin();
   const completeNewPasswordMutation = useCompleteNewPassword();
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!token;
 
@@ -64,10 +66,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (result.success) {
         setUser({email: email});
+        // Ensure token state is updated from localStorage set in useLogin onSuccess
+        const stored = localStorage.getItem('authToken');
+        if (stored) setToken(stored);
         sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
         if (result.data?.requiresPasswordChange) {
           setIsPasswordChangeRequired(true);
         }
+        // Refresh profile immediately for header/navigation
+        await queryClient.invalidateQueries({ queryKey: ['profile'] });
         return result;
       } else {
         // Include error code in thrown error for UI to parse
@@ -94,6 +101,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('authToken');
     sessionStorage.removeItem(SESSION_START_KEY);
+    setToken(null);
+    setUser(null);
+    queryClient.removeQueries({ queryKey: ['profile'] });
   };
 
   const value: AuthContextType = {
