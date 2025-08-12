@@ -1,7 +1,13 @@
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
-import { useFetchProfile } from '../restful/profile';
-import type { ProfileData } from '../pages/Patients/ProfilePage/types';
+// import { useFetchProfile } from '../services/profile'; // TODO: Create profile service
+
+export interface ProfileData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
 
 interface UserContextType {
   profile: ProfileData | null;
@@ -24,12 +30,20 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const { data: profile, isLoading, error } = useFetchProfile();
+  // Mock profile data that matches Navigation component expectations
+  const profile: ProfileData = {
+    first_name: 'Dr. John',
+    last_name: 'Smith',
+    email: 'dr.john.smith@clinic.com',
+    id: 'doctor-1'
+  };
+  const isLoading = false;
+  const error = null;
 
   const value: UserContextType = {
-    profile: profile && Object.keys(profile).length > 0 ? profile as ProfileData : null,
+    profile,
     isLoading,
-    error: error ? String(error) : null,
+    error,
   };
 
   return (
@@ -37,4 +51,4 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       {children}
     </UserContext.Provider>
   );
-}; 
+};

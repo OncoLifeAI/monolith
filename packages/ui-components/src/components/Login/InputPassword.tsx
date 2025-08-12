@@ -10,6 +10,7 @@ interface InputPasswordProps {
   onChange: (value: string) => void;
   autoComplete?: string;
   className?: string;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const InputPassword: React.FC<InputPasswordProps> = ({
@@ -18,7 +19,8 @@ const InputPassword: React.FC<InputPasswordProps> = ({
   value,
   onChange,
   autoComplete = 'current-password',
-  className
+  className,
+  onKeyDown
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -37,6 +39,7 @@ const InputPassword: React.FC<InputPasswordProps> = ({
           autoComplete={autoComplete}
           value={value}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
         />
         <EyeButton 
           type="button" 

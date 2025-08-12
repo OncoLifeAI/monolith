@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { X, User, Mail, Building, Stethoscope } from 'lucide-react';
 import styled from 'styled-components';
-import { theme } from '../../../../styles/theme';
+import { theme } from '@oncolife/ui-components';
 import { useAddStaff, type AddStaffRequest } from '../../../../restful/staff';
 
 const StyledDialog = styled(Dialog)`

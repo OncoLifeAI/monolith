@@ -21,22 +21,24 @@ export const useUserType = () => {
 
 interface UserTypeProviderProps {
   children: ReactNode;
+  userType?: UserType;
 }
 
-export const UserTypeProvider: React.FC<UserTypeProviderProps> = ({ children }) => {
-  const [isDoctor, setIsDoctor] = useState<boolean>(() => {
-    const stored = localStorage.getItem('userType');
-    return stored === 'doctor';
-  });
-
+export const UserTypeProvider: React.FC<UserTypeProviderProps> = ({ 
+  children, 
+  userType = 'doctor' // Default to doctor for doctor-web app
+}) => {
+  // For doctor-web app, always set as doctor
+  const [currentUserType, setCurrentUserType] = useState<UserType>(userType);
+  
   const setUserType = (type: UserType) => {
-    setIsDoctor(type === 'doctor');
+    setCurrentUserType(type);
     localStorage.setItem('userType', type);
   };
 
   const value: UserTypeContextType = {
-    isDoctor,
-    userType: isDoctor ? 'doctor' : 'patient',
+    isDoctor: currentUserType === 'doctor',
+    userType: currentUserType,
     setUserType,
   };
 

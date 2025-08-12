@@ -6,7 +6,7 @@ import {
   Content, 
   PageHeader, 
   PageTitle
-} from '../../../styles/GlobalStyles';
+} from '@oncolife/ui-components';
 import { 
   TextField, 
   Button,
@@ -26,12 +26,76 @@ import {
 } from '@mui/material';
 import { Search, Plus, Edit } from 'lucide-react';
 import styled from 'styled-components';
-import { theme } from '../../../styles/theme';
-import { useStaff, type Staff } from '../../../restful/staff';
-import AddStaffModal from './components/AddStaffModal';
-import EditStaffModal from './components/EditStaffModal';
+// import AddStaffModal from './components/AddStaffModal';
+// import EditStaffModal from './components/EditStaffModal';
 
-// Styled components
+// Temporary placeholder modals
+const AddStaffModal = ({ open, onClose }: { open: boolean; onClose: () => void }) => 
+  open ? (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '8px',
+        minWidth: '400px'
+      }}>
+        <h3>Add Staff Modal</h3>
+        <p>Add staff functionality will be implemented here</p>
+        <button onClick={onClose}>Close</button>
+      </div>
+    </div>
+  ) : null;
+
+const EditStaffModal = ({ open, onClose, staff }: { open: boolean; onClose: () => void; staff: Staff | null }) => 
+  open ? (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '2rem',
+        borderRadius: '8px',
+        minWidth: '400px'
+      }}>
+        <h3>Edit Staff Modal</h3>
+        <p>Edit staff functionality for {staff?.firstName} {staff?.lastName} will be implemented here</p>
+        <button onClick={onClose}>Close</button>
+      </div>
+    </div>
+  ) : null;
+
+// Theme
+const theme = {
+  colors: {
+    primary: '#007bff',
+    gray: {
+      300: '#d1d5db',
+      400: '#9ca3af',
+      600: '#6b7280',
+      700: '#374151'
+    }
+  }
+};
 const StaffContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -95,6 +159,47 @@ const StyledTable = styled(Table)`
   }
 `;
 
+// Mock Staff type
+interface Staff {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  clinicName?: string;
+}
+
+// Mock data
+const mockStaffData = {
+  data: [
+    {
+      id: '1',
+      firstName: 'John',
+      lastName: 'Smith',
+      email: 'john.smith@clinic.com',
+      role: 'Doctor',
+      clinicName: 'Main Clinic'
+    },
+    {
+      id: '2',
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      email: 'sarah.johnson@clinic.com',
+      role: 'Nurse',
+      clinicName: 'Main Clinic'
+    },
+    {
+      id: '3',
+      firstName: 'Michael',
+      lastName: 'Brown',
+      email: 'michael.brown@clinic.com',
+      role: 'Administrator',
+      clinicName: 'East Branch'
+    }
+  ],
+  total: 3
+};
+
 const StaffPage: React.FC = () => {
   const [page, setPage] = useState(0); // TablePagination uses 0-based indexing
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -103,7 +208,10 @@ const StaffPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   
-  const { data, isLoading, error } = useStaff(page + 1, search, rowsPerPage); // Convert to 1-based for API
+  // Mock API response
+  const data = mockStaffData;
+  const isLoading = false;
+  const error = null;
   
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);

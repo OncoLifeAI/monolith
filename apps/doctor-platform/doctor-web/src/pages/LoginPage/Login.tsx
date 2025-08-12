@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Form } from 'react-bootstrap';
-import { Mail } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { Card, Title, Subtitle, InputPassword } from '@oncolife/ui-components';
 import {
   StyledForm,
@@ -28,10 +27,12 @@ const Login: React.FC = () => {
     try {
       const result = await authenticateLogin(email, password);
       if (result?.data?.requiresPasswordChange) {
+        // Doctor portal might have different password reset flow
         navigate('/reset-password');
       }
       if (result?.data?.user_status === 'CONFIRMED') {
-        navigate('/chat');
+        // Navigate to doctor dashboard instead of chat
+        navigate('/dashboard');
       }
     } catch (err: any) {
       let message = 'Login failed';
@@ -60,26 +61,26 @@ const Login: React.FC = () => {
 
   return (
     <Card>
-      <Title>Welcome Back to OncoLife AI <span role="img" aria-label="wave">👋🏻</span></Title>
-      <Subtitle>Please enter your details to sign in to your account</Subtitle>
+      <Title>Welcome to OncoLife AI Doctor Portal <span role="img" aria-label="stethoscope">🩺</span></Title>
+      <Subtitle>Please enter your credentials to access the doctor dashboard</Subtitle>
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <StyledForm onSubmit={handleSubmit}>
-        <Form.Group className="mb-3" controlId="formEmail">
-          <Form.Label>Email</Form.Label>
+        <div className="mb-3">
+          <label>Email</label>
           <StyledInputGroup>
             <InputIcon>
               <Mail size={20} />
             </InputIcon>
             <StyledInput
               type="email"
-              placeholder="Your Email"
+              placeholder="Doctor Email"
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
             />
           </StyledInputGroup>
-        </Form.Group>
+        </div>
         <InputPassword
           value={password}
           onChange={setPassword}
@@ -90,10 +91,10 @@ const Login: React.FC = () => {
         />
         <ForgotPassword href="#">Forgot Password?</ForgotPassword>
         <StyledButton variant="primary" type="submit">
-          Sign In
+          Sign In to Doctor Portal
         </StyledButton>
       </StyledForm>
-      <Divider>Or continue with</Divider>
+      <Divider>Secure Doctor Access</Divider>
       <SocialRow>
         <SocialIcon src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google" />
       </SocialRow>
@@ -101,4 +102,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login; 
+export default Login;

@@ -5,10 +5,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { UserTypeProvider } from './contexts/UserTypeContext';
 
-// Shared login from ui-components
-import LoginPage from '@oncolife/ui-components/pages/Login/LoginPage';
-
 // Doctor-specific pages
+import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import PatientsPage from './pages/Patients/PatientsPage';
@@ -20,8 +18,8 @@ function App() {
       <AuthProvider>
         <UserProvider>
           <GlobalStyles />
-          <SessionTimeoutManager />
           <BrowserRouter>
+            <SessionTimeoutManager />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route element={<Layout />}>

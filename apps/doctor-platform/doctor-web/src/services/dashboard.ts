@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../utils/apiClient';
-import { API_CONFIG } from '../config/api';
+// import { apiClient } from '../utils/apiClient';
+// import { API_CONFIG } from '../config/api';
 
 export interface PatientSummary {
   id: string;

@@ -6,7 +6,7 @@ import {
   Content, 
   PageHeader, 
   PageTitle
-} from '../../../styles/GlobalStyles';
+} from '@oncolife/ui-components';
 import { 
   TextField, 
   Select, 
@@ -19,8 +19,8 @@ import {
 } from '@mui/material';
 import { Search, Calendar, User, FileText } from 'lucide-react';
 import styled from 'styled-components';
-import { theme } from '../../../styles/theme';
-import { usePatientSummaries, type PatientSummary } from '../../../restful/dashboard';
+import { theme } from '@oncolife/ui-components';
+import { usePatientSummaries, type PatientSummary } from '../../services/dashboard';
 
 // Styled components
 const DashboardContainer = styled.div`

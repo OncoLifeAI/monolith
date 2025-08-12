@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../utils/apiClient';
-import { API_CONFIG } from '../config/api';
+// import { apiClient } from '../utils/apiClient';
+// import { API_CONFIG } from '../config/api';
 
 export interface Patient {
   id: string;

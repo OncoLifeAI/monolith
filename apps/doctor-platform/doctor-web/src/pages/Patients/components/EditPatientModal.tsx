@@ -16,8 +16,8 @@ import {
 } from '@mui/material';
 import { X, User, Mail, Calendar, Phone, Shield, Stethoscope, Building, Globe, Heart, Users } from 'lucide-react';
 import styled from 'styled-components';
-import { theme } from '../../../../styles/theme';
-import { useUpdatePatient, type Patient } from '../../../../restful/patients';
+import { theme } from '@oncolife/ui-components';
+import { useUpdatePatient, type Patient } from '../../../services/patients';
 
 const StyledDialog = styled(Dialog)`
   .MuiDialog-paper {

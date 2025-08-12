@@ -4,7 +4,7 @@ import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, Che
 import logo from '../../assets/logo.png';
 import { useNavigate } from 'react-router-dom';
 import { SESSION_START_KEY } from '../SessionTimeout/SessionTimeoutManager';
-import { useUser } from '../../contexts/UserContext';
+// import { useUser } from '../../contexts/UserContext'; // Each app provides its own UserContext
 import { useUserType } from '../../contexts/UserTypeContext';
 // import { useLogout } from '../../restful/login';
 
@@ -205,17 +205,25 @@ interface MenuItem {
   href: string;
 }
 
+interface ProfileData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 interface NavigationProps {
   userType: 'patient' | 'doctor';
+  profile?: ProfileData | null;
 }
 
 interface UserProfileProps {
   isExpanded: boolean;
   onClick?: () => void;
+  profile?: ProfileData | null;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ isExpanded, onClick }) => {
-  const { profile, isLoading } = useUser();
+const UserProfile: React.FC<UserProfileProps> = ({ isExpanded, onClick, profile }) => {
   let displayName = 'User';
   let initials = 'U';
   if (profile) {
@@ -230,7 +238,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ isExpanded, onClick }) => {
       {isExpanded && (
         <UserInfo>
           <UserHello>Hello</UserHello>
-          <UserName>{isLoading ? 'Loading...' : displayName}</UserName>
+          <UserName>{displayName}</UserName>
         </UserInfo>
       )}
     </UserProfileContainer>
@@ -270,7 +278,8 @@ const SidebarContent: React.FC<{
   onToggleExpand: () => void;
   onProfileClick: () => void;
   userType: 'patient' | 'doctor';
-}> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand, onProfileClick, userType }) => {
+  profile?: ProfileData | null;
+}> = ({ isExpanded, onMenuClick, onLogout, onToggleExpand, onProfileClick, userType, profile }) => {
   
   // Define menu items based on user type
   const menuItems: MenuItem[] = userType === 'patient' 
@@ -305,6 +314,7 @@ const SidebarContent: React.FC<{
       <UserProfile 
         isExpanded={isExpanded}
         onClick={onProfileClick}
+        profile={profile}
       />
       <MenuSection>
         {isExpanded && <MenuTitle>MENU</MenuTitle>}
@@ -326,7 +336,7 @@ const SidebarContent: React.FC<{
   );
 };
 
-const Navigation: React.FC<NavigationProps> = ({ userType }) => {
+const Navigation: React.FC<NavigationProps> = ({ userType, profile }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const navigate = useNavigate();
 
@@ -357,6 +367,7 @@ const Navigation: React.FC<NavigationProps> = ({ userType }) => {
             onToggleExpand={() => setIsExpanded((prev) => !prev)}
             onProfileClick={handleProfileClick}
             userType={userType}
+            profile={profile}
           />
         </Sidebar>
       </div>

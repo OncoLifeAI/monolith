@@ -46,7 +46,7 @@ function App() {
                 <Route path="/education" element={<EducationPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
               </Route>
-              <Route path="/" element={<RootRedirect />} />
+              <Route path="/" element={<Navigate to="/login" />} />
             </Routes>
           </BrowserRouter>
         </UserProvider>

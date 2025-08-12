@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { useLogin, useCompleteNewPassword } from '../restful/login';
-import type { CompleteNewPasswordResponse, LoginResponse } from '../restful/login';
-import { SESSION_START_KEY } from '../components/SessionTimeoutManager';
+import { useLogin, useCompleteNewPassword } from '../services/login';
+import type { CompleteNewPasswordResponse, LoginResponse } from '../services/login';
+import { SESSION_START_KEY } from '@oncolife/ui-components';
 
 interface User {
   email: string;

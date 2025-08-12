@@ -6,7 +6,7 @@ import {
   Content, 
   PageHeader, 
   PageTitle
-} from '../../../styles/GlobalStyles';
+} from '@oncolife/ui-components';
 import { 
   TextField, 
   Button,
@@ -26,8 +26,8 @@ import {
 } from '@mui/material';
 import { Search, Plus, Edit } from 'lucide-react';
 import styled from 'styled-components';
-import { theme } from '../../../styles/theme';
-import { usePatients, type Patient } from '../../../restful/patients';
+import { theme } from '@oncolife/ui-components';
+import { usePatients, type Patient } from '../../services/patients';
 import AddPatientModal from './components/AddPatientModal';
 import EditPatientModal from './components/EditPatientModal';
 
