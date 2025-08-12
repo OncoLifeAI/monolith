@@ -97,6 +97,8 @@ async def signup_user(
     and patient_configurations tables.
     If a physician_email is provided, it links the patient to the physician.
     """
+    logger.info(f"Starting signup process for email: {request.email}")
+    
     # Check if a non-deleted user with this email already exists in the local DB
     existing_patient = patient_db.query(PatientInfo).filter(
         PatientInfo.email_address == request.email,
@@ -104,6 +106,7 @@ async def signup_user(
     ).first()
 
     if existing_patient:
+        logger.warning(f"Signup attempt for existing active user: {request.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"A user with email {request.email} already exists and is active."
@@ -112,6 +115,7 @@ async def signup_user(
     try:
         user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
         if not user_pool_id:
+            logger.error("COGNITO_USER_POOL_ID not configured")
             raise HTTPException(
                 status_code=500, detail="COGNITO_USER_POOL_ID not configured"
             )
@@ -125,6 +129,7 @@ async def signup_user(
             {"Name": "family_name", "Value": request.last_name},
         ]
 
+        logger.info(f"Creating user in Cognito for: {request.email}")
         response = cognito_client.admin_create_user(
             UserPoolId=user_pool_id,
             Username=request.email,
@@ -149,6 +154,7 @@ async def signup_user(
         )
 
         # Now, create the corresponding records in our own database
+        logger.info(f"Creating database records for user: {user_sub}")
         new_patient_info = PatientInfo(
             uuid=user_sub,
             email_address=request.email,
@@ -162,6 +168,7 @@ async def signup_user(
 
         # Step 3: If physician_email is provided, find and associate the physician
         if request.physician_email:
+            logger.info(f"Looking up physician: {request.physician_email} for patient: {user_sub}")
             physician_profile = doctor_db.query(StaffProfiles).filter(
                 StaffProfiles.email_address == request.physician_email,
                 StaffProfiles.role == 'physician'
@@ -170,12 +177,14 @@ async def signup_user(
             if not physician_profile:
                 # Decide on error handling: either fail signup or just log a warning.
                 # Failing is safer to ensure data integrity.
+                logger.error(f"Physician not found: {request.physician_email} during signup for {request.email}")
                 patient_db.rollback() # Rollback patient creation
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Physician with email {request.physician_email} not found."
                 )
             
+            logger.info(f"Creating physician association: patient {user_sub} -> physician {physician_profile.staff_uuid}")
             new_association = PatientPhysicianAssociations(
                 patient_uuid=user_sub,
                 physician_uuid=physician_profile.staff_uuid
@@ -184,7 +193,7 @@ async def signup_user(
         
         patient_db.commit()
         
-        logger.info(f"Successfully created database records for user {user_sub}")
+        logger.info(f"Successfully completed signup process for user {user_sub}")
 
         return SignupResponse(
             message=f"User {request.email} created successfully. A temporary password has been sent to their email.",
@@ -197,19 +206,19 @@ async def signup_user(
         error_message = e.response["Error"]["Message"]
 
         if error_code == "UsernameExistsException":
+            logger.warning(f"Cognito user already exists: {request.email}")
             raise HTTPException(
                 status_code=400, detail=f"User with email {request.email} already exists"
             )
         else:
-            logger.error(f"Cognito error: {error_code} - {error_message}")
+            logger.error(f"Cognito error during signup for {request.email}: {error_code} - {error_message}")
             raise HTTPException(
                 status_code=500, detail=f"AWS Cognito error: {error_message}"
             )
 
     except Exception as e:
-        logger.error(f"Unexpected error creating user: {str(e)}")
+        logger.error(f"Unexpected error during signup for {request.email}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @router.post("/login", response_model=LoginResponse)
 async def validate_login(request: LoginRequest):

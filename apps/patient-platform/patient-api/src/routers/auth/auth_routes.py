@@ -23,6 +23,7 @@ import hmac
 import hashlib
 import base64
 from pydantic import BaseModel
+from uuid import UUID
 
 # Use absolute imports from the 'backend' directory
 from routers.auth.models import (
@@ -402,52 +403,76 @@ async def delete_patient(
     db: Session = Depends(get_patient_db)
 ):
     """
-    Deletes all data for the specified user (by email) from the application database
-    and then permanently deletes the user from the Cognito user pool.
+    Deletes all data for the specified user from the application database.
+    Can delete by email or UUID. Optionally skips AWS Cognito deletion.
     This is an irreversible action.
     """
-    logger.warning(f"[AUTH] /delete-patient start email={request.email}")
-    # First, find the user by email to get their UUID
-    patient_info = db.query(PatientInfo).filter(PatientInfo.email_address == request.email).first()
+    # Validate that either email or UUID is provided
+    if not request.email and not request.uuid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either email or uuid must be provided"
+        )
+    
+    # Find the user by email or UUID
+    patient_info = None
+    if request.uuid:
+        try:
+            patient_uuid = UUID(request.uuid)
+            patient_info = db.query(PatientInfo).filter(PatientInfo.uuid == patient_uuid).first()
+            logger.warning(f"[AUTH] /delete-patient start uuid={request.uuid}")
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid UUID format"
+            )
+    else:
+        patient_info = db.query(PatientInfo).filter(PatientInfo.email_address == request.email).first()
+        logger.warning(f"[AUTH] /delete-patient start email={request.email}")
+    
     if not patient_info:
-        logger.error(f"[AUTH] /delete-patient patient not found email={request.email}")
+        identifier = request.uuid or request.email
+        logger.error(f"[AUTH] /delete-patient patient not found identifier={identifier}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Patient with email {request.email} not found"
+            detail=f"Patient not found with identifier: {identifier}"
         )
     
     user_id = patient_info.uuid
-    logger.warning(f"[AUTH] /delete-patient deleting uuid={user_id} email={request.email}")
+    user_email = patient_info.email_address
+    logger.warning(f"[AUTH] /delete-patient deleting uuid={user_id} email={user_email}")
 
     # --- Step 1: Soft-delete all related data in the database ---
     try:
+        # Soft delete all patient-related records
         db.query(PatientDiaryEntries).filter(PatientDiaryEntries.patient_uuid == user_id).update({"is_deleted": True})
         db.query(PatientPhysicianAssociations).filter(PatientPhysicianAssociations.patient_uuid == user_id).update({"is_deleted": True})
-        db.query(PatientChemoDates).filter(PatientChemoDates.patient_uuid == user_id).delete()
-        db.query(Conversations).filter(Conversations.patient_uuid == user_id).delete()
         db.query(PatientConfigurations).filter(PatientConfigurations.uuid == user_id).update({"is_deleted": True})
         db.query(PatientInfo).filter(PatientInfo.uuid == user_id).update({"is_deleted": True})
-        logger.info(f"[AUTH] /delete-patient DB soft-deletes completed uuid={user_id}")
+        logger.info(f"Database records processed for user {user_id}")
     except Exception as e:
         db.rollback()
         logger.error(f"[AUTH] /delete-patient DB cleanup failed uuid={user_id} error={e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not delete user data. Please try again.")
 
-    # --- Step 2: Delete the user from Cognito ---
-    try:
-        cognito_client = get_cognito_client()
-        cognito_client.admin_delete_user(
-            UserPoolId=os.getenv("COGNITO_USER_POOL_ID"),
-            Username=request.email
-        )
-        logger.info(f"[AUTH] /delete-patient deleted from Cognito uuid={user_id}")
-    except ClientError as e:
-        db.rollback()
-        logger.error(f"[AUTH] /delete-patient Cognito delete failed uuid={user_id} error={e.response['Error']['Message']}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete user from authentication service.")
+    # --- Step 2: Delete the user from Cognito (unless skipped) ---
+    if not request.skip_aws:
+        try:
+            cognito_client = get_cognito_client()
+            cognito_client.admin_delete_user(
+                UserPoolId=os.getenv("COGNITO_USER_POOL_ID"),
+                Username=user_email
+            )
+            logger.info(f"[AUTH] /delete-patient deleted from Cognito uuid={user_id}")
+        except ClientError as e:
+            db.rollback()
+            logger.error(f"[AUTH] /delete-patient Cognito delete failed uuid={user_id} error={e.response['Error']['Message']}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete user from authentication service.")
+    else:
+        logger.info(f"[AUTH] /delete-patient skipped AWS Cognito deletion uuid={user_id}")
     
     # --- Step 3: Commit the transaction ---
     db.commit()
-    logger.warning(f"[AUTH] /delete-patient complete uuid={user_id} email={request.email}")
+    logger.warning(f"[AUTH] /delete-patient complete uuid={user_id} email={user_email}")
     
     return

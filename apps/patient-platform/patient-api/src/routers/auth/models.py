@@ -39,4 +39,6 @@ class CompleteNewPasswordResponse(BaseModel):
     tokens: AuthTokens
 
 class DeletePatientRequest(BaseModel):
-    email: EmailStr 
+    email: Optional[EmailStr] = None
+    uuid: Optional[str] = None
+    skip_aws: Optional[bool] = False 
