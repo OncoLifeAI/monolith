@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignUp } from '../services/signup';
 
@@ -9,9 +9,23 @@ const SignUpPage = () => {
     lastName: ''
   });
   const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   
   const signUpMutation = useSignUp();
   const navigate = useNavigate();
+
+  // Countdown effect
+  useEffect(() => {
+    if (isSuccess && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (isSuccess && countdown === 0) {
+      navigate('/login');
+    }
+  }, [isSuccess, countdown, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -26,13 +40,34 @@ const SignUpPage = () => {
 
     signUpMutation.mutate(formData, {
       onSuccess: () => {
-        navigate('/login');
+        setIsSuccess(true);
       },
       onError: (error) => {
         setError(error.message || 'Registration failed. Please try again.');
       }
     });
   };
+
+  // Show success message with countdown
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div className="bg-green-50 border border-green-200 rounded-md p-6">
+            <div className="text-green-800">
+              <h2 className="text-2xl font-bold mb-4">Account Created Successfully!</h2>
+              <p className="text-lg mb-4">
+                Please check your email for your temporary password.
+              </p>
+              <p className="text-sm text-green-600">
+                Redirecting to login in {countdown}...
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
