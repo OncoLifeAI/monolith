@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { MessageBubble } from '../../components/chat/MessageBubble';
 import { MessageInput } from '../../components/chat/MessageInput';
 import { ThinkingBubble } from '../../components/chat/ThinkingBubble';
@@ -12,6 +14,8 @@ import '../../components/chat/Chat.css';
 import { API_CONFIG } from '../../config/api';
 
 const ChatsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,20 +121,15 @@ const ChatsPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await chatService.getTodaySession();
-      // Gateway now returns the backend payload directly under response.data
       const sessionData = response.data;
       
       if (!sessionData) {
         throw new Error('No session data returned');
       }
       
-      // Set chat session immediately to start WebSocket connection
       setChatSession(sessionData);
-      
-      // Set messages after session is set (guard against undefined)
       setMessages(Array.isArray(sessionData.messages) ? sessionData.messages : []);
       
-      // Update symptom list in localStorage based on backend response
       if (sessionData.symptom_list && Array.isArray(sessionData.symptom_list)) {
         console.log('Loading symptom list from backend:', sessionData.symptom_list);
         updateSymptomList(sessionData.symptom_list);
@@ -139,9 +138,16 @@ const ChatsPage: React.FC = () => {
         resetSymptomList();
       }
       
-      // Stop loading once we have session data (don't wait for WebSocket)
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
+      // If auth failed (expired/invalid), force logout and redirect to login silently
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        setLoading(true); // keep loading screen while redirecting
+        try { logout(); } catch {}
+        navigate('/login', { replace: true });
+        return;
+      }
       setError('Failed to load chat session');
       console.error('Failed to load chat session:', error);
       setLoading(false);
@@ -499,5 +505,5 @@ const ChatsPage: React.FC = () => {
     </div>
   );
 };
-
-export default ChatsPage; 
+  
+export default ChatsPage;

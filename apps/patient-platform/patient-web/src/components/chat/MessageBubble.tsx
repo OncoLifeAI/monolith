@@ -39,17 +39,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
   
   const renderMessageContent = () => {
-    console.log('[MessageBubble DEBUG] Rendering message:', {
-      message_type: message.message_type,
-      content: message.content,
-      structured_data: message.structured_data,
-      shouldShowInteractiveElements
-    });
-    
     switch (message.message_type) {
       case 'single-select':
       case 'button_prompt': // Backwards compatibility
-        console.log('[MessageBubble DEBUG] Single-select case, options:', message.structured_data?.options);
         return (
           <>
             <div className="message-content">{message.content}</div>
@@ -58,10 +50,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {message.structured_data.options.map((option, index) => (
                   <button
                     key={index}
-                    onClick={() => {
-                      console.log('[MessageBubble DEBUG] Button clicked:', option);
-                      onButtonClick?.(option);
-                    }}
+                    onClick={() => onButtonClick?.(option)}
                     className="option-button"
                   >
                     {option}
@@ -93,18 +82,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </>
         );
       case 'feeling_response':
-        // For feeling_response, render the image instead of text
+      case 'feeling-response': {
+        // For feeling responses (underscore or hyphen), render the face image only
         const imageSrc = feelingImages[message.content];
         if (imageSrc) {
           return (
             <div className="feeling-response-display">
               <img src={imageSrc} alt={message.content} className="feeling-response-image" />
-              <span className="feeling-response-text">{message.content}</span>
             </div>
           );
         }
         // Fallback to text if image not found
         return <div className="message-content">{message.content}</div>;
+      }
       case 'text':
       case 'button_response':
       case 'multi_select_response':
