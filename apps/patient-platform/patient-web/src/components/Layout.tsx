@@ -8,7 +8,7 @@ const Layout: React.FC = () => {
   
   return (
   <div style={{ display: 'flex' }}>
-    <Navigation userType="patient" />
+    <Navigation userType="patient" profile={profile || undefined} />
     <PageContentWrapper style={{ flex: 1, minHeight: '100vh', background: '#f9fafb' }}>
       <Outlet />
     </PageContentWrapper>

@@ -45,7 +45,7 @@ class Chat(BaseModel):
     medication_list: Optional[List[Dict[str, Any]]] = []
     longer_summary: Optional[str] = None
     bulleted_summary: Optional[str] = None
-    overall_feeling: Optional[Literal['Very Happy', 'Happy', 'Neutral', 'Bad', 'Very Bad']] = None
+    overall_feeling: Optional[Literal['Very Happy', 'Happy', 'Neutral', 'Sad', 'Very Sad']] = None
     
     class Config:
         from_attributes = True

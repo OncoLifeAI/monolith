@@ -34,7 +34,7 @@ router = APIRouter(prefix="/chat", tags=["Chat Conversation"])
 logger = logging.getLogger(__name__)
 
 class OverallFeelingUpdate(BaseModel):
-    feeling: Literal['Very Happy', 'Happy', 'Neutral', 'Bad', 'Very Bad']
+    feeling: Literal['Very Happy', 'Happy', 'Neutral', 'Sad', 'Very Sad']
 
 def convert_message_for_frontend(message: Message) -> Message:
     """

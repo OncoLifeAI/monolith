@@ -63,7 +63,7 @@ long_q_ids:
 
 "Have you vomited in the last 24 hours? If so, how many times?"
 "Are you experiencing abdominal pain or cramping?"
-"Any weight loss?"
+"Are you experiencing any weight loss?"
 "Any fever > 100.4°F?"
 "What color is your urine?"
 "Is the amount of urine in the last 12 hours a lot less than your usual amount?"

@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
-import { useFetchProfile } from '../services/profile';
+import { useFetchProfile, getCachedProfile } from '../services/profile';
 
 interface UserContextType {
   profile: any;
@@ -24,12 +24,13 @@ interface UserProviderProps {
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const isAuthenticated = !!localStorage.getItem('authToken');
+  const cached = getCachedProfile();
   const { data: profile, isLoading, error } = useFetchProfile({
     enabled: isAuthenticated
   });
 
   const value: UserContextType = {
-    profile: profile && Object.keys(profile).length > 0 ? profile : null,
+    profile: (profile && Object.keys(profile).length > 0 ? profile : null) || cached || null,
     isLoading: isAuthenticated ? isLoading : false,
     error: error ? String(error) : null,
   };

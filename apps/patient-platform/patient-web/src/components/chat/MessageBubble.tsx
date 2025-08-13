@@ -5,6 +5,13 @@ import { FeelingSelector } from './FeelingSelector';
 import { formatTimeForDisplay } from '@oncolife/shared-utils';
 import './FeelingSelector.css';
 
+// Import feeling images
+import VeryHappy from '../../assets/VeryHappy.png';
+import Happy from '../../assets/Happy.png';
+import Neutral from '../../assets/Neutral.png';
+import Sad from '../../assets/Sad.png';
+import VerySad from '../../assets/VerySad.png';
+
 interface MessageBubbleProps {
   message: Message;
   onButtonClick?: (option: string) => void;
@@ -22,10 +29,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const isUser = message.sender === 'user';
   
+  // Create feeling image mapping
+  const feelingImages: { [key: string]: string } = {
+    'Very Happy': VeryHappy,
+    'Happy': Happy,
+    'Neutral': Neutral,
+    'Sad': Sad,
+    'Very Sad': VerySad,
+  };
+  
   const renderMessageContent = () => {
+    console.log('[MessageBubble DEBUG] Rendering message:', {
+      message_type: message.message_type,
+      content: message.content,
+      structured_data: message.structured_data,
+      shouldShowInteractiveElements
+    });
+    
     switch (message.message_type) {
       case 'single-select':
       case 'button_prompt': // Backwards compatibility
+        console.log('[MessageBubble DEBUG] Single-select case, options:', message.structured_data?.options);
         return (
           <>
             <div className="message-content">{message.content}</div>
@@ -34,7 +58,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {message.structured_data.options.map((option, index) => (
                   <button
                     key={index}
-                    onClick={() => onButtonClick?.(option)}
+                    onClick={() => {
+                      console.log('[MessageBubble DEBUG] Button clicked:', option);
+                      onButtonClick?.(option);
+                    }}
                     className="option-button"
                   >
                     {option}
@@ -65,27 +92,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             )}
           </>
         );
-      case 'text':
-      case 'button_response':
-      case 'multi_select_response':
       case 'feeling_response':
-      default:
         // For feeling_response, render the image instead of text
-        if (message.message_type === 'feeling_response') {
-          const feelingImages: { [key: string]: string } = {
-            'Very Happy': '/src/assets/VeryHappy.png',
-            'Happy': '/src/assets/Happy.png',
-            'Neutral': '/src/assets/Neutral.png',
-            'Sad': '/src/assets/Sad.png',
-            'Very Sad': '/src/assets/VerySad.png',
-          };
-          const imageSrc = feelingImages[message.content];
+        const imageSrc = feelingImages[message.content];
+        if (imageSrc) {
           return (
-            <div className="feeling-response-image">
-              <img src={imageSrc} alt={message.content} style={{ width: '60px', height: '60px' }}/>
+            <div className="feeling-response-display">
+              <img src={imageSrc} alt={message.content} className="feeling-response-image" />
+              <span className="feeling-response-text">{message.content}</span>
             </div>
           );
         }
+        // Fallback to text if image not found
+        return <div className="message-content">{message.content}</div>;
+      case 'text':
+      case 'button_response':
+      case 'multi_select_response':
+      default:
         const isHtml = /<\/?[a-z][\s\S]*>/i.test(message.content);
         return isHtml ? (
           <div

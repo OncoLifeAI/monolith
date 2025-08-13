@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users, Menu, X, ChevronDown } from 'lucide-react';
+import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users, Menu, X, ChevronDown, BookOpen } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SESSION_START_KEY } from '../SessionTimeout/SessionTimeoutManager';
@@ -49,7 +49,7 @@ const Logo = styled.img`
 const LogoText = styled.span`
   font-size: 1.3rem;
   font-weight: 600;
-  color: #2563eb;
+  color: #3b82f6; /* lighter blue than #2563eb */
   margin-left: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
@@ -87,7 +87,7 @@ const AvatarInitials = styled.div`
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7aa5ff 0%, #8f79d1 100%); /* slightly lighter */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -540,7 +540,7 @@ const SidebarContent: React.FC<{
         { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
         { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
         { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
-        { id: '4', label: 'Education', icon: <Grid3X3 size={20} />, href: '/education' },
+        { id: '4', label: 'Education', icon: <BookOpen size={20} />, href: '/education' },
       ]
     : [
         { id: '1', label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
@@ -606,7 +606,7 @@ const MobileNavigation: React.FC<{
         { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
         { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
         { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
-        { id: '4', label: 'Education', icon: <Grid3X3 size={20} />, href: '/education' },
+        { id: '4', label: 'Education', icon: <BookOpen size={20} />, href: '/education' },
       ]
     : [
         { id: '1', label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },

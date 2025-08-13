@@ -8,6 +8,7 @@ const notesRoutes = require('./notes-endpoint');
 const profileRoutes = require('./profile-endpoint');
 const chatRoutes = require('./chat-routes');
 const patientRoutes = require('./patient-endpoints');
+const chemoRoutes = require('./chemo-endpoint');
 
 router.get('/', (req, res) => {
   res.json({
@@ -26,5 +27,6 @@ router.use('/', notesRoutes);
 router.use('/', profileRoutes);
 router.use('/chat', chatRoutes);
 router.use('/', patientRoutes);
+router.use('/', chemoRoutes);
 
 module.exports = router;

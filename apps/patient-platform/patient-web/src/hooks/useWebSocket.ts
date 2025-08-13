@@ -90,15 +90,22 @@ export const useWebSocket = (
     content: string,
     message_type: 'text' | 'button_response' | 'multi_select_response' | 'feeling_response'
   ) => {
+    console.log('[WebSocket DEBUG] Attempting to send message:', { content, message_type });
+    console.log('[WebSocket DEBUG] WebSocket state:', wsRef.current?.readyState);
+    
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       const payload = {
         type: 'user_message',
         message_type,
         content,
       };
+      console.log('[WebSocket DEBUG] Sending payload:', payload);
       wsRef.current.send(JSON.stringify(payload));
+      console.log('[WebSocket DEBUG] Message sent successfully');
+      return true;
     } else {
-      console.error('Cannot send message, WebSocket is not open.');
+      console.error('Cannot send message, WebSocket is not open. State:', wsRef.current?.readyState);
+      return false;
     }
   }, []);
 

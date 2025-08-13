@@ -30,8 +30,17 @@ const ChatsPage: React.FC = () => {
 
   const handleNewMessage = useCallback((wsMessage: any) => {
     console.log('Received WebSocket message:', wsMessage);
+    console.log('[DEBUG] Raw WebSocket message type:', wsMessage.type);
+    console.log('[DEBUG] Raw WebSocket message data:', {
+      id: wsMessage.id,
+      message_type: wsMessage.message_type,
+      content: wsMessage.content,
+      structured_data: wsMessage.structured_data
+    });
 
     setMessages(prevMessages => {
+      console.log('[DEBUG] Processing WebSocket message, current messages count:', prevMessages.length);
+      
       if (wsMessage.type === 'message_chunk') {
         console.log('Processing message chunk:', wsMessage);
         setIsThinking(false);
@@ -39,6 +48,7 @@ const ChatsPage: React.FC = () => {
         if (messageIndex !== -1) {
           const updatedMessages = [...prevMessages];
           updatedMessages[messageIndex].content += wsMessage.content;
+          console.log('[DEBUG] Updated existing message at index:', messageIndex);
           return updatedMessages;
         } else {
           const newMessage: Message = {
@@ -49,6 +59,7 @@ const ChatsPage: React.FC = () => {
             content: wsMessage.content,
             created_at: new Date().toISOString(),
           };
+          console.log('[DEBUG] Created new message from chunk:', newMessage);
           return [...prevMessages, newMessage];
         }
       } else if (wsMessage.type === 'message_end') {
@@ -84,6 +95,7 @@ const ChatsPage: React.FC = () => {
           }
         }
         
+        console.log('[DEBUG] Returning updated messages, removing temp message with id -1');
         return [...prevMessages.filter(m => m.id !== -1 && m.id !== wsMessage.id), wsMessage];
       }
       console.log('No matching message type, returning previous messages');
@@ -183,34 +195,47 @@ const ChatsPage: React.FC = () => {
 
   const handleButtonClick = async (option: string) => {
     if (!chatSession) return;
+    
+    console.log('[CHEMO DEBUG] Button clicked:', option);
+    console.log('[CHEMO DEBUG] Current messages:', messages);
+    
     // Handle special chemo date responses
     if (option === "I had it recently, but didn't record it") {
       setIsCalendarModalOpen(true);
       return;
     }
 
-    if (option === "Yes" && messages.length > 0) {
-      // Check if this is the first question about chemotherapy
-      const lastMessage = messages[messages.length - 1];
-      console.log('[CHEMO DEBUG] Last message content:', lastMessage.content);
-      console.log('[CHEMO DEBUG] Checking if contains "chemotherapy today":', lastMessage.content.toLowerCase().includes('chemotherapy today'));
-      console.log('[CHEMO DEBUG] Checking if contains "did you get chemotherapy":', lastMessage.content.toLowerCase().includes('did you get chemotherapy'));
+    if (option === "Yes") {
+      console.log('[CHEMO DEBUG] Yes button clicked, checking for chemotherapy question...');
       
-      if (lastMessage.content.toLowerCase().includes('did you get chemotherapy')) {
-        try {
-          console.log('[CHEMO DEBUG] Attempting to log chemotherapy date for today');
-          // Get today's date in user's timezone
-          const todayInUserTz = getTodayInUserTimezone();
-          console.log('[CHEMO DEBUG] Today in user timezone:', todayInUserTz.toISOString().split('T')[0]);
-          
-          const chemoResult = await chatService.logChemoDate(todayInUserTz);
-          console.log('[CHEMO DEBUG] Successfully logged chemotherapy date for today:', chemoResult);
-        } catch (error) {
-          console.error('[CHEMO DEBUG] Failed to log chemotherapy date:', error);
-          // Don't throw the error, just log it and continue with the chat
-        }
+      // Check if this is the first question about chemotherapy by looking at the assistant's message
+      // Find the most recent assistant message that asks about chemotherapy
+      const assistantMessage = messages
+        .filter(msg => msg.sender === 'assistant')
+        .reverse()
+        .find(msg => msg.content.toLowerCase().includes('did you get chemotherapy'));
+      
+      console.log('[CHEMO DEBUG] Found assistant message:', assistantMessage);
+      
+      if (assistantMessage) {
+        // Fire-and-forget chemo date logging - don't block the conversation
+        (async () => {
+          try {
+            console.log('[CHEMO DEBUG] Attempting to log chemotherapy date for today');
+            // Get today's date in user's timezone
+            const todayInUserTz = getTodayInUserTimezone();
+            console.log('[CHEMO DEBUG] Today in user timezone:', todayInUserTz.toISOString().split('T')[0]);
+            
+            const chemoResult = await chatService.logChemoDate(todayInUserTz);
+            console.log('[CHEMO DEBUG] Successfully logged chemotherapy date for today:', chemoResult);
+          } catch (error) {
+            console.error('[CHEMO DEBUG] Failed to log chemotherapy date:', error);
+            // Don't block the conversation - just log the error
+          }
+        })();
       } else {
-        console.log('[CHEMO DEBUG] Condition not met - not logging chemo date');
+        console.log('[CHEMO DEBUG] No chemotherapy question found in recent messages');
+        console.log('[CHEMO DEBUG] All assistant messages:', messages.filter(msg => msg.sender === 'assistant').map(msg => msg.content));
       }
     }
 
@@ -223,10 +248,18 @@ const ChatsPage: React.FC = () => {
       content: option,
       created_at: new Date().toISOString(),
     };
+    
+    console.log('[DEBUG] Adding user message to UI:', userMessage);
     setMessages(prev => [...prev, userMessage]);
+    
     if (isConnected) {
+      console.log('[DEBUG] WebSocket connected, sending message:', option);
+      console.log('[DEBUG] Setting isThinking to true');
       setIsThinking(true);
-      sendMessage(option, 'button_response');
+      const sendResult = sendMessage(option, 'button_response');
+      console.log('[DEBUG] sendMessage result:', sendResult);
+    } else {
+      console.log('[DEBUG] WebSocket not connected, cannot send message');
     }
   };
 
@@ -363,18 +396,33 @@ const ChatsPage: React.FC = () => {
   };
 
   const shouldShowInteractiveElements = (message: Message, index: number): boolean => {
+    console.log('[DEBUG] shouldShowInteractiveElements called with:', {
+      index,
+      message_sender: message.sender,
+      message_type: message.message_type,
+      content: message.content,
+      structured_data: message.structured_data,
+      total_messages: messages.length
+    });
+    
     // Only show interactive elements if this is an assistant message
-    if (message.sender !== 'assistant') return false;
+    if (message.sender !== 'assistant') {
+      console.log('[DEBUG] Not assistant message, returning false');
+      return false;
+    }
     
     // Check if there's a user message after this assistant message
     for (let i = index + 1; i < messages.length; i++) {
       if (messages[i].sender === 'user') {
+        console.log('[DEBUG] User already responded at index', i, 'not showing buttons');
         return false; // User has already responded, don't show buttons
       }
     }
     
     // This is the latest assistant message with no user response
-    return true;
+    const shouldShow = true;
+    console.log('[DEBUG] Should show interactive elements:', shouldShow, 'for message at index', index);
+    return shouldShow;
   };
 
   

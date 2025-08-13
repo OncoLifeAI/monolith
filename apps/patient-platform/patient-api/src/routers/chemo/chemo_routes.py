@@ -7,10 +7,10 @@ from db.database import get_patient_db
 from routers.auth.dependencies import get_current_user, TokenData
 from . import services, models
 
-router = APIRouter()
+router = APIRouter(prefix="/chemo", tags=["Chemotherapy"])
 logger = logging.getLogger(__name__)
 
-@router.post("/chemo/log", response_model=models.LogChemoDateResponse, tags=["chemo"])
+@router.post("/log", response_model=models.LogChemoDateResponse, tags=["chemo"])
 def log_chemo_date(
     request: models.LogChemoDateRequest,
     db: Session = Depends(get_patient_db),
