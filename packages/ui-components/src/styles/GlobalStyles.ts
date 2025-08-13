@@ -83,8 +83,19 @@ export const GlobalStyles = createGlobalStyle`
 export const Background = styled.div`
   min-height: 100vh;
   width: 100%;
-  background: url('/src/assets/background.png') no-repeat center center fixed;
-  background-size: cover;
+  /* Code-generated, performant background (no external image) */
+  background-image:
+    /* subtle grid */
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.25) 0 1px, rgba(255,255,255,0) 1px 24px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.25) 0 1px, rgba(255,255,255,0) 1px 24px),
+    /* stronger blue radial glows */
+    radial-gradient(900px 700px at 75% 18%, rgba(59,130,246,0.32) 0%, rgba(59,130,246,0.00) 60%),
+    radial-gradient(720px 540px at 20% 80%, rgba(79,70,229,0.24) 0%, rgba(79,70,229,0.00) 60%),
+    radial-gradient(600px 480px at 50% 95%, rgba(14,165,233,0.20) 0%, rgba(14,165,233,0.00) 60%),
+    /* slightly darker base vertical wash */
+    linear-gradient(180deg, #e6f0ff 0%, #e1efff 30%, #ddeeff 60%, #f5f9ff 100%);
+  background-attachment: fixed, fixed, fixed, fixed, fixed, fixed;
+  background-size: auto, auto, cover, cover, cover, cover;
   padding: 10px 20px;
 `;
 

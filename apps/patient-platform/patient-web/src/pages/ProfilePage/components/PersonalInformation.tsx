@@ -42,6 +42,9 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
     onFieldChange(field, e.target.value);
   };
 
+  const canEdit = (field: keyof ProfileFormData) =>
+    isEditing && (field === 'phone_number' || field === 'chemotherapy_day' || field === 'reminder_time');
+
   return (
     <div>
       <SectionTitle>Personal Information</SectionTitle>
@@ -52,8 +55,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="text"
             value={formData.first_name || ''}
             onChange={handleInputChange('first_name')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('first_name')}
+            isEditing={canEdit('first_name')}
           />
         </InputGroup>
         <InputGroup>
@@ -62,8 +65,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="text"
             value={formData.last_name || ''}
             onChange={handleInputChange('last_name')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('last_name')}
+            isEditing={canEdit('last_name')}
           />
         </InputGroup>
         <InputGroup>
@@ -72,8 +75,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="email"
             value={formData.email_address || ''}
             onChange={handleInputChange('email_address')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('email_address')}
+            isEditing={canEdit('email_address')}
           />
         </InputGroup>
         <InputGroup>
@@ -82,8 +85,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="tel"
             value={formData.phone_number || ''}
             onChange={handleInputChange('phone_number')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('phone_number')}
+            isEditing={canEdit('phone_number')}
           />
         </InputGroup>
         <InputGroup>
@@ -92,8 +95,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="text"
             value={formData.date_of_birth || ''}
             onChange={handleInputChange('date_of_birth')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('date_of_birth')}
+            isEditing={canEdit('date_of_birth')}
           />
         </InputGroup>
         <InputGroup>
@@ -102,18 +105,18 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="text"
             value={formData.chemotherapy_day || ''}
             onChange={handleInputChange('chemotherapy_day')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('chemotherapy_day')}
+            isEditing={canEdit('chemotherapy_day')}
           />
         </InputGroup>
         <InputGroup>
           <InputLabel>Reminder Time</InputLabel>
           <InputField
-            type="text"
+            type="time"
             value={formData.reminder_time || ''}
             onChange={handleInputChange('reminder_time')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('reminder_time')}
+            isEditing={canEdit('reminder_time')}
           />
         </InputGroup>
         <InputGroup>
@@ -122,8 +125,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="text"
             value={formData.doctor_name || ''}
             onChange={handleInputChange('doctor_name')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('doctor_name')}
+            isEditing={canEdit('doctor_name')}
           />
         </InputGroup>
         <InputGroup>
@@ -132,8 +135,8 @@ const PersonalInformation: React.FC<PersonalInformationProps> = ({
             type="text"
             value={formData.clinic_name || ''}
             onChange={handleInputChange('clinic_name')}
-            disabled={!isEditing}
-            isEditing={isEditing}
+            disabled={!canEdit('clinic_name')}
+            isEditing={canEdit('clinic_name')}
           />
         </InputGroup>
       </GridContainer>

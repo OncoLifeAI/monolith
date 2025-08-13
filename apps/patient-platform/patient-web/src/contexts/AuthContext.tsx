@@ -4,6 +4,7 @@ import { useLogin, useCompleteNewPassword } from '../services/login';
 import type { CompleteNewPasswordResponse, LoginResponse } from '../services/login';
 import { SESSION_START_KEY } from '@oncolife/ui-components';
 import { useQueryClient } from '@tanstack/react-query';
+import { fetchProfile } from '../services/profile';
 
 interface User {
   email: string;
@@ -53,12 +54,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (storedToken) {
         // TODO: Verify token with backend
         setToken(storedToken);
+        // Prefetch profile so navigation has data immediately on first render
+        try {
+          await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: fetchProfile });
+        } catch {}
       }
       setIsLoading(false);
     };
 
     initializeAuth();
-  }, []);
+  }, [queryClient]);
 
   const authenticateLogin = async (email: string, password: string) => {
     try {
@@ -73,8 +78,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (result.data?.requiresPasswordChange) {
           setIsPasswordChangeRequired(true);
         }
-        // Refresh profile immediately for header/navigation
+        // Refresh and prefetch profile immediately so the sidebar shows name/initials
         await queryClient.invalidateQueries({ queryKey: ['profile'] });
+        try {
+          await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: fetchProfile });
+        } catch {}
         return result;
       } else {
         // Include error code in thrown error for UI to parse
