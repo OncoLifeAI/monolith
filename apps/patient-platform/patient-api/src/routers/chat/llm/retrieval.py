@@ -49,8 +49,22 @@ def _oa_client():
 def _cache_client():
     global _cache
     if _cache is None and REDIS_URL and Redis is not None:
-        logger.info(f"[RAG][CACHE] Connecting Redis")
-        _cache = Redis.from_url(REDIS_URL)
+        try:
+            logger.info(f"[RAG][CACHE] Attempting Redis connection to: {REDIS_URL}")
+            _cache = Redis.from_url(REDIS_URL)
+            # Test the connection
+            _cache.ping()
+            logger.info(f"[RAG][CACHE] Redis connected successfully")
+        except Exception as e:
+            logger.error(f"[RAG][CACHE] Redis connection failed: {e}")
+            _cache = None
+    elif _cache is None:
+        if not REDIS_URL:
+            logger.warning(f"[RAG][CACHE] REDIS_URL environment variable not set - Redis caching disabled")
+        elif Redis is None:
+            logger.warning(f"[RAG][CACHE] Redis library not available - Redis caching disabled")
+        else:
+            logger.warning(f"[RAG][CACHE] Redis caching disabled for unknown reason")
     return _cache
 
 

@@ -1,7 +1,7 @@
 import os
 import json
 import uuid
-from typing import Dict, Any, List, Tuple, Generator, AsyncGenerator
+from typing import Dict, Any, List, Tuple, AsyncGenerator
 from uuid import UUID
 from sqlalchemy.orm import Session
 from datetime import datetime, time
@@ -19,7 +19,7 @@ from .llm.cerebras import CerebrasProvider
 from .llm.retrieval import retrieve_for_symptoms, cached_retrieve
 from db.patient_models import Conversations as ChatModel, Messages as MessageModel
 
-LLM_PROVIDER = "gpt4o"  # Options: "gpt4o", "groq", "cerebras"
+LLM_PROVIDER = "groq"  # Options: "gpt4o", "groq", "cerebras"
 
 def get_llm_provider():
     """Factory function to get the configured LLM provider."""
@@ -205,48 +205,6 @@ class ConversationService:
         print(f"KB_RAG: Received response from {LLM_PROVIDER.upper()}: '{full_response[:100]}...'")
         return full_response if full_response else "I'm not sure what to ask next. Can you tell me more?"
 
-    def _query_knowledge_base_stream_with_rag(self, chat: ChatModel, context: Dict[str, Any]) -> Generator[str, None, None]:
-        """
-        Streaming version of knowledge base query with complete context.
-        """
-        print(f"KB_RAG_STREAM: Streaming {LLM_PROVIDER.upper()} with complete context...")
-        
-        # 1. Load complete system prompt (base documents + RAG results)
-        model_inputs_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'model_inputs')
-        context_loader = ContextLoader(model_inputs_path)
-        
-        # Get patient symptoms for RAG
-        patient_symptoms = context.get('patient_state', {}).get('current_symptoms', [])
-        
-        # Load complete context (base documents + RAG results)
-        system_prompt = context_loader.load_context(patient_symptoms)
-        
-        print(f"Loaded complete context for symptoms: {patient_symptoms}")
-
-        # 2. Construct the user prompt for the LLM
-        user_prompt_parts = [
-            "### Conversation Context ###",
-            f"Current Symptoms: {context.get('patient_state', {}).get('current_symptoms', [])}",
-            f"Chat History (most recent messages): {json.dumps(context.get('history', []), indent=2)}",
-            f"\n### User's Latest Message ###",
-            f"User: \"{context.get('latest_input', '')}\"",
-            "\n### Instructions ###",
-            "Follow the conversation workflow defined in your system instructions. Remember to respond with valid JSON only.",
-            "IMPORTANT: If you detect new symptoms in the user's message, include them in the 'new_symptoms' field of your JSON response."
-        ]
-        user_prompt = "\n".join(user_prompt_parts)
-
-        # 3. Call the LLM provider
-        llm_provider = get_llm_provider()
-        response_generator = llm_provider.query(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt
-        )
-
-        # 4. Yield chunks directly from the generator
-        for chunk in response_generator:
-            yield chunk
-
     def _extract_json_from_response(self, text: str) -> Dict[str, Any]:
         """
         Extracts JSON from the LLM response, handling various formats.
@@ -353,16 +311,11 @@ class ConversationService:
 
         print(f"📝 Context prepared: patient_state={context.get('patient_state')} history_len={len(history_for_llm)}")
 
-        # 4. Stream the LLM response and build the full JSON string
+        # 4. Get LLM response (non-streaming)
         try:
             print("🤖 Starting LLM processing...")
-            llm_response_generator = self._query_knowledge_base_stream_with_rag(chat, context)
-            full_response_text = ""
-            for chunk_content in llm_response_generator:
-                full_response_text += chunk_content
-                print(f"📦 LLM chunk: {chunk_content}")
-
-            print(f"📄 Full LLM response: {full_response_text}")
+            llm_response_text = self._query_knowledge_base_with_rag(chat, context)
+            print(f"📄 Full LLM response: {llm_response_text}")
         except Exception as e:
             print(f"❌ LLM processing error: {e}")
             # Yield a fallback error message
@@ -377,10 +330,10 @@ class ConversationService:
             return
             
         # 5. Parse the complete JSON response
-        llm_json = self._extract_json_from_response(full_response_text)
+        llm_json = self._extract_json_from_response(llm_response_text)
 
         if not llm_json:
-            print(f"ERROR: Could not parse JSON from LLM response: {full_response_text}")
+            print(f"ERROR: Could not parse JSON from LLM response: {llm_response_text}")
             # Yield a fallback error message
             yield Message(
                 id=-1,

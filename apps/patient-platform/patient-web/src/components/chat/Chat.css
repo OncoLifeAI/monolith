@@ -163,6 +163,7 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   background: white;
+  user-select: none; /* Prevent text selection */
 }
 
 .multi-select-item.selected {
@@ -172,6 +173,20 @@ body {
 
 .multi-select-item input[type="checkbox"] {
   margin-right: 12px;
+  cursor: pointer;
+  /* Ensure checkbox is properly sized and clickable */
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Ensure the label spans the full width and height */
+.multi-select-item label {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 .multi-select-submit {

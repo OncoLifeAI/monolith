@@ -33,18 +33,19 @@ export const MultiSelectMessage: React.FC<MultiSelectMessageProps> = ({
   return (
     <div className="multi-select-options">
       {message.structured_data?.options?.map((option, index) => (
-        <div
+        <label
           key={index}
           className={`multi-select-item ${selectedOptions.includes(option) ? 'selected' : ''}`}
-          onClick={() => toggleOption(option)}
+          htmlFor={`checkbox-${index}`}
         >
           <input
+            id={`checkbox-${index}`}
             type="checkbox"
             checked={selectedOptions.includes(option)}
             onChange={() => toggleOption(option)}
           />
           <span>{option}</span>
-        </div>
+        </label>
       ))}
       <button
         className="multi-select-submit"
