@@ -15,9 +15,21 @@ const Card = styled.div`
   display: flex;
   flex-direction: column;
 
+  @media (max-width: 767px) {
+    padding: 1.25rem;
+    border-radius: 10px;
+  }
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
   }
 `;
 
@@ -27,6 +39,11 @@ const DateHeader = styled.h4`
   color: #2C3E50;
   margin: 0 0 1rem 0;
   line-height: 1.3;
+  
+  @media (max-width: 767px) {
+    font-size: 1.05rem;
+    margin-bottom: 0.75rem;
+  }
 `;
 
 const SummaryContent = styled.div`
@@ -35,6 +52,11 @@ const SummaryContent = styled.div`
   border-radius: 8px;
   margin-bottom: 1rem;
   flex: 1;
+  
+  @media (max-width: 767px) {
+    padding: 0.875rem;
+    margin-bottom: 0.875rem;
+  }
 `;
 
 const BulletList = styled.ul`
@@ -50,6 +72,12 @@ const BulletItem = styled.li`
   color: #495057;
   font-size: 0.9rem;
   line-height: 1.4;
+
+  @media (max-width: 767px) {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 0.625rem;
+  }
 
   &:before {
     content: "";
@@ -74,9 +102,22 @@ const ViewDetailsButton = styled(Button)`
   padding: 0.5rem 1rem;
   transition: all 0.2s ease;
   
+  @media (max-width: 767px) {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    border-radius: 6px;
+  }
+  
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
   }
 `;
 

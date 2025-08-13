@@ -91,10 +91,26 @@ export const Background = styled.div`
 export const WrapperStyle = styled.div`
   border: 5px solid white;
   border-radius: 30px;
-  height: calc(100vh - 20px);
+  min-height: calc(100vh - 20px);
+  max-height: calc(100vh - 20px);
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    border-radius: 20px;
+    border-width: 3px;
+    min-height: calc(100vh - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  @media (max-width: 480px) {
+    border-radius: 15px;
+    border-width: 2px;
+    min-height: calc(100vh - 12px);
+    max-height: calc(100vh - 12px);
+  }
 `;
 
 export const Container = styled.div`
@@ -114,6 +130,12 @@ export const Header = styled.div`
   background-color: #FFFFFF;
   border-bottom: 1px solid #E0E0E0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 4rem; /* Height of mobile navigation */
+    z-index: 10;
+  }
 `;
 
 export const Title = styled.h1`
@@ -122,6 +144,17 @@ export const Title = styled.h1`
   color: #2C3E50;
   margin: 0;
   letter-spacing: -0.5px;
+  text-align: center;
+  line-height: 1.2;
+
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.75rem;
+    letter-spacing: -0.25px;
+  }
 `;
 
 export const Content = styled.div`
@@ -143,6 +176,15 @@ export const PageHeader = styled.div`
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #E9ECEF;
+  
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 4rem; /* Height of mobile navigation */
+    z-index: 10;
+    background-color: #f9fafb;
+    padding-top: 1rem;
+    margin-top: -1rem;
+  }
 `;
 
 export const PageTitle = styled.h2`
@@ -166,14 +208,30 @@ interface CardProps {
 
 export const Card = styled.div<CardProps>`
   background: rgba(255, 255, 255, 0.85);
-  border-radius: 24px;
+  border-radius: 1.5rem;
   box-shadow: 0 4px 32px rgba(0,0,0,0.07);
-  padding: 1.5rem;
-  max-width: ${(props) => props.width || '490px'};
+  padding: 2rem;
+  max-width: ${(props) => props.width === '100%' ? '720px' : (props.width || '490px')};
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin: 1rem;
+
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    margin: 0.75rem;
+    max-width: calc(100% - 1.5rem);
+  }
+
+  @media (max-width: 480px) {
+    padding: 1.25rem;
+    border-radius: 1rem;
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  }
 `;
 
 export const Subtitle = styled.p`
@@ -181,4 +239,10 @@ export const Subtitle = styled.p`
   color: #666;
   margin-bottom: 1.5rem;
   text-align: center;
+  line-height: 1.4;
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+  }
 `;

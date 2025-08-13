@@ -9,6 +9,9 @@ import {
   ProfileName,
   ProfileEmail,
   EditProfileButton,
+  DesktopProfileLayout,
+  MobileProfileTop,
+  MobileProfileActions,
 } from '../ProfilePage.styles';
 import type { ProfileData } from '../types';
 
@@ -29,26 +32,55 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   return (
     <ProfileInfoHeader>
-      <ProfileImageContainer>
-        <ProfileImage imageUrl={undefined}>
-          {getInitials(profile.first_name, profile.last_name)}
-        </ProfileImage>
-        <EditImageButton onClick={onEditImage}>
-          <Edit />
-        </EditImageButton>
-      </ProfileImageContainer>
-      
-      <ProfileInfo>
-        <ProfileName>{`${profile.first_name || ''} ${profile.last_name || ''}`}</ProfileName>
-        <ProfileEmail>
-          <Mail />
-          {profile.email_address || ''}
-        </ProfileEmail>
-      </ProfileInfo>
-      
-      <EditProfileButton onClick={onEditProfile}>
-        Edit Profile
-      </EditProfileButton>
+      {/* Desktop Layout */}
+      <DesktopProfileLayout>
+        <ProfileImageContainer>
+          <ProfileImage imageUrl={undefined}>
+            {getInitials(profile.first_name, profile.last_name)}
+          </ProfileImage>
+          <EditImageButton onClick={onEditImage}>
+            <Edit />
+          </EditImageButton>
+        </ProfileImageContainer>
+        
+        <ProfileInfo>
+          <ProfileName>{`${profile.first_name || ''} ${profile.last_name || ''}`}</ProfileName>
+          <ProfileEmail>
+            <Mail />
+            {profile.email_address || ''}
+          </ProfileEmail>
+        </ProfileInfo>
+        
+        <EditProfileButton onClick={onEditProfile}>
+          Edit Profile
+        </EditProfileButton>
+      </DesktopProfileLayout>
+
+      {/* Mobile Layout */}
+      <MobileProfileTop>
+        <ProfileImageContainer>
+          <ProfileImage imageUrl={undefined}>
+            {getInitials(profile.first_name, profile.last_name)}
+          </ProfileImage>
+          <EditImageButton onClick={onEditImage}>
+            <Edit />
+          </EditImageButton>
+        </ProfileImageContainer>
+        
+        <ProfileInfo>
+          <ProfileName>{`${profile.first_name || ''} ${profile.last_name || ''}`}</ProfileName>
+          <ProfileEmail>
+            <Mail />
+            {profile.email_address || ''}
+          </ProfileEmail>
+        </ProfileInfo>
+      </MobileProfileTop>
+
+      <MobileProfileActions>
+        <EditProfileButton onClick={onEditProfile}>
+          Edit Profile
+        </EditProfileButton>
+      </MobileProfileActions>
     </ProfileInfoHeader>
   );
 };

@@ -15,6 +15,13 @@ export const ProfileHeader = styled.div`
   background-color: #FFFFFF;
   border-bottom: 1px solid #E0E0E0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 4rem; /* Height of mobile navigation */
+    z-index: 10;
+    padding: 1rem 1.5rem;
+  }
 `;
 
 export const ProfileTitle = styled.h1`
@@ -23,6 +30,10 @@ export const ProfileTitle = styled.h1`
   color: #2C3E50;
   margin: 0;
   letter-spacing: -0.5px;
+  
+  @media (max-width: 767px) {
+    font-size: 1.75rem;
+  }
 `;
 
 export const ProfileContent = styled.div`
@@ -32,6 +43,10 @@ export const ProfileContent = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  
+  @media (max-width: 767px) {
+    padding: 1rem;
+  }
 `;
 
 export const ProfileCard = styled.div`
@@ -40,6 +55,12 @@ export const ProfileCard = styled.div`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   padding: 2rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 767px) {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
 `;
 
 export const ProfileInfoHeader = styled.div`
@@ -49,6 +70,45 @@ export const ProfileInfoHeader = styled.div`
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #E9ECEF;
+  
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+`;
+
+export const DesktopProfileLayout = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+export const MobileProfileTop = styled.div`
+  display: none;
+  
+  @media (max-width: 767px) {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+`;
+
+export const MobileProfileActions = styled.div`
+  display: none;
+  
+  @media (max-width: 767px) {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
 `;
 
 export const ProfileImageContainer = styled.div`
@@ -108,6 +168,10 @@ export const ProfileInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  
+  @media (max-width: 767px) {
+    gap: 0.25rem;
+  }
 `;
 
 export const ProfileName = styled.h2`
@@ -115,6 +179,10 @@ export const ProfileName = styled.h2`
   font-weight: 600;
   color: #2C3E50;
   margin: 0;
+  
+  @media (max-width: 767px) {
+    font-size: 1.5rem;
+  }
 `;
 
 export const ProfileEmail = styled.div`
@@ -141,6 +209,13 @@ export const EditProfileButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   
+  @media (max-width: 767px) {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    width: 100%;
+    max-width: 200px;
+  }
+  
   &:hover {
     background-color: #0056b3;
     transform: translateY(-1px);
@@ -150,6 +225,14 @@ export const EditProfileButton = styled.button`
   &:active {
     transform: translateY(0);
   }
+  
+  @media (hover: none) {
+    &:hover {
+      background-color: #007BFF;
+      transform: none;
+      box-shadow: none;
+    }
+  }
 `;
 
 export const SectionTitle = styled.h3`
@@ -157,6 +240,11 @@ export const SectionTitle = styled.h3`
   font-weight: 600;
   color: #495057;
   margin: 0 0 1.5rem 0;
+  
+  @media (max-width: 767px) {
+    font-size: 1.15rem;
+    margin-bottom: 1.25rem;
+  }
 `;
 
 export const InformationGrid = styled.div`
@@ -166,10 +254,12 @@ export const InformationGrid = styled.div`
   
   @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
   
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
 `;
 
@@ -201,6 +291,12 @@ export const InputField = styled.input<{ isEditing?: boolean }>`
   color: #495057;
   background-color: ${props => props.isEditing ? '#F8F9FA' : '#FFFFFF'};
   transition: all 0.2s ease;
+  
+  @media (max-width: 767px) {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border-radius: 6px;
+  }
   
   &:focus {
     outline: none;
@@ -243,6 +339,13 @@ export const SaveButton = styled.button`
   transition: all 0.2s ease;
   margin-top: 1rem;
   
+  @media (max-width: 767px) {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    flex: 1;
+    min-width: 120px;
+  }
+  
   &:hover {
     background-color: #218838;
     transform: translateY(-1px);
@@ -259,6 +362,14 @@ export const SaveButton = styled.button`
     transform: none;
     box-shadow: none;
   }
+  
+  @media (hover: none) {
+    &:hover {
+      background-color: #28A745;
+      transform: none;
+      box-shadow: none;
+    }
+  }
 `;
 
 export const CancelButton = styled.button`
@@ -274,6 +385,14 @@ export const CancelButton = styled.button`
   margin-top: 1rem;
   margin-left: 1rem;
   
+  @media (max-width: 767px) {
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    flex: 1;
+    min-width: 120px;
+    margin-left: 0;
+  }
+  
   &:hover {
     background-color: #545B62;
     transform: translateY(-1px);
@@ -283,10 +402,23 @@ export const CancelButton = styled.button`
   &:active {
     transform: translateY(0);
   }
+  
+  @media (hover: none) {
+    &:hover {
+      background-color: #6C757D;
+      transform: none;
+      box-shadow: none;
+    }
+  }
 `;
 
 export const ButtonGroup = styled.div`
   display: flex;
   gap: 1rem;
   margin-top: 1rem;
+  
+  @media (max-width: 767px) {
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
 `; 

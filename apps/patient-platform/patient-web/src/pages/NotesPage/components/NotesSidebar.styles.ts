@@ -11,6 +11,13 @@ export const SidebarContainer = styled.div`
   min-width: 280px;
   max-width: 350px;
   flex-shrink: 0;
+  
+  @media (max-width: 767px) {
+    min-width: 100%;
+    max-width: 100%;
+    border-right: none;
+    height: 100%;
+  }
 `;
 
 export const SidebarHeader = styled.div`
@@ -20,6 +27,10 @@ export const SidebarHeader = styled.div`
   position: sticky;
   top: 0;
   z-index: 1;
+  
+  @media (max-width: 767px) {
+    padding: 0.875rem;
+  }
 `;
 
 export const NotesSidebarTitle = styled.div`
@@ -40,4 +51,9 @@ export const NotesList = styled.div`
   gap: 0.5rem;
   padding: 1rem;
   min-height: 0;
+  
+  @media (max-width: 767px) {
+    padding: 0.875rem;
+    gap: 0.75rem;
+  }
 `; 

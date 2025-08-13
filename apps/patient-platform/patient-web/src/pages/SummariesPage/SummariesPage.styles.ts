@@ -14,6 +14,13 @@ export const Header = styled.div`
   background-color: #FFFFFF;
   border-bottom: 1px solid #E0E0E0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 4rem; /* Height of mobile navigation */
+    z-index: 10;
+    padding: 1rem 1.5rem;
+  }
 `;
 
 export const Title = styled.h1`
@@ -22,6 +29,10 @@ export const Title = styled.h1`
   color: #2C3E50;
   margin: 0;
   letter-spacing: -0.5px;
+  
+  @media (max-width: 767px) {
+    font-size: 1.75rem;
+  }
 `;
 
 export const Content = styled.div`
@@ -32,6 +43,10 @@ export const Content = styled.div`
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  
+  @media (max-width: 767px) {
+    padding: 1rem;
+  }
 `;
 
 export const PageHeader = styled.div`
@@ -41,6 +56,13 @@ export const PageHeader = styled.div`
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #E9ECEF;
+  
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
 `;
 
 export const PageTitle = styled.h2`
@@ -51,6 +73,10 @@ export const PageTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 1rem;
+  
+  @media (max-width: 767px) {
+    font-size: 1.5rem;
+  }
 `;
 
 export const DatePickerContainer = styled.div`
@@ -94,6 +120,13 @@ export const NavigationContainer = styled.div`
   align-items: center;
   gap: 1rem;
   
+  @media (max-width: 767px) {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
   .btn-primary {
     font-weight: 600;
     font-size: 14px;
@@ -101,6 +134,12 @@ export const NavigationContainer = styled.div`
     border-radius: 8px;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    
+    @media (max-width: 767px) {
+      padding: 10px 16px;
+      font-size: 16px;
+      width: 100%;
+    }
     
     &:hover {
       background-color: #4A90E2;
@@ -124,6 +163,12 @@ export const DateNavigationGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  
+  @media (max-width: 767px) {
+    width: 100%;
+    justify-content: center;
+    gap: 0.75rem;
+  }
   
   .btn {
     border-radius: 8px;
@@ -159,6 +204,16 @@ export const NavigationButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   color: #6C757D;
+  
+  @media (max-width: 767px) {
+    width: 44px;
+    height: 44px;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
   
   &:hover {
     background-color: #F8F9FA;

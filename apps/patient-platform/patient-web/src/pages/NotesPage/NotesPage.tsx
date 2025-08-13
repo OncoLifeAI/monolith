@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { NotesSidebar, NoteEditor } from './components';
-import { NotesPageContainer } from './NotesPage.styles';
+import { 
+  NotesPageContainer, 
+  MobileNavBar, 
+  MobileNavButton, 
+  MobileViewContainer, 
+  MobileSidebarWrapper, 
+  MobileEditorWrapper, 
+  DesktopContainer 
+} from './NotesPage.styles';
 import type { Note, NoteResponse } from './types';
 import { Header, Title, Container } from '@oncolife/ui-components';
+import { List, Edit3, ArrowLeft } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import { useFetchNotes, useSaveNewNotes, useUpdateNote, useDeleteNote } from '../../services/notes';
 
@@ -14,8 +23,10 @@ const NotesPage: React.FC = () => {
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  
   const [draftNote, setDraftNote] = useState<Note | null>(null);
+  
+  // Mobile state management
+  const [showMobileSidebar, setShowMobileSidebar] = useState<boolean>(true);
 
   // Hooks for API mutations
   const saveNewNotesMutation = useSaveNewNotes(selectedDate.year(), selectedDate.month() + 1);
@@ -46,11 +57,15 @@ const NotesPage: React.FC = () => {
   const handleNoteSelect = (noteId: string) => {
     setSelectedNoteId(noteId);
     setDraftNote(null);
+    // On mobile, switch to editor view when a note is selected
+    setShowMobileSidebar(false);
   };
 
   const handleNoteDeselect = () => {
     setSelectedNoteId('');
     setDraftNote(null);
+    // On mobile, go back to sidebar when note is deselected
+    setShowMobileSidebar(true);
   };
 
   const handleNoteUpdate = (updatedNote: Note) => {
@@ -75,6 +90,8 @@ const NotesPage: React.FC = () => {
       marked_for_doctor: false
     };
     setDraftNote(newNote);
+    // On mobile, switch to editor view when adding a note
+    setShowMobileSidebar(false);
   };
 
   const handleSaveNote = (noteToSave: Note) => {
@@ -98,56 +115,158 @@ const NotesPage: React.FC = () => {
   const handleCancelDraft = () => {
     setDraftNote(null);
     // Don't auto-select any note - let the user choose
+    // On mobile, go back to sidebar when canceling draft
+    setShowMobileSidebar(true);
+  };
+
+  // Mobile navigation handlers
+  const handleShowSidebar = () => {
+    setShowMobileSidebar(true);
+  };
+
+  const handleShowEditor = () => {
+    setShowMobileSidebar(false);
+  };
+
+  const handleBackToNotes = () => {
+    setShowMobileSidebar(true);
   };
 
   return (
     <Container>
-      <Header>
-        <Title>Notes</Title>
-      </Header>
+      {/* Desktop Header - only show on desktop */}
+      <div style={{ display: 'none' }}>
+        <Header>
+          <Title>Notes</Title>
+        </Header>
+      </div>
+      
       <NotesPageContainer>
-        <NotesSidebar
-          notes={filteredNotes}
-          selectedNoteId={selectedNoteId}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onNoteSelect={handleNoteSelect}
-          onNoteDeselect={handleNoteDeselect}
-          onAddNote={handleAddNote}
-          onDeleteNote={handleDeleteNote}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-        />
-        <div style={{ flex: 1, height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
-          {selectedNote ? (
-            <NoteEditor
-              key={selectedNote?.id}
-              note={selectedNote}
-              onNoteUpdate={handleNoteUpdate}
-              onSaveNote={handleSaveNote}
+        {/* Desktop Layout */}
+        <DesktopContainer>
+          <Header>
+            <Title>Notes</Title>
+          </Header>
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <NotesSidebar
+              notes={filteredNotes}
+              selectedNoteId={selectedNoteId}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onNoteSelect={handleNoteSelect}
+              onNoteDeselect={handleNoteDeselect}
+              onAddNote={handleAddNote}
               onDeleteNote={handleDeleteNote}
-              onCancelDraft={handleCancelDraft}
-              isDraft={!!draftNote}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
             />
-          ) : (
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              height: '100%',
-              color: '#6C757D',
-              fontSize: '1.1rem'
-            }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
-              <h3 style={{ marginBottom: '0.5rem', color: '#495057' }}>No Note Selected</h3>
-              <p style={{ margin: 0, textAlign: 'center' }}>
-                Select a note from the sidebar to view and edit it,<br />
-                or click "Add New" to create a new note.
-              </p>
+            <div style={{ flex: 1, height: 'calc(100vh - 80px)', overflow: 'hidden' }}>
+              {selectedNote ? (
+                <NoteEditor
+                  key={selectedNote?.id}
+                  note={selectedNote}
+                  onNoteUpdate={handleNoteUpdate}
+                  onSaveNote={handleSaveNote}
+                  onDeleteNote={handleDeleteNote}
+                  onCancelDraft={handleCancelDraft}
+                  isDraft={!!draftNote}
+                />
+              ) : (
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  height: '100%',
+                  color: '#6C757D',
+                  fontSize: '1.1rem'
+                }}>
+                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
+                  <h3 style={{ marginBottom: '0.5rem', color: '#495057' }}>No Note Selected</h3>
+                  <p style={{ margin: 0, textAlign: 'center' }}>
+                    Select a note from the sidebar to view and edit it,<br />
+                    or click "Add New" to create a new note.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </DesktopContainer>
+
+        {/* Mobile Layout */}
+        <MobileViewContainer showSidebar={showMobileSidebar}>
+          {/* Mobile Navigation Bar */}
+          <MobileNavBar>
+            {!showMobileSidebar && (
+              <MobileNavButton onClick={handleBackToNotes}>
+                <ArrowLeft size={16} />
+                Back to Notes
+              </MobileNavButton>
+            )}
+            {showMobileSidebar && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <List size={20} />
+                <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>Notes</span>
+              </div>
+            )}
+            {!showMobileSidebar && selectedNote && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit3 size={20} />
+                <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                  {selectedNote.title || 'Untitled Note'}
+                </span>
+              </div>
+            )}
+          </MobileNavBar>
+
+          {/* Mobile Sidebar */}
+          <MobileSidebarWrapper isVisible={showMobileSidebar}>
+            <NotesSidebar
+              notes={filteredNotes}
+              selectedNoteId={selectedNoteId}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              onNoteSelect={handleNoteSelect}
+              onNoteDeselect={handleNoteDeselect}
+              onAddNote={handleAddNote}
+              onDeleteNote={handleDeleteNote}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+            />
+          </MobileSidebarWrapper>
+
+          {/* Mobile Editor */}
+          <MobileEditorWrapper isVisible={!showMobileSidebar}>
+            {selectedNote ? (
+              <NoteEditor
+                key={selectedNote?.id}
+                note={selectedNote}
+                onNoteUpdate={handleNoteUpdate}
+                onSaveNote={handleSaveNote}
+                onDeleteNote={handleDeleteNote}
+                onCancelDraft={handleCancelDraft}
+                isDraft={!!draftNote}
+              />
+            ) : (
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                color: '#6C757D',
+                fontSize: '1rem',
+                padding: '2rem'
+              }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📝</div>
+                <h3 style={{ marginBottom: '0.5rem', color: '#495057', textAlign: 'center' }}>No Note Selected</h3>
+                <p style={{ margin: 0, textAlign: 'center', lineHeight: '1.5' }}>
+                  Go back to notes and select one to view and edit it, or create a new note.
+                </p>
+              </div>
+            )}
+          </MobileEditorWrapper>
+        </MobileViewContainer>
       </NotesPageContainer>
     </Container>
   );

@@ -1,7 +1,7 @@
 import logo from '../../assets/logo.png';
 import React, { useState} from 'react';
-import { Background, WrapperStyle, Header, Logo, Card, Title, Subtitle, InputPassword } from '@oncolife/ui-components';
-import { MainContent, StyledButton } from './LoginPage.styles';
+import { Background, WrapperStyle, Logo, Card, Title, Subtitle, InputPassword } from '@oncolife/ui-components';
+import { MainContent, StyledButton, LoginHeader } from './LoginPage.styles';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
@@ -63,9 +63,9 @@ const ResetPassword: React.FC = () => {
   return (
     <Background>
       <WrapperStyle>
-        <Header>
+        <LoginHeader>
             <Logo src={logo} alt="Logo" />
-        </Header>
+        </LoginHeader>
         <MainContent>
             <Card> 
                 <Title>New Password</Title>

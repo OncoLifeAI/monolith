@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users } from 'lucide-react';
+import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users, Menu, X, ChevronDown } from 'lucide-react';
 import logo from '../../assets/logo.png';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { SESSION_START_KEY } from '../SessionTimeout/SessionTimeoutManager';
 // import { useUser } from '../../contexts/UserContext'; // Each app provides its own UserContext
 import { useUserType } from '../../contexts/UserTypeContext';
@@ -20,6 +20,10 @@ const Sidebar = styled.nav.withConfig({
   transition: width 0.3s;
   width: ${props => (props.isExpanded ? '16rem' : '6rem')};
   min-width: 0;
+  
+  @media (max-width: 767px) {
+    display: none;
+  }
 `;
 
 const Header = styled.div.withConfig({
@@ -198,6 +202,255 @@ const LogoutLabel = styled.span`
   }
 `;
 
+// Mobile Navigation Styles
+const MobileNavContainer = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+
+const MobileHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  height: 4rem;
+`;
+
+// Export mobile nav height for other components to use
+export const MOBILE_NAV_HEIGHT = '4rem';
+
+// Utility component to add proper spacing for mobile navigation
+export const MobileNavSpacer = styled.div`
+  @media (max-width: 767px) {
+    height: ${MOBILE_NAV_HEIGHT};
+    width: 100%;
+    flex-shrink: 0;
+  }
+`;
+
+// Wrapper for page content that accounts for mobile navigation
+export const PageContentWrapper = styled.div`
+  @media (max-width: 767px) {
+    padding-top: ${MOBILE_NAV_HEIGHT};
+  }
+`;
+
+const MobileLogo = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const MobileLogoText = styled.span`
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-left: 0.5rem;
+`;
+
+const MobileMenuButton = styled.button`
+  padding: 0.75rem;
+  border: none;
+  background: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  
+  &:hover {
+    background: #f3f4f6;
+  }
+  
+  &:active {
+    background: #e5e7eb;
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      background: none;
+    }
+  }
+`;
+
+const BreadcrumbContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isOpen'
+})<{ isOpen: boolean }>`
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  max-height: ${props => props.isOpen ? '400px' : '0'};
+  overflow-y: auto;
+  transition: all 0.3s ease-in-out;
+`;
+
+const BreadcrumbItem = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border: none;
+  background: #fff;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  min-height: 3.5rem;
+  
+  &:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    background: #e2e8f0;
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      transform: none;
+      background: #fff;
+    }
+  }
+`;
+
+const BreadcrumbItemContent = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const BreadcrumbIcon = styled.span`
+  color: #4b5563;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+`;
+
+const BreadcrumbLabel = styled.span`
+  color: #374151;
+  font-weight: 500;
+  font-size: 1rem;
+`;
+
+const BreadcrumbChevron = styled.span`
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+`;
+
+const MobileUserSection = styled.div`
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+`;
+
+const MobileUserProfile = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-height: 4rem;
+  
+  &:hover {
+    background: #f1f5f9;
+  }
+  
+  &:active {
+    background: #e2e8f0;
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      background: #f8fafc;
+    }
+  }
+`;
+
+const MobileUserInfo = styled.div`
+  margin-left: 0.75rem;
+`;
+
+const MobileUserHello = styled.p`
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+`;
+
+const MobileUserName = styled.p`
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0;
+`;
+
+const MobileLogoutButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  background: #fef2f2;
+  color: #ef4444;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  min-height: 3.5rem;
+  font-size: 1rem;
+  
+  &:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+  
+  &:active {
+    background: #fecaca;
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      background: #fef2f2;
+      color: #ef4444;
+    }
+  }
+`;
+
+const MobileOverlay = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isOpen'
+})<{ isOpen: boolean }>`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  opacity: ${props => props.isOpen ? 1 : 0};
+  transition: opacity 0.3s ease-in-out;
+`;
+
 interface MenuItem {
   id: string;
   label: string;
@@ -336,6 +589,131 @@ const SidebarContent: React.FC<{
   );
 };
 
+// Mobile Navigation Component
+const MobileNavigation: React.FC<{
+  userType: 'patient' | 'doctor';
+  profile?: ProfileData | null;
+  onMenuClick: (href: string) => void;
+  onLogout: () => void;
+  onProfileClick: () => void;
+}> = ({ userType, profile, onMenuClick, onLogout, onProfileClick }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+
+  // Define menu items based on user type
+  const menuItems: MenuItem[] = userType === 'patient' 
+    ? [
+        { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
+        { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
+        { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
+        { id: '4', label: 'Education', icon: <Grid3X3 size={20} />, href: '/education' },
+      ]
+    : [
+        { id: '1', label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
+        { id: '2', label: 'Patients', icon: <Users size={20} />, href: '/patients' },
+        { id: '3', label: 'Staff', icon: <ShieldUser size={20} />, href: '/staff' },
+      ];
+
+
+
+  // Close menu when clicking outside or navigating
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isOpen && !target.closest('[data-mobile-nav]')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // Close menu on route change
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  const handleMenuItemClick = (href: string) => {
+    onMenuClick(href);
+    setIsOpen(false);
+  };
+
+  const handleLogoutClick = () => {
+    onLogout();
+    setIsOpen(false);
+  };
+
+  const handleProfileClick = () => {
+    onProfileClick();
+    setIsOpen(false);
+  };
+
+  // User display info
+  let displayName = 'User';
+  let initials = 'U';
+  if (profile) {
+    displayName = profile.first_name + (profile.last_name ? ' ' + profile.last_name : '');
+    const first = profile.first_name?.[0] || '';
+    const last = profile.last_name?.[0] || '';
+    initials = (first + last).toUpperCase() || 'U';
+  }
+
+  return (
+    <>
+      <MobileOverlay isOpen={isOpen} onClick={() => setIsOpen(false)} />
+      <MobileNavContainer data-mobile-nav>
+        <MobileHeader>
+          <MobileLogo>
+            <Logo src={logo} alt="Company Logo" />
+            <MobileLogoText>Oncolife AI</MobileLogoText>
+          </MobileLogo>
+          <MobileMenuButton 
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </MobileMenuButton>
+        </MobileHeader>
+
+        <BreadcrumbContainer isOpen={isOpen}>
+          {/* Navigation items */}
+          {menuItems.map((item) => (
+            <BreadcrumbItem 
+              key={item.id}
+              onClick={() => handleMenuItemClick(item.href)}
+            >
+              <BreadcrumbItemContent>
+                <BreadcrumbIcon>{item.icon}</BreadcrumbIcon>
+                <BreadcrumbLabel>{item.label}</BreadcrumbLabel>
+              </BreadcrumbItemContent>
+              <BreadcrumbChevron>
+                <ChevronRight size={16} />
+              </BreadcrumbChevron>
+            </BreadcrumbItem>
+          ))}
+
+          {/* User section */}
+          <MobileUserSection>
+            <MobileUserProfile onClick={handleProfileClick}>
+              <AvatarInitials>{initials}</AvatarInitials>
+              <MobileUserInfo>
+                <MobileUserHello>Hello</MobileUserHello>
+                <MobileUserName>{displayName}</MobileUserName>
+              </MobileUserInfo>
+            </MobileUserProfile>
+            
+            <MobileLogoutButton onClick={handleLogoutClick}>
+              <LogOut size={20} style={{ marginRight: '0.5rem' }} />
+              Log out
+            </MobileLogoutButton>
+          </MobileUserSection>
+        </BreadcrumbContainer>
+      </MobileNavContainer>
+    </>
+  );
+};
+
 const Navigation: React.FC<NavigationProps> = ({ userType, profile }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const navigate = useNavigate();
@@ -357,20 +735,27 @@ const Navigation: React.FC<NavigationProps> = ({ userType, profile }) => {
 
   return (
     <>
-      {/* Sidebar for desktop */}
-      <div className="d-none d-md-flex" style={{ height: '100vh' }}>
-        <Sidebar isExpanded={isExpanded}>
-          <SidebarContent
-            isExpanded={isExpanded}
-            onMenuClick={handleMenuItemClick}
-            onLogout={handleLogout}
-            onToggleExpand={() => setIsExpanded((prev) => !prev)}
-            onProfileClick={handleProfileClick}
-            userType={userType}
-            profile={profile}
-          />
-        </Sidebar>
-      </div>
+      {/* Mobile Navigation - visible on small screens */}
+      <MobileNavigation
+        userType={userType}
+        profile={profile}
+        onMenuClick={handleMenuItemClick}
+        onLogout={handleLogout}
+        onProfileClick={handleProfileClick}
+      />
+
+      {/* Desktop Sidebar - visible on medium screens and up */}
+      <Sidebar isExpanded={isExpanded}>
+        <SidebarContent
+          isExpanded={isExpanded}
+          onMenuClick={handleMenuItemClick}
+          onLogout={handleLogout}
+          onToggleExpand={() => setIsExpanded((prev) => !prev)}
+          onProfileClick={handleProfileClick}
+          userType={userType}
+          profile={profile}
+        />
+      </Sidebar>
     </>
   );
 };

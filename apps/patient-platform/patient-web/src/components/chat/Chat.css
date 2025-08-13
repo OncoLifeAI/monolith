@@ -13,6 +13,14 @@ body {
   background-color: #fff;
 }
 
+/* Account for mobile navigation on small screens */
+@media (max-width: 767px) {
+  .chat-container {
+    padding-top: 8rem; /* Height of mobile navigation (4rem) + chat header (4rem) */
+    height: calc(100vh - 4rem); /* Adjust height to account for mobile nav */
+  }
+}
+
 .chat-header {
   display: flex;
   justify-content: center;
@@ -25,10 +33,31 @@ body {
   z-index: 10;
 }
 
+/* Account for mobile navigation on small screens */
+@media (max-width: 767px) {
+  .chat-header {
+    top: 4rem; /* Height of mobile navigation */
+    position: fixed;
+    width: 100%;
+    left: 0;
+    right: 0;
+    justify-content: space-between; /* Title left, button right */
+    padding: 1rem 1.5rem; /* Add more horizontal padding for better spacing */
+  }
+}
+
 .chat-title {
   font-weight: 700;
   font-size: 1rem;
   color: #222;
+}
+
+/* Mobile adjustments for chat title */
+@media (max-width: 767px) {
+  .chat-title {
+    font-size: 1.1rem; /* Slightly larger on mobile for better readability */
+    font-weight: 600; /* Slightly less bold to balance with the button */
+  }
 }
 
 .symptom-list-debug {
@@ -44,9 +73,7 @@ body {
   white-space: nowrap;
 }
 
-.chat-header span {
-  /* Title will be centered by the parent's justify-content: center */
-}
+
 
 .new-conversation-button {
   position: absolute;
@@ -82,6 +109,21 @@ body {
   line-height: 1;
 }
 
+/* Mobile adjustments for new conversation button */
+@media (max-width: 767px) {
+  .new-conversation-button {
+    position: static; /* Remove absolute positioning */
+    right: auto; /* Reset right positioning */
+    padding: 8px 16px; /* Slightly smaller padding for mobile */
+    font-size: 13px; /* Slightly smaller font */
+    border-radius: 20px; /* Slightly smaller border radius */
+  }
+  
+  .new-conversation-icon {
+    font-size: 14px; /* Smaller icon on mobile */
+  }
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -90,6 +132,14 @@ body {
   flex-direction: column;
   gap: 25px;
   background-color: #f9f9f9;
+}
+
+/* Mobile adjustments for messages container */
+@media (max-width: 767px) {
+  .messages-container {
+    padding: 20px 15px;
+    gap: 20px;
+  }
 }
 
 .message-bubble {
@@ -221,6 +271,14 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Mobile adjustments for input container */
+@media (max-width: 767px) {
+  .input-container {
+    margin: 10px 15px 20px 15px;
+    padding: 10px;
+  }
 }
 
 .message-input {

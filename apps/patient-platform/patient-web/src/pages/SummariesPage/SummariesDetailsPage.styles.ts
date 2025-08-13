@@ -9,6 +9,12 @@ export const Header = styled.div`
   background-color: #FFFFFF;
   border-bottom: 1px solid #E0E0E0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 4rem; /* Height of mobile navigation */
+    z-index: 10;
+  }
 `;
 
 export const HeaderContent = styled.div`
@@ -18,6 +24,13 @@ export const HeaderContent = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  
+  @media (max-width: 767px) {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 `;
 
 export const BackButton = styled.button`
@@ -29,6 +42,13 @@ export const BackButton = styled.button`
   cursor: pointer;
   transition: color 0.2s ease;
   font-size: 1.1rem;
+  
+  @media (max-width: 767px) {
+    padding: 0.5rem;
+    margin: -0.5rem;
+    font-size: 1rem;
+    order: -1;
+  }
   
   &:hover {
     color: #495057;
@@ -50,16 +70,29 @@ export const PageTitle = styled.h1`
   color: #2C3E50;
   margin: 0;
   letter-spacing: -0.5px;
+  
+  @media (max-width: 767px) {
+    font-size: 1.75rem;
+    order: 0;
+  }
 `;
 
 export const TitleSpacer = styled.div`
   width: 200px;
+  
+  @media (max-width: 767px) {
+    display: none;
+  }
 `;
 
 export const Content = styled.div`
   max-width: 1400px;
   margin: 0 auto;
   padding: 2.5rem 2rem;
+  
+  @media (max-width: 767px) {
+    padding: 1.5rem 1rem;
+  }
 `;
 
 export const SummaryHeaderCard = styled.div`
@@ -69,12 +102,24 @@ export const SummaryHeaderCard = styled.div`
   border: 1px solid #E0E0E0;
   padding: 2rem;
   margin-bottom: 2rem;
+  
+  @media (max-width: 767px) {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 10px;
+  }
 `;
 
 export const SummaryHeaderContent = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 `;
 
 export const DateContainer = styled.div`
@@ -90,6 +135,10 @@ export const DateIcon = styled.span`
 export const DateText = styled.span`
   font-size: 1.25rem;
   font-weight: 600;
+  
+  @media (max-width: 767px) {
+    font-size: 1.1rem;
+  }
 `;
 
 export const FeelingContainer = styled.div`
@@ -97,6 +146,11 @@ export const FeelingContainer = styled.div`
   align-items: center;
   padding: 0.75rem 1rem;
   border-radius: 50px;
+  
+  @media (max-width: 767px) {
+    padding: 0.625rem 0.875rem;
+    align-self: flex-start;
+  }
 `;
 
 export const FeelingImage = styled.img`
@@ -108,12 +162,20 @@ export const FeelingImage = styled.img`
 export const FeelingText = styled.span`
   font-weight: 600;
   font-size: 1.1rem;
+  
+  @media (max-width: 767px) {
+    font-size: 1rem;
+  }
 `;
 
 export const MainGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 2rem;
+  
+  @media (max-width: 767px) {
+    gap: 1.5rem;
+  }
   
   @media (min-width: 1024px) {
     grid-template-columns: 2fr 1fr;
@@ -128,12 +190,21 @@ export const Card = styled.div`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #E0E0E0;
   padding: 2rem;
+  
+  @media (max-width: 767px) {
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
 `;
 
 export const CardHeader = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 1.5rem;
+  
+  @media (max-width: 767px) {
+    margin-bottom: 1.25rem;
+  }
 `;
 
 export const CardIcon = styled.span`
@@ -145,6 +216,10 @@ export const CardTitle = styled.h2`
   font-weight: 700;
   color: #2C3E50;
   margin: 0;
+  
+  @media (max-width: 767px) {
+    font-size: 1.3rem;
+  }
 `;
 
 export const DetailedSummaryText = styled.div`
@@ -155,6 +230,11 @@ export const DetailedSummaryText = styled.div`
     margin: 0;
     font-size: 1.1rem;
     line-height: 1.6;
+    
+    @media (max-width: 767px) {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
   }
 `;
 
@@ -164,6 +244,11 @@ export const QuickSummaryContent = styled.div`
   color: #495057;
   line-height: 1.6;
   font-size: 1rem;
+  
+  @media (max-width: 767px) {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
   
   & > * {
     margin-bottom: 0.75rem;
@@ -180,6 +265,11 @@ export const AdditionalInfoGrid = styled.div`
   gap: 2rem;
   margin-top: 2rem;
   
+  @media (max-width: 767px) {
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
   @media (min-width: 768px) {
     grid-template-columns: 1fr 1fr;
   }
@@ -190,12 +280,21 @@ export const InfoCardTitle = styled.h3`
   font-weight: 700;
   color: #2C3E50;
   margin: 0 0 1.5rem 0;
+  
+  @media (max-width: 767px) {
+    font-size: 1.15rem;
+    margin-bottom: 1.25rem;
+  }
 `;
 
 export const SymptomsList = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  
+  @media (max-width: 767px) {
+    gap: 0.625rem;
+  }
 `;
 
 export const SymptomTag = styled.span`
@@ -206,12 +305,21 @@ export const SymptomTag = styled.span`
   border-radius: 50px;
   font-size: 1rem;
   font-weight: 500;
+  
+  @media (max-width: 767px) {
+    padding: 0.45rem 0.875rem;
+    font-size: 0.9rem;
+  }
 `;
 
 export const MedicationsList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  
+  @media (max-width: 767px) {
+    gap: 0.625rem;
+  }
 `;
 
 export const MedicationItem = styled.div`
@@ -221,4 +329,10 @@ export const MedicationItem = styled.div`
   border-radius: 8px;
   color: #6A1B9A;
   font-size: 1rem;
+  
+  @media (max-width: 767px) {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.95rem;
+    border-radius: 6px;
+  }
 `; 

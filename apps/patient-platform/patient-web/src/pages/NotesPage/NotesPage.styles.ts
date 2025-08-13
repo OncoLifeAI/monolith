@@ -8,6 +8,11 @@ export const NotesPageContainer = styled.div`
   overflow: hidden;
   height: calc(100vh - 80px);
   min-height: 0;
+  
+  @media (max-width: 767px) {
+    flex-direction: column;
+    height: calc(100vh - 8rem); /* Account for mobile nav + header */
+  }
 `;
 
 export const NotesHeader = styled.div`
@@ -70,5 +75,116 @@ export const AddNewButton = styled.button`
   
   &:active {
     transform: translateY(0);
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      background-color: #007bff;
+      transform: none;
+    }
+  }
+`;
+
+// Mobile Navigation Components
+export const MobileNavBar = styled.div`
+  display: none;
+  
+  @media (max-width: 767px) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+`;
+
+export const MobileNavButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+  }
+  
+  &:active {
+    background: #e9ecef;
+  }
+  
+  @media (hover: none) {
+    &:hover {
+      background: none;
+      border-color: #dee2e6;
+      color: #495057;
+    }
+  }
+`;
+
+export const MobileViewContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'showSidebar'
+})<{ showSidebar: boolean }>`
+  display: none;
+  
+  @media (max-width: 767px) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+  }
+`;
+
+export const MobileSidebarWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isVisible'
+})<{ isVisible: boolean }>`
+  display: none;
+  
+  @media (max-width: 767px) {
+    display: ${props => props.isVisible ? 'flex' : 'none'};
+    flex: 1;
+    flex-direction: column;
+    background: #fff;
+    overflow: hidden;
+  }
+`;
+
+export const MobileEditorWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isVisible'
+})<{ isVisible: boolean }>`
+  display: none;
+  
+  @media (max-width: 767px) {
+    display: ${props => props.isVisible ? 'flex' : 'none'};
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+  }
+`;
+
+export const DesktopContainer = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+  
+  @media (max-width: 767px) {
+    display: none;
   }
 `; 
