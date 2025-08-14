@@ -5,6 +5,7 @@ export * from './components/Login/InputPassword.styles';
 
 // Login components (for apps to build their own login pages)
 export { default as Login } from './pages/Login/Login';
+export { default as ForgotPassword } from './pages/Login/ForgotPassword';
 
 
 // Navigation

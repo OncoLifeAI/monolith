@@ -7,6 +7,7 @@ import { UserTypeProvider } from './contexts/UserTypeContext';
 
 // Doctor-specific pages
 import LoginPage from './pages/LoginPage';
+import ForgotPassword from './pages/LoginPage/ForgotPassword';
 import Layout from './components/Layout';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import PatientsPage from './pages/Patients/PatientsPage';
@@ -22,6 +23,7 @@ function App() {
             <SessionTimeoutManager />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/patients" element={<PatientsPage />} />

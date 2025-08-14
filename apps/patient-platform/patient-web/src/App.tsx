@@ -8,6 +8,7 @@ import { useAuth } from './contexts/AuthContext';
 // Shared login from ui-components
 import LoginPage from './pages/LoginPage';
 import ResetPassword from './pages/LoginPage/ResetPassword';
+import ForgotPassword from './pages/LoginPage/ForgotPassword';
 import Acknowledgement from './pages/LoginPage/Acknowledgement';
 
 // Patient-specific pages
@@ -35,6 +36,7 @@ function App() {
             <SessionTimeoutManager />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/acknowledgement" element={<Acknowledgement />} />
               <Route path="/signup" element={<SignUpPage />} />

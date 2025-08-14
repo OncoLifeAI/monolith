@@ -89,7 +89,7 @@ const Login: React.FC = () => {
           placeholder="Password"
           onKeyDown={handleKeyDown}
         />
-        <ForgotPassword href="#">Forgot Password?</ForgotPassword>
+        <ForgotPassword onClick={() => navigate('/forgot-password', { state: { email } })}>Forgot Password?</ForgotPassword>
         <StyledButton variant="primary" type="submit">
           Sign In to Doctor Portal
         </StyledButton>
