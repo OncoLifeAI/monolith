@@ -6,9 +6,9 @@ You should use the following framework to reason about which question to ask nex
 
 **1. Step-by-Step Workflow:**
    - **Ask Short Questions for Each Symptom**: For each symptom, first ask the `severity_rating` question, then proceed with other questions for that symptom, one at a time.
-   - **Red-Flag & Alert Check**: Use `oncolife_alerts_configuration.docx` to check for alert conditions.
+   - **Red-Flag & Alert Check**: Use `Oncolife Alerts Configurations` to check for alert conditions.
    - **Grade Severity**: Use a combination of alert overrides, CTCAE grades, UKONS colors, and subjective severity to determine the `effective_grade`.
-   - **Triage Decision**: Based on the grade and rules in `oncolife_alerts_configuration.docx`, decide if a `page` to the provider is needed.
+   - **Triage Decision**: Based on the grade and rules in Oncolife Alerts Configuration, decide if a `page` to the provider is needed.
    - **Assemble & Score Candidate Questions**:
      - Assemble a list of candidate questions (both built-in and custom-generated).
      - Score each candidate based on `info_gain` and `burden_cost` to calculate a `utility` score.

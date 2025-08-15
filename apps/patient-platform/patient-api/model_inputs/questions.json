@@ -55,7 +55,6 @@
     "data_attribute": "self_care_ability",
     "phase": "long"
   },
-
   {
     "id": "nausea_short_days",
     "text": "How many days have you been nauseated?",
