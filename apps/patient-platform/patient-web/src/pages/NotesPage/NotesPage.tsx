@@ -7,7 +7,8 @@ import {
   MobileViewContainer, 
   MobileSidebarWrapper, 
   MobileEditorWrapper, 
-  DesktopContainer 
+  DesktopContainer,
+  EmptyState
 } from './NotesPage.styles';
 import type { Note, NoteResponse } from './types';
 import { Header, Title, Container } from '@oncolife/ui-components';
@@ -52,6 +53,9 @@ const NotesPage: React.FC = () => {
       )
     : notes;
   
+  // Add draft note to the beginning of the list if it exists
+  const notesWithDraft = draftNote ? [draftNote, ...filteredNotes] : filteredNotes;
+  
   const selectedNote = draftNote || (selectedNoteId ? notes.find(note => note.id === selectedNoteId) : null);
 
   const handleNoteSelect = (noteId: string) => {
@@ -84,12 +88,14 @@ const NotesPage: React.FC = () => {
 
   const handleAddNote = () => {
     const newNote: Note = {
-      title: 'New Note',
+      id: `draft-${Date.now()}`, // Temporary ID for the draft
+      title: '',
       diary_entry: '',
       created_at: selectedDate.toDate().toISOString(),
       marked_for_doctor: false
     };
     setDraftNote(newNote);
+    setSelectedNoteId(newNote.id || null);
     // On mobile, switch to editor view when adding a note
     setShowMobileSidebar(false);
   };
@@ -114,7 +120,7 @@ const NotesPage: React.FC = () => {
 
   const handleCancelDraft = () => {
     setDraftNote(null);
-    // Don't auto-select any note - let the user choose
+    setSelectedNoteId(''); // Clear selection when canceling draft
     // On mobile, go back to sidebar when canceling draft
     setShowMobileSidebar(true);
   };
@@ -149,7 +155,7 @@ const NotesPage: React.FC = () => {
           </Header>
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <NotesSidebar
-              notes={filteredNotes}
+              notes={notesWithDraft}
               selectedNoteId={selectedNoteId}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -172,22 +178,13 @@ const NotesPage: React.FC = () => {
                   isDraft={!!draftNote}
                 />
               ) : (
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  height: '100%',
-                  color: '#6C757D',
-                  fontSize: '1.1rem'
-                }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
-                  <h3 style={{ marginBottom: '0.5rem', color: '#495057' }}>No Note Selected</h3>
-                  <p style={{ margin: 0, textAlign: 'center' }}>
-                    Select a note from the sidebar to view and edit it,<br />
-                    or click "Add New" to create a new note.
+                <EmptyState>
+                  <div className="empty-icon">📝</div>
+                  <h3 className="empty-title">No Note Selected</h3>
+                  <p className="empty-description">
+                    Select a note from the sidebar to view and edit it, or click "Add New" to create a new note.
                   </p>
-                </div>
+                </EmptyState>
               )}
             </div>
           </div>
@@ -222,7 +219,7 @@ const NotesPage: React.FC = () => {
           {/* Mobile Sidebar */}
           <MobileSidebarWrapper isVisible={showMobileSidebar}>
             <NotesSidebar
-              notes={filteredNotes}
+              notes={notesWithDraft}
               selectedNoteId={selectedNoteId}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}

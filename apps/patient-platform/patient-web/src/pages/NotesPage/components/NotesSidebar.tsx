@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { AddNewButton } from '../NotesPage.styles';
 import { NoteItem } from './NoteItem';
 import { SidebarContainer, SidebarHeader, NotesList, NotesSidebarTitle } from './NotesSidebar.styles';
-import { DatePicker as SharedDatePicker } from '@oncolife/ui-components';
+import { SleekDatePicker } from '@oncolife/ui-components';
 import type { Note } from '../types';
 import type { Dayjs } from 'dayjs';
 
@@ -44,10 +44,11 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
   return (
     <SidebarContainer>
       <SidebarHeader>
-        <SharedDatePicker
+        <SleekDatePicker
           value={selectedDate}
           onChange={setSelectedDate}
           fullWidth={true}
+          label="Select Month & Year"
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '1rem' }}>
           <NotesSidebarTitle>All Notes</NotesSidebarTitle>

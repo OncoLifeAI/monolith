@@ -15,6 +15,10 @@ export { default as Navigation, PageContentWrapper, MobileNavSpacer, MOBILE_NAV_
 export { default as DatePicker } from './components/DatePicker';
 export * from './components/DatePicker/DatePicker.styles';
 
+// Sleek Date Picker
+export { default as SleekDatePicker } from './components/SleekDatePicker';
+export * from './components/SleekDatePicker/SleekDatePicker.styles';
+
 // Session Management
 export { default as SessionTimeoutManager, SESSION_START_KEY } from './components/SessionTimeout/SessionTimeoutManager';
 export { default as SessionTimeoutModal } from './components/SessionTimeout/SessionTimeoutModal';

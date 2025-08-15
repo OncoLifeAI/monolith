@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users, Menu, X, ChevronDown, BookOpen } from 'lucide-react';
+import { MessageCircle, LibraryBig, Notebook, Grid3X3, LogOut, ChevronRight, ChevronLeft, LayoutDashboard, ShieldUser, Users, Menu, X, ChevronDown, BookOpen, FileText, StickyNote, GraduationCap, User } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SESSION_START_KEY } from '../SessionTimeout/SessionTimeoutManager';
@@ -8,34 +8,56 @@ import { SESSION_START_KEY } from '../SessionTimeout/SessionTimeoutManager';
 import { useUserType } from '../../contexts/UserTypeContext';
 // import { useLogout } from '../../restful/login';
 
-const Sidebar = styled.nav.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>`
+const Sidebar = styled.nav<{ isExpanded: boolean }>`
   height: 100vh;
-  background: #fff;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
-  border-right: 1px solid #e5e7eb;
+  width: ${props => props.isExpanded ? '18rem' : '5rem'};
+  background: linear-gradient(to bottom, #f8fafc, #ffffff);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-right: 1px solid rgba(226, 232, 240, 0.6);
   display: flex;
   flex-direction: column;
-  transition: width 0.3s;
-  width: ${props => (props.isExpanded ? '16rem' : '6rem')};
-  min-width: 0;
+  transition: width 0.3s ease-out;
   
   @media (max-width: 767px) {
     display: none;
   }
 `;
 
-const Header = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>`
+const Header = styled.div<{ isExpanded: boolean }>`
   display: flex;
   align-items: center;
-  height: 4rem;
-  padding: 0 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  justify-content: ${props => props.isExpanded ? 'space-between' : 'center'};
+  padding: 1.5rem ${props => props.isExpanded ? '1.5rem' : '1rem'};
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
   flex-shrink: 0;
-  justify-content: ${props => (props.isExpanded ? 'flex-start' : 'center')};
+`;
+
+const LogoIcon = styled.div`
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border-radius: 0.5rem;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const LogoInner = styled.div`
+  width: 1rem;
+  height: 1rem;
+  background: white;
+  border-radius: 0.125rem;
+`;
+
+const LogoText = styled.h1`
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #1e293b, #475569);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
 `;
 
 const Logo = styled.img`
@@ -44,28 +66,28 @@ const Logo = styled.img`
   border-radius: 0.5rem;
   object-fit: cover;
   flex-shrink: 0;
-`;
-
-const LogoText = styled.span`
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #3b82f6; /* lighter blue than #2563eb */
-  margin-left: 0.75rem;
-  white-space: nowrap;
-  overflow: hidden;
-  transition: all 0.3s;
+  margin-right: 0.75rem;
 `;
 
 const ExpandToggleButton = styled.button`
-  padding: 0.5rem;
+  width: 2rem;
+  height: 2rem;
   border: none;
   background: none;
   border-radius: 0.5rem;
-  margin-left: auto;
   cursor: pointer;
-  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-out;
+  
   &:hover {
-    background: #f3f4f6;
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.1);
+  }
+  
+  &:active {
+    transform: scale(1.05);
   }
 `;
 
@@ -114,9 +136,9 @@ const UserName = styled.p`
   margin: 0;
 `;
 
-const MenuSection = styled.div`
+const MenuSection = styled.nav`
   flex: 1;
-  padding: 1.5rem 0;
+  padding: 1rem 1rem 1.5rem 1rem;
   overflow-y: auto;
 `;
 
@@ -129,77 +151,193 @@ const MenuTitle = styled.h3`
   margin: 0 0 1rem 1rem;
 `;
 
-const MenuList = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>`
+const MenuList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  align-items: ${props => (props.isExpanded ? 'stretch' : 'center')};
 `;
 
-const MenuButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>`
-  width: 100%;
+const MenuButton = styled.button<{ isActive?: boolean; isExpanded?: boolean }>`
+  position: relative;
   display: flex;
   align-items: center;
-  background: none;
+  justify-content: ${props => props.isExpanded ? 'flex-start' : 'center'};
+  width: 100%;
+  padding: ${props => props.isExpanded ? '1rem' : '0.75rem'};
+  background: ${props => props.isActive 
+    ? 'linear-gradient(to right, #eff6ff, rgba(239, 246, 255, 0.8), #eef2ff)' 
+    : 'none'};
   border: none;
-  padding: 0.75rem 1rem;
-  justify-content: ${props => (props.isExpanded ? 'flex-start' : 'center')};
+  border-radius: 1rem;
+  color: ${props => props.isActive ? '#1d4ed8' : '#475569'};
+  font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease-out;
+  box-shadow: ${props => props.isActive ? '0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1)' : 'none'};
+  
   &:hover {
-    background: #f3f4f6;
+    background: ${props => props.isActive 
+      ? 'linear-gradient(to right, #eff6ff, rgba(239, 246, 255, 0.8), #eef2ff)' 
+      : 'linear-gradient(to right, #f8fafc, rgba(248, 250, 252, 0.5))'};
+    color: ${props => props.isActive ? '#1d4ed8' : '#1e293b'};
+    box-shadow: ${props => props.isActive 
+      ? '0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1)' 
+      : '0 6px 20px -6px rgba(148, 163, 184, 0.3)'};
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #3b82f6, 0 0 0 4px rgba(59, 130, 246, 0.1);
   }
 `;
 
-const MenuIconWrapper = styled.span`
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
+const MenuIconWrapper = styled.span<{ isExpanded?: boolean }>`
+  margin-right: ${props => props.isExpanded ? '1rem' : '0'};
+  flex-shrink: 0;
+  transition: transform 0.2s ease-out;
+  
   ${MenuButton}:hover & {
-    color: #2563eb;
+    transform: scale(1.1);
   }
 `;
 
 const MenuLabel = styled.span`
-  margin-left: 0.75rem;
-  color: #374151;
-  font-weight: 500;
-  font-size: 1.1rem;
-  transition: color 0.2s;
-  ${MenuButton}:hover & {
-    color: #2563eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const FooterSection = styled.div`
+  padding: 1rem;
+  padding-bottom: 1rem;
+`;
+
+const FooterStatus = styled.div`
+  background: linear-gradient(to right, #eff6ff, #eef2ff);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+`;
+
+const StatusIndicator = styled.div`
+  width: 0.5rem;
+  height: 0.5rem;
+  background: #4ade80;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  animation: pulse 2s infinite;
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 `;
 
-const LogoutSection = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isExpanded'
-})<{ isExpanded: boolean }>`
-  padding: 1.5rem 0;
-  border-top: 1px solid #e5e7eb;
-  flex-shrink: 0;
+const StatusText = styled.span`
+  font-size: 0.75rem;
+  color: #475569;
   display: flex;
-  justify-content: ${props => (props.isExpanded ? 'flex-start' : 'center')};
+  align-items: center;
 `;
 
-const LogoutButton = styled(MenuButton)`
-  &:hover {
-    background: #fef2f2;
-  }
-`;
-
-const LogoutLabel = styled.span`
-  margin-left: 0.75rem;
+const LogoutButton = styled.button<{ isExpanded?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: ${props => props.isExpanded ? 'flex-start' : 'center'};
+  width: 100%;
+  padding: ${props => props.isExpanded ? '1rem' : '0.75rem'};
+  background: none;
+  border: none;
+  border-radius: 1rem;
   color: #ef4444;
   font-weight: 500;
-  transition: color 0.2s;
-  ${LogoutButton}:hover & {
-    color: #dc2626;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  
+  &:hover {
+    background: linear-gradient(to right, #fef2f2, rgba(254, 242, 242, 0.8));
+    box-shadow: 0 6px 20px -6px rgba(239, 68, 68, 0.3);
   }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #ef4444, 0 0 0 4px rgba(239, 68, 68, 0.1);
+  }
+`;
+
+const ProfileSection = styled.div<{ isExpanded: boolean }>`
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.3);
+  margin-bottom: 0.5rem;
+`;
+
+const ProfileContainer = styled.div<{ isExpanded: boolean; isClickable?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.isExpanded ? '0.75rem' : '0'};
+  padding: ${props => props.isExpanded ? '0.75rem' : '0.75rem'};
+  border-radius: 12px;
+  background: transparent;
+  cursor: ${props => props.isClickable ? 'pointer' : 'default'};
+  transition: all 0.3s ease;
+  justify-content: ${props => props.isExpanded ? 'flex-start' : 'center'};
+
+  &:hover {
+    background: ${props => props.isClickable ? 'rgba(59, 130, 246, 0.08)' : 'transparent'};
+    transform: ${props => props.isClickable ? 'translateY(-1px)' : 'none'};
+  }
+`;
+
+const Avatar = styled.div`
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+`;
+
+const ProfileInfo = styled.div<{ isExpanded: boolean }>`
+  display: ${props => props.isExpanded ? 'flex' : 'none'};
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+`;
+
+const ProfileGreeting = styled.div`
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 0.125rem;
+`;
+
+const ProfileName = styled.div`
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const LogoutSection = styled.div`
+  padding: 0 1rem 1rem 1rem;
+  border-top: 1px solid rgba(226, 232, 240, 0.5);
+  margin-top: auto;
 `;
 
 // Mobile Navigation Styles
@@ -504,24 +642,19 @@ interface MenuItemProps {
   isExpanded: boolean;
 }
 
-const MenuItemComponent: React.FC<MenuItemProps> = ({ item, onClick, isExpanded }) => (
-  <MenuButton onClick={() => onClick(item.href)} isExpanded={isExpanded} title={!isExpanded ? item.label : ''}>
-    <MenuIconWrapper>{item.icon}</MenuIconWrapper>
-    {isExpanded && <MenuLabel>{item.label}</MenuLabel>}
-  </MenuButton>
-);
+const MenuItemComponent: React.FC<MenuItemProps> = ({ item, onClick, isExpanded }) => {
+  const location = useLocation();
+  const isActive = location.pathname === item.href;
+  
+  return (
+    <MenuButton onClick={() => onClick(item.href)} isActive={isActive} isExpanded={isExpanded} title={!isExpanded ? item.label : ''}>
+      <MenuIconWrapper isExpanded={isExpanded}>{item.icon}</MenuIconWrapper>
+      {isExpanded && <MenuLabel>{item.label}</MenuLabel>}
+    </MenuButton>
+  );
+};
 
-interface LogoutButtonProps {
-  onClick: () => void;
-  isExpanded: boolean;
-}
 
-const LogoutButtonComponent: React.FC<LogoutButtonProps> = ({ onClick, isExpanded }) => (
-  <LogoutButton onClick={onClick} isExpanded={isExpanded} title={!isExpanded ? 'Log out' : ''}>
-    <MenuIconWrapper as={LogOut} size={20} style={{ color: '#ef4444' }} />
-    {isExpanded && <LogoutLabel>Log out</LogoutLabel>}
-  </LogoutButton>
-);
 
 // Extract menu content to a function for reuse
 const SidebarContent: React.FC<{
@@ -538,9 +671,10 @@ const SidebarContent: React.FC<{
   const menuItems: MenuItem[] = userType === 'patient' 
     ? [
         { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
-        { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
-        { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
-        { id: '4', label: 'Education', icon: <BookOpen size={20} />, href: '/education' },
+        { id: '2', label: 'Summaries', icon: <FileText size={20} />, href: '/summaries' },
+        { id: '3', label: 'Notes', icon: <StickyNote size={20} />, href: '/notes' },
+        { id: '4', label: 'Education', icon: <GraduationCap size={20} />, href: '/education' },
+        { id: '5', label: 'Profile', icon: <User size={20} />, href: '/profile' },
       ]
     : [
         { id: '1', label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
@@ -551,27 +685,46 @@ const SidebarContent: React.FC<{
   return (
     <>
       <Header isExpanded={isExpanded}>
-        <Logo 
-          src={logo}
-          alt="Company Logo"
-        />
-        {isExpanded && <LogoText>Oncolife AI</LogoText>}
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Logo src={logo} alt="OncoLife AI Logo" />
+          {isExpanded && <LogoText>OncoLife AI</LogoText>}
+        </div>
         <ExpandToggleButton onClick={onToggleExpand} aria-label={isExpanded ? 'Collapse menu' : 'Expand menu'}>
           {isExpanded ? (
-            <ChevronLeft size={20} style={{ color: '#4b5563' }} />
+            <ChevronLeft size={16} style={{ color: '#3b82f6' }} />
           ) : (
-            <ChevronRight size={20} style={{ color: '#4b5563' }} />
+            <ChevronRight size={16} style={{ color: '#3b82f6' }} />
           )}
         </ExpandToggleButton>
       </Header>
-      <UserProfile 
-        isExpanded={isExpanded}
-        onClick={onProfileClick}
-        profile={profile}
-      />
+      
+      <ProfileSection isExpanded={isExpanded}>
+        <ProfileContainer 
+          isExpanded={isExpanded} 
+          isClickable={true}
+          onClick={onProfileClick}
+          title={!isExpanded ? 'View Profile' : ''}
+        >
+          <Avatar>
+            {profile ? 
+              ((profile.first_name?.[0] || '') + (profile.last_name?.[0] || '')).toUpperCase() || 'U'
+              : 'U'
+            }
+          </Avatar>
+          <ProfileInfo isExpanded={isExpanded}>
+            <ProfileGreeting>Hello</ProfileGreeting>
+            <ProfileName>
+              {profile ? 
+                (profile.first_name + (profile.last_name ? ' ' + profile.last_name : ''))
+                : 'User'
+              }
+            </ProfileName>
+          </ProfileInfo>
+        </ProfileContainer>
+      </ProfileSection>
+      
       <MenuSection>
-        {isExpanded && <MenuTitle>MENU</MenuTitle>}
-        <MenuList isExpanded={isExpanded}>
+        <MenuList>
           {menuItems.map((item) => (
             <MenuItemComponent 
               key={item.id} 
@@ -582,9 +735,16 @@ const SidebarContent: React.FC<{
           ))}
         </MenuList>
       </MenuSection>
-      <LogoutSection isExpanded={isExpanded}>
-        <LogoutButtonComponent onClick={onLogout} isExpanded={isExpanded} />
+      
+      <LogoutSection>
+        <LogoutButton onClick={onLogout} isExpanded={isExpanded} title={!isExpanded ? 'Log out' : ''}>
+          <MenuIconWrapper isExpanded={isExpanded}>
+            <LogOut size={20} />
+          </MenuIconWrapper>
+          {isExpanded && <MenuLabel>Log out</MenuLabel>}
+        </LogoutButton>
       </LogoutSection>
+
     </>
   );
 };
@@ -604,9 +764,10 @@ const MobileNavigation: React.FC<{
   const menuItems: MenuItem[] = userType === 'patient' 
     ? [
         { id: '1', label: 'Chat', icon: <MessageCircle size={20} />, href: '/chat' },
-        { id: '2', label: 'Summaries', icon: <LibraryBig size={20} />, href: '/summaries' },
-        { id: '3', label: 'Notes', icon: <Notebook size={20} />, href: '/notes' },
-        { id: '4', label: 'Education', icon: <BookOpen size={20} />, href: '/education' },
+        { id: '2', label: 'Summaries', icon: <FileText size={20} />, href: '/summaries' },
+        { id: '3', label: 'Notes', icon: <StickyNote size={20} />, href: '/notes' },
+        { id: '4', label: 'Education', icon: <GraduationCap size={20} />, href: '/education' },
+        { id: '5', label: 'Profile', icon: <User size={20} />, href: '/profile' },
       ]
     : [
         { id: '1', label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },

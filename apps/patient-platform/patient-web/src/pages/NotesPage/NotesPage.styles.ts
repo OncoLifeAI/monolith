@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const NotesPageContainer = styled.div`
   flex: 1;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   display: flex;
   flex-direction: row;
   overflow: hidden;
@@ -33,54 +33,69 @@ export const NotesHeader = styled.div`
 `;
 
 export const SearchContainer = styled.div`
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
   width: 100%;
   display: flex;
-  padding: 0 1rem;
+  padding: 0 16px;
   
   .search-input {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 12px 16px;
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 12px;
     font-size: 14px;
     outline: none;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+    color: #1e293b;
+    
+    &::placeholder {
+      color: #94a3b8;
+    }
     
     &:focus {
-      border-color: #007bff;
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+      background: rgba(255, 255, 255, 0.95);
     }
   }
 `;
 
 export const AddNewButton = styled.button`
-  background-color: #007bff;
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.5rem 0.875rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 8px;
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
+  backdrop-filter: blur(8px);
   
   &:hover {
-    background-color: #0056b3;
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
   }
   
   &:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
   }
   
   @media (hover: none) {
     &:hover {
-      background-color: #007bff;
+      background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
       transform: none;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
     }
   }
 `;
@@ -186,5 +201,37 @@ export const DesktopContainer = styled.div`
   
   @media (max-width: 767px) {
     display: none;
+  }
+`;
+
+export const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 48px;
+  text-align: center;
+  
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 24px;
+    opacity: 0.6;
+  }
+  
+  .empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 12px;
+    margin: 0;
+  }
+  
+  .empty-description {
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 400px;
   }
 `; 

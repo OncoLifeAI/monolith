@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { EditorContainer, EditorHeader, EditorContent, EditorHeading, SaveButton, DeleteButton, CancelButton, EditorInput, EditorTextarea } from './NoteEditor.styles';
+import { EditorContainer, EditorHeader, EditorContent, EditorActionBar, SaveButton, DeleteButton, CancelButton, EditorInput, EditorTextarea } from './NoteEditor.styles';
 import type { Note } from '../types';
 
 interface NoteEditorProps {
@@ -14,7 +14,7 @@ interface NoteEditorProps {
 export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSaveNote, onDeleteNote, isDraft, onCancelDraft }) => {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.diary_entry);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isDraft || false); // Start in edit mode if it's a draft
 
   const titleInputRef = useCallback((node: HTMLInputElement | null) => {
     if (node && isEditing && lastEditField === 'title') {
@@ -78,78 +78,56 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
     <EditorContainer>
       <EditorHeader>
         {isEditing ? (
-          <>
-            <EditorHeading>
-              <EditorInput
-                type="text"
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                ref={titleInputRef}
-                placeholder="Title"
-                autoFocus
-              />
-            </EditorHeading>
-          </>
+          <EditorInput
+            type="text"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            ref={titleInputRef}
+            placeholder="Enter note title..."
+            autoFocus={isDraft || lastEditField === 'title'}
+          />
         ) : (
-          <EditorHeading onClick={handleTitleClick} style={{ cursor: 'pointer', width: '100%' }}>
-            <EditorInput
-              type="text"
-              value={title}
-              readOnly
-              style={{ background: '#f8f9fa', cursor: 'pointer' }}
-            />
-          </EditorHeading>
+          <EditorInput
+            type="text"
+            value={title || 'Untitled Note'}
+            readOnly
+            onClick={handleTitleClick}
+          />
         )}
       </EditorHeader>
 
       <EditorContent>
         {isEditing ? (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <EditorTextarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Start writing your note..."
-              ref={contentTextareaRef}
-              autoFocus={lastEditField === 'content'}
-            />
-          </div>
+          <EditorTextarea
+            value={content}
+            onChange={(e) => handleContentChange(e.target.value)}
+            placeholder="Start writing your note..."
+            ref={contentTextareaRef}
+            autoFocus={isDraft && !lastEditField || lastEditField === 'content'}
+          />
         ) : (
-          <div onClick={handleContentClick} style={{ cursor: 'pointer', height: '100%' }}>
-            <EditorTextarea
-              value={content || 'Click to start writing...'}
-              readOnly
-              style={{ background: '#f8f9fa', cursor: 'pointer', minHeight: 200 }}
-            />
-          </div>
+          <EditorTextarea
+            value={content || 'Click to start writing...'}
+            readOnly
+            onClick={handleContentClick}
+          />
         )}
       </EditorContent>
+      
       {isEditing && (
-        <div style={{ 
-          position: 'absolute', 
-          bottom: '2rem', 
-          right: '2rem', 
-          zIndex: 1000,
-          display: 'flex',
-          gap: '1rem'
-        }}>
-          <CancelButton
-            onClick={handleCancel}
-          >
+        <EditorActionBar>
+          <CancelButton onClick={handleCancel}>
             Cancel
           </CancelButton>
           {!isDraft && (
-            <DeleteButton
-              onClick={() => onDeleteNote && onDeleteNote(note.id || '')}
-            >
+            <DeleteButton onClick={() => onDeleteNote && onDeleteNote(note.id || '')}>
               Delete
             </DeleteButton>
           )}
-          <SaveButton
-            onClick={handleSave}
-          >
+          <SaveButton onClick={handleSave}>
             Save
           </SaveButton>
-        </div>
+        </EditorActionBar>
       )}
     </EditorContainer>
   );

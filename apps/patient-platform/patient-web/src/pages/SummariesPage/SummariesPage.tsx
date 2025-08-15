@@ -10,7 +10,7 @@ import {
   LoadingContainer,
   ErrorContainer,
 } from './SummariesPage.styles';
-import { DatePicker as SharedDatePicker, Container, Header, Title, Content } from '@oncolife/ui-components';
+import { SleekDatePicker, Container, Header, Title, Content } from '@oncolife/ui-components';
 import { useSummaries, type Summary } from '../../services/summaries';
 import { SummaryGrid } from './components';
 import dayjs, { Dayjs } from 'dayjs';
@@ -67,9 +67,10 @@ const SummariesPage: React.FC = () => {
                 <ChevronLeft />
               </NavigationButton>
               
-              <SharedDatePicker
+              <SleekDatePicker
                 value={selectedDate}
                 onChange={handleDateChange}
+                label="Select Month & Year"
               />
               
               <NavigationButton onClick={goToNextMonth}>
