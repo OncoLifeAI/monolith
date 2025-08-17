@@ -60,7 +60,7 @@ const Login: React.FC = () => {
 
   return (
     <Card>
-      <Title>Welcome Back to OncoLife AI <span role="img" aria-label="wave">👋🏻</span></Title>
+      <Title>Welcome to OncoLife! </Title>
       <Subtitle>Please enter your details to sign in to your account</Subtitle>
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <StyledForm onSubmit={handleSubmit}>

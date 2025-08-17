@@ -23,23 +23,7 @@ export const NoteItem: React.FC<NoteItemProps> = ({ note, isSelected, onSelect, 
     onDelete && onDelete(note.entry_uuid || note.id || '');
   };
 
-  // Format the date
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch {
-      return 'Recent';
-    }
-  };
-
-  // Format the date for display (clean, consistent format)
+  // Format the date for display (shows last modified date and time)
   const formatDisplayDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
@@ -70,7 +54,7 @@ export const NoteItem: React.FC<NoteItemProps> = ({ note, isSelected, onSelect, 
         {note.diary_entry || 'No content available...'}
       </NotePreview>
       <NoteDate>
-        {formatDisplayDate(note.created_at || new Date().toISOString())}
+        {formatDisplayDate(note.last_updated_at || note.created_at || new Date().toISOString())}
       </NoteDate>
       
       {onDelete && (

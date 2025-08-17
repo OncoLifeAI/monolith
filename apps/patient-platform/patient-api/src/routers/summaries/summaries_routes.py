@@ -60,13 +60,36 @@ async def get_summaries_by_month(
 ):
     """
     Get all conversation summaries that have been processed (have bulleted_summary) for a specific month and year.
+    Filters by user's timezone to ensure correct month boundaries.
     """
     try:
+        from datetime import datetime
+        import pytz
+        from utils.timezone_utils import get_user_timezone, user_timezone_to_utc
+        
+        # Create start and end of month in user's timezone
+        user_tz = get_user_timezone(timezone)
+        
+        # Start of month in user timezone (e.g., August 1, 2025 00:00:00 PST)
+        start_of_month_user = user_tz.localize(datetime(year, month, 1, 0, 0, 0))
+        
+        # End of month in user timezone (e.g., August 31, 2025 23:59:59 PST)
+        if month == 12:
+            next_year, next_month = year + 1, 1
+        else:
+            next_year, next_month = year, month + 1
+        end_of_month_user = user_tz.localize(datetime(next_year, next_month, 1, 0, 0, 0))
+        
+        # Convert to UTC for database filtering
+        start_of_month_utc = start_of_month_user.astimezone(pytz.UTC)
+        end_of_month_utc = end_of_month_user.astimezone(pytz.UTC)
+        
+        # Filter conversations within the UTC range that corresponds to the user's month
         conversations = db.query(Conversations).filter(
             Conversations.patient_uuid == current_user.sub,
             Conversations.bulleted_summary.isnot(None),
-            extract('year', Conversations.created_at) == year,
-            extract('month', Conversations.created_at) == month
+            Conversations.created_at >= start_of_month_utc,
+            Conversations.created_at < end_of_month_utc
         ).order_by(Conversations.created_at.desc()).all()
         
         # Convert timestamps to user timezone and create proper response objects

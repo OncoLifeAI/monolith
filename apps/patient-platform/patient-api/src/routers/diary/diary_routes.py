@@ -25,7 +25,7 @@ from routers.auth.dependencies import get_current_user, TokenData
 from .models import DiaryEntrySchema, DiaryEntryCreate, DiaryEntryUpdate
 from utils.timezone_utils import utc_to_user_timezone, format_datetime_for_display
 
-router = APIRouter()
+router = APIRouter(prefix="/diary", tags=["Patient Diary"])
 logger = logging.getLogger(__name__)
 
 def convert_diary_entry_to_user_timezone(entry, user_timezone: str = "America/Los_Angeles"):
@@ -60,7 +60,7 @@ def convert_diary_entry_to_user_timezone(entry, user_timezone: str = "America/Lo
     
     return entry_data
 
-@router.get("/diary/{year}/{month}", response_model=list[DiaryEntrySchema], tags=["diary"])
+@router.get("/{year}/{month}", response_model=list[DiaryEntrySchema])
 async def get_diary_entries_by_month(
     year: int,
     month: int,
@@ -91,7 +91,7 @@ async def get_diary_entries_by_month(
         logger.error(f"[DIARY] Fetch month failed patient={current_user.sub} error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/diary", response_model=DiaryEntrySchema, tags=["diary"])
+@router.post("", response_model=DiaryEntrySchema)
 async def create_diary_entry(
     entry_data: DiaryEntryCreate,
     db: Session = Depends(get_patient_db),
@@ -125,7 +125,7 @@ async def create_diary_entry(
         logger.error(f"[DIARY] Create failed patient={current_user.sub} error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch("/diary/{entry_uuid}", response_model=DiaryEntrySchema, tags=["diary"])
+@router.patch("/{entry_uuid}", response_model=DiaryEntrySchema)
 async def update_diary_entry(
     entry_uuid: str,
     update_data: DiaryEntryUpdate,
@@ -166,7 +166,7 @@ async def update_diary_entry(
         logger.error(f"[DIARY] Update failed entry_uuid={entry_uuid} patient={current_user.sub} error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/diary", response_model=list[DiaryEntrySchema], tags=["diary"])
+@router.get("", response_model=list[DiaryEntrySchema])
 async def get_all_diary_entries(
     db: Session = Depends(get_patient_db),
     current_user: TokenData = Depends(get_current_user),

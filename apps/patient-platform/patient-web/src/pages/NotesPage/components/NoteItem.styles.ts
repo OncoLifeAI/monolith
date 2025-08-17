@@ -23,13 +23,23 @@ export const NoteItemContainer = styled.div<NoteItemContainerProps>`
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  min-height: 100px; /* Back to accommodate title + preview + single-line date */
+  min-height: 140px; /* Increased to ensure all content is visible */
+  height: 140px; /* Fixed height to prevent compression */
+  flex-shrink: 0; /* Prevent flex container from shrinking this item */
   
   /* Responsive adjustments */
+  @media (max-width: 768px) {
+    min-height: 120px;
+    height: 120px;
+    padding: 18px;
+    padding-right: 55px;
+  }
+  
   @media (max-width: 480px) {
+    min-height: 110px;
+    height: 110px;
     padding: 16px;
     padding-right: 50px;
-    min-height: 90px;
   }
 
   &:hover {
@@ -76,14 +86,26 @@ export const NotePreview = styled.p`
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3; /* Increased to 3 lines for better content visibility */
   -webkit-box-orient: vertical;
   white-space: normal;
-  min-height: 42px; /* Ensure consistent height for 2 lines */
+  flex: 1; /* Take available space between title and date */
   
   /* Ensure content is always visible */
   word-break: break-word;
   hyphens: auto;
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    -webkit-line-clamp: 2;
+    font-size: 13px;
+  }
+  
+  @media (max-width: 480px) {
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
 `;
 
 export const NoteDate = styled.div`

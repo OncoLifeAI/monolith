@@ -1,61 +1,66 @@
 import styled from 'styled-components';
 
 export const InputGroup = styled.div`
-  position: relative;
   display: flex;
   align-items: center;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background-color: #ffffff;
-  transition: border-color 0.2s ease;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 2px solid transparent;
+  transition: border 0.2s, box-shadow 0.2s;
+  min-height: 3.5rem;
 
   &:focus-within {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border: 2px solid #4d7cfe;
+    box-shadow: 0 4px 12px rgba(77, 124, 254, 0.15);
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.875rem 1rem;
+    min-height: 3.75rem;
+    border-radius: 0.75rem;
   }
 `;
 
 export const Input = styled.input`
-  flex: 1;
-  padding: 12px 16px;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 16px;
-  color: #1f2937;
-
+  flex: 1;
+  font-size: 1.1rem;
+  padding: 0.5rem 0.5rem;
+  color: #222;
+  
   &::placeholder {
-    color: #9ca3af;
+    color: #bbb;
+    opacity: 1;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
   }
 `;
 
-export const InputIcon = styled.div`
+export const InputIcon = styled.span`
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  color: #6b7280;
+  color: #888;
+  margin-right: 0.75rem;
+  font-size: 1.2rem;
 `;
 
 export const EyeButton = styled.button`
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: #888;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  cursor: pointer;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: #374151;
-  }
-
-  &:focus {
-    outline: none;
-    color: #3b82f6;
-  }
+  font-size: 1.2rem;
+  margin-left: 0.5rem;
+  padding: 0;
 `; 

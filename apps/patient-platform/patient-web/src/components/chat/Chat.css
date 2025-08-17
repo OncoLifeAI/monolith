@@ -772,7 +772,7 @@ body {
 
 .new-conversation-modal-footer .confirm-button {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
   color: white;
   border: none;
   border-radius: 12px;
@@ -780,11 +780,11 @@ body {
   font-weight: 600;
   font-size: 14px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
 }
 
 .new-conversation-modal-footer .confirm-button:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
 } 
