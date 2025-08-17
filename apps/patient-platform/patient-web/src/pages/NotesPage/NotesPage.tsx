@@ -21,6 +21,8 @@ const NotesPage: React.FC = () => {
   // Fetch notes from API
   const { data: notesResponse } = useFetchNotes(selectedDate.year(), selectedDate.month() + 1);
   const notes: Note[] = (notesResponse as NoteResponse)?.data ?? [];
+  
+
 
   const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -95,7 +97,7 @@ const NotesPage: React.FC = () => {
       marked_for_doctor: false
     };
     setDraftNote(newNote);
-    setSelectedNoteId(newNote.id || null);
+    setSelectedNoteId(newNote.id || '');
     // On mobile, switch to editor view when adding a note
     setShowMobileSidebar(false);
   };
@@ -107,14 +109,27 @@ const NotesPage: React.FC = () => {
       saveNewNotesMutation.mutate({
         content: noteToSave.diary_entry,
         title: noteToSave.title,
+      }, {
+        onSuccess: () => {
+          setDraftNote(null);
+          setSelectedNoteId(''); // Clear selection after successful save
+        },
+        onError: (error) => {
+          console.error('Failed to save note:', error);
+          // Keep the draft note if save failed
+        }
       });
-      setDraftNote(null);
     }
   };
 
-  const handleDeleteNote = () => {
+  const handleDeleteNote = (noteId?: string) => {
+    const noteToDelete = noteId || selectedNote?.entry_uuid || selectedNote?.id;
+    if (!noteToDelete) {
+      console.error('No note ID provided for deletion');
+      return;
+    }
     deleteNoteMutation.mutate({
-      noteId: selectedNote?.entry_uuid || '',
+      noteId: noteToDelete,
     });
   };
 

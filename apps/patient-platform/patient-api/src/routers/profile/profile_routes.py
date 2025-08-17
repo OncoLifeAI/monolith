@@ -12,7 +12,7 @@ from .models import PatientProfileResponse
 router = APIRouter(prefix="/profile", tags=["Patient Profile"])
 logger = logging.getLogger(__name__)
 
-@router.get("/", response_model=PatientProfileResponse, summary="Get complete patient profile")
+@router.get("", response_model=PatientProfileResponse, summary="Get complete patient profile")
 async def get_patient_profile(
     patient_db: Session = Depends(get_patient_db),
     doctor_db: Session = Depends(get_doctor_db),

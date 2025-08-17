@@ -11,7 +11,6 @@ class DiaryEntrySchema(BaseModel):
     diary_entry: str
     entry_uuid: str
     marked_for_doctor: bool
-    is_deleted: bool
 
     class Config:
         from_attributes = True

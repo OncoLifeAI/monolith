@@ -23,7 +23,14 @@ export const NoteItemContainer = styled.div<NoteItemContainerProps>`
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  min-height: 80px;
+  min-height: 100px; /* Back to accommodate title + preview + single-line date */
+  
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    padding: 16px;
+    padding-right: 50px;
+    min-height: 90px;
+  }
 
   &:hover {
     background: ${props => props.isSelected 
@@ -50,6 +57,15 @@ export const NoteTitle = styled.h6`
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.4;
+  min-height: 22px; /* Ensure consistent height */
+  
+  /* Allow wrapping on very small screens */
+  @media (max-width: 480px) {
+    white-space: normal;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+  }
 `;
 
 export const NotePreview = styled.p`
@@ -63,6 +79,11 @@ export const NotePreview = styled.p`
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   white-space: normal;
+  min-height: 42px; /* Ensure consistent height for 2 lines */
+  
+  /* Ensure content is always visible */
+  word-break: break-word;
+  hyphens: auto;
 `;
 
 export const NoteDate = styled.div`
@@ -70,6 +91,10 @@ export const NoteDate = styled.div`
   font-size: 12px;
   font-weight: 500;
   margin-top: auto;
+  min-height: 16px; /* Back to single line height */
+  
+  /* Ensure date is always visible */
+  flex-shrink: 0;
 `;
 
 export const NoteActions = styled.div`

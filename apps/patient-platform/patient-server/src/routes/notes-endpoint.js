@@ -40,14 +40,21 @@ router.patch('/notes/:noteId', async (req, res) => {
     }
 });
 
-router.patch('/notes/:noteId/delete', async (req, res) => {
+router.delete('/notes/:noteId', async (req, res) => {
     try {
         const base = apiClient.defaults.baseURL;
-        console.log(`[NOTES] PATCH ${base}/diary/${req.params.noteId}/delete`);
-        const response = await updateWithAuth(`/diary/${req.params.noteId}/delete`, {}, req, res);
-        return res.status(200).json(response);
+        console.log(`[NOTES] DELETE ${base}/diary/${req.params.noteId}`);
+        const response = await apiClient.delete(`/diary/${req.params.noteId}`, {
+            headers: {
+                'Authorization': req.headers.authorization
+            }
+        });
+        return res.status(204).send(); // No content for successful deletion
     } catch (error) {
         console.error('[NOTES] Delete failed:', error.message);
+        if (error.response?.status === 404) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
         return res.status(500).json({ error: 'Failed to delete note' });
     }
 });

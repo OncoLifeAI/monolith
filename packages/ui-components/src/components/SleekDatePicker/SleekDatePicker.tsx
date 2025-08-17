@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Dayjs } from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
 import {
   DatePickerContainer,
@@ -17,11 +17,12 @@ import {
 } from './SleekDatePicker.styles';
 
 interface SleekDatePickerProps {
-  value: Dayjs;
+  value: Dayjs | null;
   onChange: (date: Dayjs) => void;
   label?: string;
   fullWidth?: boolean;
   placeholder?: string;
+  maxDate?: Dayjs;
 }
 
 const months = [
@@ -34,11 +35,12 @@ const SleekDatePicker: React.FC<SleekDatePickerProps> = ({
   onChange,
   label = 'Select Month & Year',
   fullWidth = false,
-  placeholder
+  placeholder,
+  maxDate
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'months' | 'years'>('months');
-  const [displayYear, setDisplayYear] = useState(value.year());
+  const [displayYear, setDisplayYear] = useState(value?.year() || new Date().getFullYear());
   const containerRef = useRef<HTMLDivElement>(null);
 
   const formatDisplayDate = (date: Dayjs) => {
@@ -48,13 +50,13 @@ const SleekDatePicker: React.FC<SleekDatePickerProps> = ({
   const handleToggle = () => {
     setIsOpen(!isOpen);
     if (!isOpen) {
-      setDisplayYear(value.year());
+      setDisplayYear(value?.year() || new Date().getFullYear());
       setViewMode('months');
     }
   };
 
   const handleMonthSelect = (monthIndex: number) => {
-    const newDate = value.month(monthIndex).year(displayYear);
+    const newDate = dayjs().month(monthIndex).year(displayYear).date(1);
     onChange(newDate);
     setIsOpen(false);
   };
@@ -102,7 +104,7 @@ const SleekDatePicker: React.FC<SleekDatePickerProps> = ({
     };
   }, [isOpen]);
 
-  const selectedMonth = value.year() === displayYear ? value.month() : -1;
+  const selectedMonth = value && value.year() === displayYear ? value.month() : -1;
 
   return (
     <>
@@ -116,7 +118,7 @@ const SleekDatePicker: React.FC<SleekDatePickerProps> = ({
           <div className="date-content">
             {label && <span className="label">{label}</span>}
             <span className="date-text">
-              {placeholder && !value ? placeholder : formatDisplayDate(value)}
+              {!value ? (placeholder || 'Select Date') : formatDisplayDate(value)}
             </span>
           </div>
           <div className="icon-container">
@@ -147,16 +149,20 @@ const SleekDatePicker: React.FC<SleekDatePickerProps> = ({
 
             {viewMode === 'months' ? (
               <MonthGrid>
-                {months.map((month, index) => (
-                  <MonthButton
-                    key={month}
-                    onClick={() => handleMonthSelect(index)}
-                    $isSelected={selectedMonth === index}
-                    $isCurrent={new Date().getMonth() === index && new Date().getFullYear() === displayYear}
-                  >
-                    {month}
-                  </MonthButton>
-                ))}
+                {months.map((month, index) => {
+                  const isDisabled = maxDate && dayjs().month(index).year(displayYear).isAfter(maxDate, 'month');
+                  return (
+                    <MonthButton
+                      key={month}
+                      onClick={() => !isDisabled && handleMonthSelect(index)}
+                      $isSelected={selectedMonth === index}
+                      $isCurrent={new Date().getMonth() === index && new Date().getFullYear() === displayYear}
+                      $isDisabled={isDisabled}
+                    >
+                      {month}
+                    </MonthButton>
+                  );
+                })}
               </MonthGrid>
             ) : (
               <YearGrid>

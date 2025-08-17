@@ -5,6 +5,7 @@ import { MessageBubble } from '../../components/chat/MessageBubble';
 import { MessageInput } from '../../components/chat/MessageInput';
 import { ThinkingBubble } from '../../components/chat/ThinkingBubble';
 import { CalendarModal } from '../../components/chat/CalendarModal';
+import { NewConversationModal } from '../../components/chat/NewConversationModal';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useSymptomList } from '../../hooks/useSymptomList';
 import { chatService } from '../../services/chatService';
@@ -22,6 +23,7 @@ const ChatsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isNewConversationModalOpen, setIsNewConversationModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Use the symptom list hook for localStorage management
@@ -158,6 +160,24 @@ const ChatsPage: React.FC = () => {
     loadTodaySession();
   }, []);
 
+  // Helper function to check if current conversation is finished
+  const isConversationFinished = () => {
+    return chatSession?.conversation_state === 'COMPLETED' || 
+           chatSession?.conversation_state === 'EMERGENCY';
+  };
+
+  // Handle new conversation button click with confirmation if needed
+  const handleNewConversationClick = () => {
+    // If no current session or conversation is finished, start new conversation directly
+    if (!chatSession || isConversationFinished()) {
+      handleStartNewConversation();
+    } else {
+      // Show confirmation modal for unfinished conversation
+      setIsNewConversationModalOpen(true);
+    }
+  };
+
+  // Start new conversation (called after confirmation or directly)
   const handleStartNewConversation = async () => {
     try {
       setLoading(true);
@@ -446,8 +466,9 @@ const ChatsPage: React.FC = () => {
   return (
     <div className="chat-container">
       <div className="chat-header">
+        <div className="header-spacer"></div>
         <div className="chat-title">Chat with Ruby</div>
-        <button onClick={handleStartNewConversation} className="new-conversation-button">
+        <button onClick={handleNewConversationClick} className="new-conversation-button">
           <span className="new-conversation-icon">+</span>
           New Conversation
         </button>
@@ -501,6 +522,13 @@ const ChatsPage: React.FC = () => {
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
         onDateSelect={handleCalendarDateSelect}
+      />
+
+      {/* New Conversation Confirmation Modal */}
+      <NewConversationModal
+        isOpen={isNewConversationModalOpen}
+        onClose={() => setIsNewConversationModalOpen(false)}
+        onConfirm={handleStartNewConversation}
       />
     </div>
   );

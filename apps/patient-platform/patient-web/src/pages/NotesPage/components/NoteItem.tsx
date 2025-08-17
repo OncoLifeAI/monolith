@@ -20,7 +20,7 @@ interface NoteItemProps {
 export const NoteItem: React.FC<NoteItemProps> = ({ note, isSelected, onSelect, onDelete }) => {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete && onDelete(note.id || '');
+    onDelete && onDelete(note.entry_uuid || note.id || '');
   };
 
   // Format the date
@@ -39,14 +39,39 @@ export const NoteItem: React.FC<NoteItemProps> = ({ note, isSelected, onSelect, 
     }
   };
 
+  // Format the date for display (clean, consistent format)
+  const formatDisplayDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Recent';
+    }
+  };
+
+
+
   return (
     <NoteItemContainer 
       isSelected={isSelected}
       onClick={onSelect}
     >
-      <NoteTitle>{note.title || 'Untitled Note'}</NoteTitle>
-      <NotePreview>{note.diary_entry || 'No content available...'}</NotePreview>
-      <NoteDate>{formatDate(note.date_created || new Date().toISOString())}</NoteDate>
+      <NoteTitle title={note.title || 'Untitled Note'}>
+        {note.title || 'Untitled Note'}
+      </NoteTitle>
+      <NotePreview title={note.diary_entry || 'No content available...'}>
+        {note.diary_entry || 'No content available...'}
+      </NotePreview>
+      <NoteDate>
+        {formatDisplayDate(note.created_at || new Date().toISOString())}
+      </NoteDate>
       
       {onDelete && (
         <NoteActions>

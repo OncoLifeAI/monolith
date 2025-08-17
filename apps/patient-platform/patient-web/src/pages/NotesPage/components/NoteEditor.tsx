@@ -6,7 +6,7 @@ interface NoteEditorProps {
   note: Note;
   onNoteUpdate: (note: Note) => void;
   onSaveNote: (note: Note) => void;
-  onDeleteNote: (noteId: string) => void;
+  onDeleteNote: (noteId?: string) => void;
   isDraft?: boolean;
   onCancelDraft?: () => void;
 }
@@ -49,7 +49,8 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
     };
     onNoteUpdate(updatedNote);
     
-    if (!note.id) {
+    // Always call onSaveNote for draft notes or notes without entry_uuid
+    if (isDraft || !note.entry_uuid) {
       onSaveNote(updatedNote);
     }
     
@@ -120,7 +121,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ note, onNoteUpdate, onSa
             Cancel
           </CancelButton>
           {!isDraft && (
-            <DeleteButton onClick={() => onDeleteNote && onDeleteNote(note.id || '')}>
+            <DeleteButton onClick={() => onDeleteNote && onDeleteNote(note.entry_uuid || note.id || '')}>
               Delete
             </DeleteButton>
           )}

@@ -16,22 +16,36 @@ export const useFetchNotes = (year: number, month: number) => {
 };
 
 export const saveNewNotes = async (params: { content: string, title: string}) => {
+  console.log('Saving note:', params);
   const body = {
     diary_entry: params.content,
     title: params.title,
   };
-  const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.NOTES}`, body);
-  return response.data;
+  console.log('Request body:', body);
+  console.log('Posting to:', `${API_CONFIG.ENDPOINTS.NOTES}`);
+  
+  try {
+    const response = await apiClient.post(`${API_CONFIG.ENDPOINTS.NOTES}`, body);
+    console.log('Save response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Save request failed:', error);
+    throw error;
+  }
 };
 
 export const useSaveNewNotes = (year: number, month: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: saveNewNotes,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Note saved successfully:', data);
       // Invalidate and refetch notes for the current year/month
       queryClient.invalidateQueries({ queryKey: ['notes', year, month] });
     },
+    onError: (error) => {
+      console.error('Failed to save note to backend:', error);
+    }
   });
 };
 
@@ -57,7 +71,10 @@ export const useUpdateNote = (year: number, month: number) => {
 };  
 
 export const deleteNote = async (params: {noteId: string}) => {
-  const response = await apiClient.patch(`${API_CONFIG.ENDPOINTS.NOTES}/${params.noteId}/delete`);
+  if (!params.noteId || params.noteId.trim() === '' || params.noteId === 'delete') {
+    throw new Error('Invalid or missing note ID for deletion');
+  }
+  const response = await apiClient.delete(`${API_CONFIG.ENDPOINTS.NOTES}/${params.noteId}`);
   return response.data;
 };
 

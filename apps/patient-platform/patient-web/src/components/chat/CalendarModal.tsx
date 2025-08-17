@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calendar } from 'lucide-react';
+import dayjs, { Dayjs } from 'dayjs';
+import { SleekDayDatePicker } from '@oncolife/ui-components';
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -12,22 +14,27 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({
   onClose,
   onDateSelect
 }) => {
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
 
   if (!isOpen) return null;
 
   const handleSubmit = () => {
     if (selectedDate) {
-      const date = new Date(selectedDate);
+      // Convert dayjs to JavaScript Date, but keep the date part only
+      // This prevents timezone issues by using the exact date the user selected
+      const year = selectedDate.year();
+      const month = selectedDate.month(); // 0-based
+      const day = selectedDate.date();
+      const date = new Date(year, month, day);
       onDateSelect(date);
       onClose();
     }
   };
 
-
-  const getMaxDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+  const handleDateChange = (date: Dayjs) => {
+    console.log('CalendarModal: handleDateChange called with:', date.format('YYYY-MM-DD'));
+    setSelectedDate(date);
+    console.log('CalendarModal: selectedDate state updated');
   };
 
   return (
@@ -45,13 +52,18 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({
         
         <div className="calendar-modal-content">
           <p>When did you receive chemotherapy?</p>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            max={getMaxDate()}
-            className="date-input"
-          />
+          <div className="date-picker-container">
+            <SleekDayDatePicker
+              value={selectedDate}
+              onChange={handleDateChange}
+              maxDate={dayjs()}
+              label="Select Date"
+              fullWidth={true}
+              placeholder="Choose chemotherapy date"
+              disableBackdrop={true}
+              usePortal={true}
+            />
+          </div>
         </div>
         
         <div className="calendar-modal-footer">

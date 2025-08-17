@@ -85,6 +85,21 @@ export const NotesSidebar: React.FC<NotesSidebarProps> = ({
             />
           );
         })}
+        
+        {/* Scroll indicator when there are many notes */}
+        {notes.length > 8 && (
+          <div style={{
+            textAlign: 'center',
+            padding: '16px',
+            color: '#94a3b8',
+            fontSize: '12px',
+            fontStyle: 'italic',
+            borderTop: '1px solid rgba(226, 232, 240, 0.3)',
+            marginTop: '8px'
+          }}>
+            Scroll to see more notes ({notes.length} total)
+          </div>
+        )}
       </NotesList>
     </SidebarContainer>
   );

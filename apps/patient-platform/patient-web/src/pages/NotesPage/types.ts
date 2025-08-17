@@ -3,9 +3,9 @@ export interface Note {
   title: string;
   diary_entry: string;
   created_at: string;
+  last_updated_at?: string; // Make optional since backend might not send it
   entry_uuid?: string;
   marked_for_doctor?: boolean;
-  is_deleted?: boolean;
 } 
 
 export interface NoteResponse {

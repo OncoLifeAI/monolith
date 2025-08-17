@@ -13,11 +13,15 @@ export { default as Navigation, PageContentWrapper, MobileNavSpacer, MOBILE_NAV_
 
 // Date Picker
 export { default as DatePicker } from './components/DatePicker';
-export * from './components/DatePicker/DatePicker.styles';
+export { DatePickerContainer as OldDatePickerContainer, DateDisplayButton as OldDateDisplayButton } from './components/DatePicker/DatePicker.styles';
 
 // Sleek Date Picker
 export { default as SleekDatePicker } from './components/SleekDatePicker';
 export * from './components/SleekDatePicker/SleekDatePicker.styles';
+
+// Sleek Day Date Picker
+export { default as SleekDayDatePicker } from './components/SleekDayDatePicker';
+export * from './components/SleekDayDatePicker/SleekDayDatePicker.styles';
 
 // Session Management
 export { default as SessionTimeoutManager, SESSION_START_KEY } from './components/SessionTimeout/SessionTimeoutManager';

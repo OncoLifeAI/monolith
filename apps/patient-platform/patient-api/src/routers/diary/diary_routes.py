@@ -6,7 +6,7 @@ This module provides endpoints for managing patient diary entries:
 Routes:
 - GET /diary/{year}/{month}: Fetch diary entries for a specific month and year
 - POST /diary/: Create a new diary entry with text and doctor flag
-- PATCH /diary/{entry_uuid}/delete: Soft delete a diary entry by UUID
+- DELETE /diary/{entry_uuid}: Permanently delete a diary entry by UUID
 
 All routes require authentication and operate on the logged-in user's data.
 """
@@ -40,14 +40,23 @@ def convert_diary_entry_to_user_timezone(entry, user_timezone: str = "America/Lo
         "diary_entry": entry.diary_entry,
         "entry_uuid": str(entry.entry_uuid),  # Convert UUID to string
         "marked_for_doctor": entry.marked_for_doctor,
-        "is_deleted": entry.is_deleted,
+
     }
     
     # Convert timestamps to user timezone
     if entry_data["created_at"]:
-        entry_data["created_at"] = utc_to_user_timezone(entry_data["created_at"], user_timezone)
+        try:
+            entry_data["created_at"] = utc_to_user_timezone(entry_data["created_at"], user_timezone)
+        except Exception as e:
+            logger.error(f"[DIARY] Failed to convert created_at: {e}")
+            entry_data["created_at"] = entry.created_at  # Keep original if conversion fails
+    
     if entry_data["last_updated_at"]:
-        entry_data["last_updated_at"] = utc_to_user_timezone(entry_data["last_updated_at"], user_timezone)
+        try:
+            entry_data["last_updated_at"] = utc_to_user_timezone(entry_data["last_updated_at"], user_timezone)
+        except Exception as e:
+            logger.error(f"[DIARY] Failed to convert last_updated_at: {e}")
+            entry_data["last_updated_at"] = entry.last_updated_at  # Keep original if conversion fails
     
     return entry_data
 
@@ -66,7 +75,6 @@ async def get_diary_entries_by_month(
         logger.info(f"[DIARY] Fetch month year={year} month={month} patient={current_user.sub} tz={timezone}")
         entries = db.query(PatientDiaryEntries).filter(
             PatientDiaryEntries.patient_uuid == current_user.sub,
-            PatientDiaryEntries.is_deleted == False,
             extract('year', PatientDiaryEntries.created_at) == year,
             extract('month', PatientDiaryEntries.created_at) == month
         ).order_by(PatientDiaryEntries.last_updated_at.desc()).all()
@@ -87,12 +95,15 @@ async def get_diary_entries_by_month(
 async def create_diary_entry(
     entry_data: DiaryEntryCreate,
     db: Session = Depends(get_patient_db),
-    current_user: TokenData = Depends(get_current_user)
+    current_user: TokenData = Depends(get_current_user),
+    timezone: str = Query(default="America/Los_Angeles", description="User's timezone")
 ):
     """
     Create a new diary entry for the authenticated patient.
     """
     try:
+        logger.info(f"[DIARY] Creating entry patient={current_user.sub} title='{entry_data.title}' content_length={len(entry_data.diary_entry)}")
+        
         new_entry = PatientDiaryEntries(
             patient_uuid=current_user.sub,
             title=entry_data.title,
@@ -102,8 +113,13 @@ async def create_diary_entry(
         db.add(new_entry)
         db.commit()
         db.refresh(new_entry)
-        logger.info(f"[DIARY] Created entry id={new_entry.id} patient={current_user.sub}")
-        return new_entry
+        
+        logger.info(f"[DIARY] Created entry id={new_entry.id} entry_uuid={new_entry.entry_uuid} patient={current_user.sub}")
+        
+        # Convert to proper response format with timezone conversion
+        entry_data_converted = convert_diary_entry_to_user_timezone(new_entry, timezone)
+        return DiaryEntrySchema(**entry_data_converted)
+        
     except Exception as e:
         db.rollback()
         logger.error(f"[DIARY] Create failed patient={current_user.sub} error={e}")
@@ -123,8 +139,7 @@ async def update_diary_entry(
     try:
         entry_to_update = db.query(PatientDiaryEntries).filter(
             PatientDiaryEntries.entry_uuid == entry_uuid,
-            PatientDiaryEntries.patient_uuid == current_user.sub,
-            PatientDiaryEntries.is_deleted == False
+            PatientDiaryEntries.patient_uuid == current_user.sub
         ).first()
 
         if not entry_to_update:
@@ -163,8 +178,7 @@ async def get_all_diary_entries(
     try:
         logger.info(f"[DIARY] Fetch all patient={current_user.sub} tz={timezone}")
         entries = db.query(PatientDiaryEntries).filter(
-            PatientDiaryEntries.patient_uuid == current_user.sub,
-            PatientDiaryEntries.is_deleted == False
+            PatientDiaryEntries.patient_uuid == current_user.sub
         ).order_by(PatientDiaryEntries.last_updated_at.desc()).all()
         logger.info(f"[DIARY] Fetched all count={len(entries)} patient={current_user.sub}")
         
@@ -178,34 +192,42 @@ async def get_all_diary_entries(
         logger.error(f"[DIARY] Fetch all failed patient={current_user.sub} error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch(
-    "/{entry_uuid}/delete",
+@router.delete(
+    "/{entry_uuid}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Soft delete a diary entry"
+    summary="Delete a diary entry permanently"
 )
-async def soft_delete_diary_entry(
+async def delete_diary_entry(
     entry_uuid: uuid.UUID,
     db: Session = Depends(get_patient_db),
     current_user: TokenData = Depends(get_current_user)
 ):
     """
-    Soft deletes a diary entry by setting its `is_deleted` flag to true.
+    Permanently deletes a diary entry from the database.
     Ensures the entry belongs to the logged-in user before deleting.
     """
-    entry_to_delete = db.query(PatientDiaryEntries).filter(
-        PatientDiaryEntries.entry_uuid == entry_uuid,
-        PatientDiaryEntries.patient_uuid == current_user.sub
-    ).first()
+    try:
+        logger.info(f"[DIARY] Delete entry_uuid={entry_uuid} patient={current_user.sub}")
+        
+        entry_to_delete = db.query(PatientDiaryEntries).filter(
+            PatientDiaryEntries.entry_uuid == entry_uuid,
+            PatientDiaryEntries.patient_uuid == current_user.sub
+        ).first()
 
-    if not entry_to_delete:
-        logger.warning(f"[DIARY] Delete not found entry_uuid={entry_uuid} patient={current_user.sub}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diary entry not found or you do not have permission to delete it.")
+        if not entry_to_delete:
+            logger.warning(f"[DIARY] Delete not found entry_uuid={entry_uuid} patient={current_user.sub}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Diary entry not found or you do not have permission to delete it."
+            )
 
-    if entry_to_delete.is_deleted:
-        logger.info(f"[DIARY] Delete no-op already deleted entry_id={entry_to_delete.id} patient={current_user.sub}")
+        # Actually delete from database
+        db.delete(entry_to_delete)
+        db.commit()
+        logger.info(f"[DIARY] Permanently deleted entry_id={entry_to_delete.id} patient={current_user.sub}")
         return
-
-    entry_to_delete.is_deleted = True
-    db.commit()
-    logger.info(f"[DIARY] Deleted entry_id={entry_to_delete.id} patient={current_user.sub}")
-    return 
+        
+    except Exception as e:
+        logger.error(f"[DIARY] Delete failed entry_uuid={entry_uuid} patient={current_user.sub} error={e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete diary entry: {str(e)}") 

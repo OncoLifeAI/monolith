@@ -7,14 +7,14 @@ export const Backdrop = styled.div`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.1);
-  z-index: 999;
+  z-index: 500;
   backdrop-filter: blur(2px);
 `;
 
 export const DatePickerContainer = styled.div<{ $fullWidth?: boolean }>`
   position: relative;
   width: ${props => props.$fullWidth ? '100%' : 'auto'};
-  z-index: 1000;
+  z-index: 501;
 `;
 
 export const DateDisplayButton = styled.button<{ 
@@ -92,7 +92,7 @@ export const DropdownContainer = styled.div`
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
   padding: 24px;
-  z-index: 1001;
+  z-index: 502;
   animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   @keyframes slideDown {
@@ -168,38 +168,44 @@ export const MonthGrid = styled.div`
 export const MonthButton = styled.button<{ 
   $isSelected?: boolean; 
   $isCurrent?: boolean;
+  $isDisabled?: boolean;
 }>`
   padding: 16px 12px;
   border: 1px solid ${props => {
+    if (props.$isDisabled) return 'rgba(226, 232, 240, 0.3)';
     if (props.$isSelected) return 'rgba(59, 130, 246, 0.5)';
     if (props.$isCurrent) return 'rgba(16, 185, 129, 0.4)';
     return 'rgba(226, 232, 240, 0.6)';
   }};
   border-radius: 12px;
   background: ${props => {
+    if (props.$isDisabled) return 'rgba(248, 250, 252, 0.5)';
     if (props.$isSelected) return 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)';
     if (props.$isCurrent) return 'rgba(16, 185, 129, 0.1)';
     return 'rgba(255, 255, 255, 0.8)';
   }};
   color: ${props => {
+    if (props.$isDisabled) return '#9ca3af';
     if (props.$isSelected) return 'white';
     if (props.$isCurrent) return '#059669';
     return '#374151';
   }};
   font-weight: ${props => props.$isSelected || props.$isCurrent ? '600' : '500'};
   font-size: 14px;
-  cursor: pointer;
+  cursor: ${props => props.$isDisabled ? 'not-allowed' : 'pointer'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(8px);
 
-  &:hover {
-    transform: translateY(-2px);
+  &:hover:not(:disabled) {
+    transform: ${props => props.$isDisabled ? 'none' : 'translateY(-2px)'};
     box-shadow: ${props => {
+      if (props.$isDisabled) return 'none';
       if (props.$isSelected) return '0 8px 32px rgba(59, 130, 246, 0.3)';
       if (props.$isCurrent) return '0 8px 32px rgba(16, 185, 129, 0.2)';
       return '0 8px 32px rgba(0, 0, 0, 0.1)';
     }};
     background: ${props => {
+      if (props.$isDisabled) return 'rgba(248, 250, 252, 0.5)';
       if (props.$isSelected) return 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
       if (props.$isCurrent) return 'rgba(16, 185, 129, 0.15)';
       return 'rgba(255, 255, 255, 0.95)';
