@@ -7,6 +7,9 @@ Routes:
 - POST /auth/signup: Register a new user account with email, first name, and last name
 - POST /auth/login: Authenticate user with email/password and return JWT tokens
 - POST /auth/complete-new-password: Complete password setup for users with temporary passwords
+- POST /auth/forgot-password: Send password reset code to user's email
+- POST /auth/reset-password: Reset password using confirmation code from email
+- POST /auth/logout: Client-side logout (formality endpoint)
 - DELETE /auth/delete-patient: Delete patient account and all associated data (testing only)
 
 All routes handle Cognito integration and manage user data in the patient database.
@@ -34,6 +37,10 @@ from routers.auth.models import (
     CompleteNewPasswordResponse,
     AuthTokens,
     DeletePatientRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
 )
 # Import DB session and models
 from database import get_patient_db, get_doctor_db
@@ -409,6 +416,157 @@ async def complete_new_password(request: CompleteNewPasswordRequest):
         logger.error(
             f"Unexpected error setting new password for {request.email}: {str(e)}"
         )
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(request: ForgotPasswordRequest):
+    """
+    Send a password reset code to the user's email via AWS Cognito.
+    This initiates the password reset flow.
+    """
+    try:
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not client_id:
+            logger.error("COGNITO_CLIENT_ID not configured")
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        # Prepare the request parameters
+        params = {
+            "ClientId": client_id,
+            "Username": request.email,
+        }
+
+        # Add SecretHash if client secret is configured
+        if client_secret:
+            params["SecretHash"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        # Initiate the forgot password flow
+        cognito_client.forgot_password(**params)
+
+        logger.info(f"Password reset initiated for: {request.email}")
+        return ForgotPasswordResponse(
+            message="Password reset code sent to your email address",
+            email=request.email
+        )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(f"Cognito error during forgot password for {request.email}: {error_code} - {error_message}")
+
+        if error_code == "UserNotFoundException":
+            # For security, we don't reveal if the user exists or not
+            logger.info(f"Password reset attempted for non-existent user: {request.email}")
+            return ForgotPasswordResponse(
+                message="If an account with this email exists, a password reset code has been sent",
+                email=request.email
+            )
+        elif error_code == "LimitExceededException":
+            raise HTTPException(
+                status_code=429,
+                detail="Too many password reset attempts. Please wait before trying again."
+            )
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to initiate password reset: {error_message}"
+            )
+
+    except Exception as e:
+        logger.error(f"Unexpected error during forgot password for {request.email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(request: ResetPasswordRequest):
+    """
+    Reset the user's password using the confirmation code sent to their email.
+    This completes the password reset flow initiated by forgot-password.
+    """
+    try:
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not client_id:
+            logger.error("COGNITO_CLIENT_ID not configured")
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        # Prepare the request parameters
+        params = {
+            "ClientId": client_id,
+            "Username": request.email,
+            "ConfirmationCode": request.confirmation_code,
+            "Password": request.new_password,
+        }
+
+        # Add SecretHash if client secret is configured
+        if client_secret:
+            params["SecretHash"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        # Confirm the password reset
+        cognito_client.confirm_forgot_password(**params)
+
+        logger.info(f"Password successfully reset for: {request.email}")
+        return ResetPasswordResponse(
+            message="Password has been successfully reset. You can now log in with your new password.",
+            email=request.email
+        )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(f"Cognito error during password reset for {request.email}: {error_code} - {error_message}")
+
+        if error_code == "CodeMismatchException":
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid confirmation code. Please check the code and try again."
+            )
+        elif error_code == "ExpiredCodeException":
+            raise HTTPException(
+                status_code=400,
+                detail="Confirmation code has expired. Please request a new password reset."
+            )
+        elif error_code == "UserNotFoundException":
+            raise HTTPException(
+                status_code=404,
+                detail="User not found."
+            )
+        elif error_code == "InvalidPasswordException":
+            raise HTTPException(
+                status_code=400,
+                detail=f"New password does not meet requirements: {error_message}"
+            )
+        elif error_code == "LimitExceededException":
+            raise HTTPException(
+                status_code=429,
+                detail="Too many password reset attempts. Please wait before trying again."
+            )
+        else:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to reset password: {error_message}"
+            )
+
+    except Exception as e:
+        logger.error(f"Unexpected error during password reset for {request.email}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
