@@ -41,4 +41,20 @@ class CompleteNewPasswordResponse(BaseModel):
 class DeletePatientRequest(BaseModel):
     email: Optional[EmailStr] = None
     uuid: Optional[str] = None
-    skip_aws: Optional[bool] = False 
+    skip_aws: Optional[bool] = False
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    confirmation_code: str
+    new_password: str
+
+class ResetPasswordResponse(BaseModel):
+    message: str
+    email: str 
