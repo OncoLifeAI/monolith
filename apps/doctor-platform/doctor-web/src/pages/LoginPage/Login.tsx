@@ -4,9 +4,6 @@ import { Card, Title, Subtitle, InputPassword } from '@oncolife/ui-components';
 import {
   StyledForm,
   ForgotPassword,
-  Divider,
-  SocialRow,
-  SocialIcon,
   StyledInputGroup,
   StyledInput,
   InputIcon,
@@ -94,10 +91,6 @@ const Login: React.FC = () => {
           Sign In to Doctor Portal
         </StyledButton>
       </StyledForm>
-      <Divider>Secure Doctor Access</Divider>
-      <SocialRow>
-        <SocialIcon src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google" />
-      </SocialRow>
     </Card>
   );
 };

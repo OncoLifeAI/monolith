@@ -77,61 +77,6 @@ export const ForgotPassword = styled.a`
   cursor: pointer;
 `;
 
-export const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  width: 100%;
-  margin: 1.5rem 0 1rem 0;
-  color: #bbb;
-  font-size: 0.95rem;
-  
-  @media (max-width: 480px) {
-    margin: 1.25rem 0 0.75rem 0;
-    font-size: 0.875rem;
-  }
-  
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #e0e0e0;
-    margin: 0 0.75rem;
-  }
-`;
-
-export const SocialRow = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 1.25rem;
-  margin-top: 0.5rem;
-`;
-
-export const SocialIcon = styled.img`
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-  padding: 0.375rem;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 480px) {
-    width: 3rem;
-    height: 3rem;
-    padding: 0.5rem;
-  }
-`;
-
 export const Footer = styled.div`
   padding: 0 2.25rem 1.5rem 2.25rem;
   font-size: 0.95rem;

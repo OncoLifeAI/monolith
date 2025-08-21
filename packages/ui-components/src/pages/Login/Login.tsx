@@ -4,9 +4,6 @@ import { Card, Title, Subtitle } from '../../styles/GlobalStyles';
 import {
   StyledForm,
   ForgotPassword,
-  Divider,
-  SocialRow,
-  SocialIcon,
   StyledInputGroup,
   StyledInput,
   InputIcon,
@@ -95,10 +92,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {isLoading ? 'Signing In...' : 'Sign In'}
         </StyledButton>
       </StyledForm>
-      <Divider>Or continue with</Divider>
-      <SocialRow>
-        <SocialIcon src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google" />
-      </SocialRow>
     </Card>
   );
 };
