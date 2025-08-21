@@ -4,6 +4,7 @@ import { Background, WrapperStyle, ForgotPassword as ForgotPasswordComponent } f
 import { LoginHeader } from './LoginPage.styles';
 import logo from '../../assets/logo.png';
 import { Logo } from '@oncolife/ui-components';
+import { useForgotPassword, useResetPassword } from '../../services/login';
 import styled from 'styled-components';
 
 const MobileContainer = styled.div`
@@ -27,21 +28,32 @@ const MobileContainer = styled.div`
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const forgotPasswordMutation = useForgotPassword();
+  const resetPasswordMutation = useResetPassword();
   
   // Get email from navigation state if it was passed from login page
   const initialEmail = location.state?.email || '';
 
-  const handleForgotPassword = async (email: string, newPassword: string, confirmPassword: string) => {
-    // TODO: Implement API call for password reset
-    console.log('Patient password reset:', { 
-      email, 
-      newPasswordLength: newPassword.length, 
-      confirmPasswordLength: confirmPassword.length 
-    });
-    
-    // For now, just simulate success
-    // In the future, this will call the actual API
-    return Promise.resolve();
+  const handleForgotPassword = async (email: string) => {
+    try {
+      await forgotPasswordMutation.mutateAsync({ email });
+    } catch (error: any) {
+      // Re-throw the error so the UI component can handle it
+      throw new Error(error?.response?.data?.message || error?.message || 'Failed to send reset email');
+    }
+  };
+
+  const handleResetPassword = async (email: string, confirmationCode: string, newPassword: string) => {
+    try {
+      await resetPasswordMutation.mutateAsync({ 
+        email, 
+        confirmation_code: confirmationCode, 
+        new_password: newPassword 
+      });
+    } catch (error: any) {
+      // Re-throw the error so the UI component can handle it
+      throw new Error(error?.response?.data?.message || error?.message || 'Failed to reset password');
+    }
   };
 
   const handleBackToLogin = () => {
@@ -59,6 +71,7 @@ const ForgotPassword: React.FC = () => {
             userType="patient"
             initialEmail={initialEmail}
             onSubmit={handleForgotPassword}
+            onResetPassword={handleResetPassword}
             onBackToLogin={handleBackToLogin}
           />
         </MobileContainer>

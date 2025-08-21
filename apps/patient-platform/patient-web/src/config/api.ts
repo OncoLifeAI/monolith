@@ -9,6 +9,8 @@ export const API_CONFIG = {
       LOGIN: '/login',
       SIGNUP: '/signup',
       COMPLETE_NEW_PASSWORD: '/complete-new-password',
+      FORGOT_PASSWORD: '/forgot-password',
+      RESET_PASSWORD: '/reset-password',
       LOGOUT: '/logout'
     },
     PROFILE: '/profile',

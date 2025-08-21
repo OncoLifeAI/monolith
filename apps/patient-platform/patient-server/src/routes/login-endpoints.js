@@ -158,4 +158,101 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      console.warn('[LOGIN] Missing email for forgot-password');
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+        error: 'MISSING_EMAIL'
+      });
+    }
+
+    const backendBase = apiClient?.defaults?.baseURL || '<unknown>';
+    console.log(`[LOGIN] forgot-password for ${email} -> POST ${backendBase}/auth/forgot-password`);
+
+    const response = await api.post('/auth/forgot-password', { email });
+    
+    if (!response.success) {
+      console.error('[LOGIN] Upstream error details (forgot-password):', response.error?.details || response.error?.message);
+      return res.status(response.status).json({
+        success: false,
+        message: response.error.message,
+        error: 'FORGOT_PASSWORD_FAILED'
+      });
+    }
+
+    const { message, email: userEmail } = response.data;
+
+    console.log(`[LOGIN] forgot-password success for ${email}`);
+    return res.status(200).json({
+      success: true,
+      message: message || 'Password reset code sent successfully',
+      data: { email: userEmail }
+    });
+
+  } catch (error) {
+    console.error('[LOGIN] forgot-password endpoint error:', error?.response?.data || error.message);
+    return res.status(500).json({ success: false, message: 'Internal server error', error: 'INTERNAL_ERROR' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, confirmation_code, new_password } = req.body;
+
+    if (!email || !confirmation_code || !new_password) {
+      console.warn('[LOGIN] Missing fields for reset-password');
+      return res.status(400).json({
+        success: false,
+        message: 'Email, confirmation code, and new password are required',
+        error: 'MISSING_FIELDS'
+      });
+    }
+
+    if (confirmation_code.length !== 6) {
+      console.warn('[LOGIN] Invalid confirmation code length for reset-password');
+      return res.status(400).json({
+        success: false,
+        message: 'Confirmation code must be 6 digits',
+        error: 'INVALID_CODE_FORMAT'
+      });
+    }
+
+    const backendBase = apiClient?.defaults?.baseURL || '<unknown>';
+    console.log(`[LOGIN] reset-password for ${email} -> POST ${backendBase}/auth/reset-password`);
+
+    const response = await api.post('/auth/reset-password', { 
+      email, 
+      confirmation_code, 
+      new_password 
+    });
+    
+    if (!response.success) {
+      console.error('[LOGIN] Upstream error details (reset-password):', response.error?.details || response.error?.message);
+      return res.status(response.status).json({
+        success: false,
+        message: response.error.message,
+        error: 'RESET_PASSWORD_FAILED'
+      });
+    }
+
+    const { message, email: userEmail } = response.data;
+
+    console.log(`[LOGIN] reset-password success for ${email}`);
+    return res.status(200).json({
+      success: true,
+      message: message || 'Password reset successfully',
+      data: { email: userEmail }
+    });
+
+  } catch (error) {
+    console.error('[LOGIN] reset-password endpoint error:', error?.response?.data || error.message);
+    return res.status(500).json({ success: false, message: 'Internal server error', error: 'INTERNAL_ERROR' });
+  }
+});
+
 module.exports = router;

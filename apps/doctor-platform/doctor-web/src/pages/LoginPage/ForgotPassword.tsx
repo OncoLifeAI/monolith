@@ -30,13 +30,18 @@ const ForgotPassword: React.FC = () => {
   // Get email from navigation state if it was passed from login page
   const initialEmail = location.state?.email || '';
 
-  const handleForgotPassword = async (email: string, newPassword: string, confirmPassword: string) => {
+  const handleForgotPassword = async (email: string) => {
     // TODO: Implement API call for password reset
-    console.log('Doctor password reset:', { 
-      email, 
-      newPasswordLength: newPassword.length, 
-      confirmPasswordLength: confirmPassword.length 
-    });
+    console.log('Doctor forgot password request:', { email });
+    
+    // For now, just simulate success
+    // In the future, this will call the actual API
+    return Promise.resolve();
+  };
+
+  const handleResetPassword = async (email: string, confirmationCode: string, newPassword: string) => {
+    // TODO: Implement API call for password reset
+    console.log('Doctor reset password request:', { email, confirmationCode: '***', newPassword: '***' });
     
     // For now, just simulate success
     // In the future, this will call the actual API
@@ -58,6 +63,7 @@ const ForgotPassword: React.FC = () => {
             userType="doctor"
             initialEmail={initialEmail}
             onSubmit={handleForgotPassword}
+            onResetPassword={handleResetPassword}
             onBackToLogin={handleBackToLogin}
           />
         </MobileContainer>
