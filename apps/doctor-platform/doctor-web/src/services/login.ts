@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-// import { apiClient } from '../utils/apiClient';
-// import { API_CONFIG } from '../config/api';
+import { apiClient } from '../utils/apiClient';
+import { API_CONFIG } from '../config/api';
 
 interface LoginData {
   email: string;
@@ -90,10 +90,70 @@ export const useCompleteNewPassword = () => {
   });
 };
 
+interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    email: string;
+  };
+}
+
+interface ResetPasswordData {
+  email: string;
+  confirmation_code: string;
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    email: string;
+  };
+}
+
 interface LogoutResponse {
   success: boolean;
   message: string;
 }
+
+const forgotPassword = async (data: ForgotPasswordData): Promise<ForgotPasswordResponse> => {
+  const response = await apiClient.post<ForgotPasswordResponse>(API_CONFIG.ENDPOINTS.AUTH.FORGOT_PASSWORD, data);
+  return response.data;
+};
+
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: forgotPassword,
+    onSuccess: (data) => {
+      console.log('Forgot password email sent:', data.message);
+    },
+    onError: (error) => {
+      console.error('Forgot password error:', error);
+    },
+  });
+};
+
+const resetPassword = async (data: ResetPasswordData): Promise<ResetPasswordResponse> => {
+  const response = await apiClient.post<ResetPasswordResponse>(API_CONFIG.ENDPOINTS.AUTH.RESET_PASSWORD, data);
+  return response.data;
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: resetPassword,
+    onSuccess: (data) => {
+      console.log('Password reset successfully:', data.message);
+    },
+    onError: (error) => {
+      console.error('Reset password error:', error);
+    },
+  });
+};
 
 const logoutUser = async (): Promise<LogoutResponse> => {
   const response = await apiClient.post<LogoutResponse>(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);

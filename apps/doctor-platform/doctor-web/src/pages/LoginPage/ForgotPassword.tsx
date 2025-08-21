@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Background, WrapperStyle, ForgotPassword as ForgotPasswordComponent, Logo } from '@oncolife/ui-components';
 import { LoginHeader } from './LoginPage.styles';
+import { useForgotPassword, useResetPassword } from '../../services/login';
 import logo from '../../assets/logo.png';
 import styled from 'styled-components';
 
@@ -26,26 +27,32 @@ const MobileContainer = styled.div`
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const forgotPasswordMutation = useForgotPassword();
+  const resetPasswordMutation = useResetPassword();
   
   // Get email from navigation state if it was passed from login page
   const initialEmail = location.state?.email || '';
 
   const handleForgotPassword = async (email: string) => {
-    // TODO: Implement API call for password reset
-    console.log('Doctor forgot password request:', { email });
-    
-    // For now, just simulate success
-    // In the future, this will call the actual API
-    return Promise.resolve();
+    try {
+      await forgotPasswordMutation.mutateAsync({ email });
+    } catch (error) {
+      // Error handling is done in the mutation's onError callback
+      throw error;
+    }
   };
 
   const handleResetPassword = async (email: string, confirmationCode: string, newPassword: string) => {
-    // TODO: Implement API call for password reset
-    console.log('Doctor reset password request:', { email, confirmationCode: '***', newPassword: '***' });
-    
-    // For now, just simulate success
-    // In the future, this will call the actual API
-    return Promise.resolve();
+    try {
+      await resetPasswordMutation.mutateAsync({
+        email,
+        confirmation_code: confirmationCode,
+        new_password: newPassword
+      });
+    } catch (error) {
+      // Error handling is done in the mutation's onError callback
+      throw error;
+    }
   };
 
   const handleBackToLogin = () => {

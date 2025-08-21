@@ -10,10 +10,10 @@
   "scripts": {
     "dev": "turbo run dev --parallel",
     "dev:patient": "turbo run dev --parallel --filter=@oncolife/patient-web --filter=@oncolife/patient-server",
-    "dev:doctor": "turbo run dev --parallel --filter=@oncolife/doctor-web --filter=@oncolife/doctor-api",
+    "dev:doctor": "turbo run dev --parallel --filter=@oncolife/doctor-web --filter=@oncolife/doctor-server --filter=@oncolife/doctor-api",
     "build:all": "turbo run build",
     "build:patient": "turbo run build --filter=@oncolife/patient-web --filter=@oncolife/patient-api",
-    "build:doctor": "turbo run build --filter=@oncolife/doctor-web --filter=@oncolife/doctor-api",
+    "build:doctor": "turbo run build --filter=@oncolife/doctor-web --filter=@oncolife/doctor-server --filter=@oncolife/doctor-api",
     "clean": "rm -rf node_modules apps/*/node_modules apps/*/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {

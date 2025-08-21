@@ -10,7 +10,7 @@ export default defineConfig({
     cors: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8001', // Assuming doctor-api runs on different port
+        target: process.env.VITE_GATEWAY_URL || 'http://localhost:3001',
         changeOrigin: true,
         secure: false
       }
