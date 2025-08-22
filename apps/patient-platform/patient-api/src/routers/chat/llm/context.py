@@ -93,14 +93,14 @@ class ContextLoader:
             # Get CTCAE results (cached)
             ctcae_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=10, k_questions=0)
             ctcae_chunks = [h.get("text", "") for h in ctcae_results.get("ctcae", []) if h.get("text")]
-            
+        
             # Get questions results (cached)
             questions_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=0, k_questions=12)
             questions_chunks = [h.get("text", "") for h in questions_results.get("questions", []) if h.get("text")]
             
             # Build RAG section
             rag_sections = []
-            
+        
             if ctcae_chunks:
                 ctcae_text = "\n---\n".join(ctcae_chunks[:6])
                 rag_sections.append(f"=== Relevant CTCAE Criteria for {', '.join(symptoms)} ===\n{ctcae_text}")

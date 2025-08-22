@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from typing import List, Optional
 
-from ..auth.dependencies import get_current_user, TokenData
-from ...db.database import get_patient_db, get_doctor_db
-from ...db.doctor_models import StaffAssociations
-from ...db.patient_models import PatientInfo, PatientPhysicianAssociations, Conversations
+from routers.auth.dependencies import get_current_user, TokenData
+from routers.db.database import get_patient_db, get_doctor_db
+from routers.db.doctor_models import StaffAssociations
+from routers.db.patient_models import PatientInfo, PatientPhysicianAssociations, Conversations
 from .models import PaginatedDashboardResponse, DashboardPatientInfo, ConversationSummary
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])

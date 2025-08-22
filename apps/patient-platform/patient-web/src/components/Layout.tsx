@@ -5,7 +5,7 @@ import { useUser } from '../contexts/UserContext';
 
 const Layout: React.FC = () => {
   const { profile } = useUser();
-  
+
   return (
   <div style={{ display: 'flex' }}>
     <Navigation userType="patient" profile={profile || undefined} />
@@ -13,7 +13,7 @@ const Layout: React.FC = () => {
       <Outlet />
     </PageContentWrapper>
   </div>
-  );
+);
 };
 
 export default Layout;

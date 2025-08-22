@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 import uuid
-
+from typing import Optional
 # Relative imports
-from ...db.database import get_doctor_db
-from ...db.doctor_models import StaffAssociations, StaffProfiles, AllClinics
-from ..auth.dependencies import get_current_user, TokenData
+from routers.db.database import get_doctor_db
+from routers.db.doctor_models import StaffAssociations, StaffProfiles, AllClinics
+from routers.auth.dependencies import get_current_user, TokenData
 from .models import (
     ClinicAssociationResponse, 
     AddPhysicianRequest, 

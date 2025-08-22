@@ -5,10 +5,10 @@ from typing import List, Optional
 from datetime import date
 import uuid
 
-from ..auth.dependencies import get_current_user
-from ...db.database import get_patient_db, get_doctor_db
-from ...db.patient_models import PatientInfo, PatientPhysicianAssociations
-from ...db.doctor_models import StaffAssociations
+from routers.auth.dependencies import get_current_user
+from routers.db.database import get_patient_db, get_doctor_db
+from routers.db.patient_models import PatientInfo, PatientPhysicianAssociations
+from routers.db.doctor_models import StaffAssociations
 from .models import PatientResponse, PaginatedPatientsResponse, AddPatientRequest, EditPatientRequest
 
 router = APIRouter(prefix="/patients", tags=["patients"])

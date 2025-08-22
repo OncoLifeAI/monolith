@@ -84,7 +84,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       case 'feeling_response':
       case 'feeling-response': {
         // For feeling responses (underscore or hyphen), render the face image only
-        const imageSrc = feelingImages[message.content];
+          const imageSrc = feelingImages[message.content];
         if (imageSrc) {
           return (
             <div className="feeling-response-display">

@@ -43,7 +43,7 @@ from routers.auth.models import (
     ResetPasswordResponse,
 )
 # Import DB session and models
-from database import get_patient_db, get_doctor_db
+from routers.db.database import get_patient_db, get_doctor_db
 from routers.db.patient_models import (
     PatientInfo,
     PatientConfigurations,

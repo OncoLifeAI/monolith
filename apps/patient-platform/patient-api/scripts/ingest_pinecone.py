@@ -131,28 +131,28 @@ def ingest_ctcae(path="model_inputs/CTCAE.json", version="CTCAE v5"):
         
         # Create embeddings for this batch
         embs = embed_texts(batch)
-        vectors = []
+    vectors = []
         
         for text, emb in zip(batch, embs):
             # Extract symptom name for metadata
             symptom_match = re.search(r"Symptom:\s*([^\n]+)", text)
             symptom = symptom_match.group(1).strip().lower() if symptom_match else "general"
             
-            vid = stable_id("ctcae", text[:200])
-            vectors.append({
-                "id": vid,
-                "values": emb,
-                "metadata": {
-                    "type": "ctcae",
-                    "symptoms": [symptom],
-                    "version": version,
-                    "source": "ctcae",
-                    "text": text,
-                }
-            })
+        vid = stable_id("ctcae", text[:200])
+        vectors.append({
+            "id": vid,
+            "values": emb,
+            "metadata": {
+                "type": "ctcae",
+                "symptoms": [symptom],
+                "version": version,
+                "source": "ctcae",
+                "text": text,
+            }
+        })
         
         # Upsert this batch
-        index.upsert(vectors=vectors)
+    index.upsert(vectors=vectors)
         total_vectors += len(vectors)
         print(f"[INGEST] Upserted batch: {len(vectors)} vectors")
     
