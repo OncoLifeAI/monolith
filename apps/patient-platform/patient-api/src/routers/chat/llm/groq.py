@@ -36,6 +36,8 @@ class GroqProvider(LLMProvider):
             temperature=0,
             model=self.model,
             stream=False,
+            tools=None,
+            tool_choice="none"
         )
 
         print("Input tokens:", response.usage.prompt_tokens)

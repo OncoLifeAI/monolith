@@ -84,7 +84,7 @@ def _normalize_symptoms(symptoms: List[str]) -> List[str]:
 def _key(prefix: str, symptoms: List[str]) -> str:
     base = ",".join(_normalize_symptoms(symptoms))
     h = hashlib.md5(base.encode()).hexdigest()
-    key = f"rag:{prefix}:{h}:v1"
+    key = f"rag:{prefix}:{h}:v2"
     logger.debug(f"[RAG][CACHE] key={key}")
     return key
 
@@ -94,21 +94,21 @@ def _key(prefix: str, symptoms: List[str]) -> str:
 def _single_key(prefix: str, symptom: str) -> str:
     sym = (symptom or "").strip().lower()
     h = hashlib.md5(sym.encode()).hexdigest()
-    key = f"rag:per:{prefix}:{h}:v1"
+    key = f"rag:per:{prefix}:{h}:v2"
     logger.debug(f"[RAG][CACHE][PER] key={key} symptom='{sym}'")
     return key
 
 
-def retrieve_for_single_symptom(symptom: str, *, k_ctcae=8, k_questions=8) -> Dict[str, List[Dict[str, Any]]]:
+def retrieve_for_single_symptom(symptom: str, *, k_ctcae=8, k_questions=8, k_triage_kb=8) -> Dict[str, List[Dict[str, Any]]]:
     sym = (symptom or "").strip().lower()
     if not sym:
         logger.debug("[RAG][PER] Empty symptom → empty results")
-        return {"ctcae": [], "questions": []}
+        return {"ctcae": [], "questions": [], "triage_kb": []}
 
     vec = _embed(sym)
     idx = _index()
 
-    results = {"ctcae": [], "questions": []}
+    results = {"ctcae": [], "questions": [], "triage_kb": []}
 
     if k_ctcae > 0:
         logger.debug(f"[RAG][PER][CTCAE] symptom='{sym}' top_k={k_ctcae}")
@@ -147,15 +147,33 @@ def retrieve_for_single_symptom(symptom: str, *, k_ctcae=8, k_questions=8) -> Di
             for m in matches
         ]
 
+    if k_triage_kb > 0:
+        logger.debug(f"[RAG][PER][TRIAGE_KB] symptom='{sym}' top_k={k_triage_kb}")
+        triage_kb_res = idx.query(
+            vector=vec, top_k=k_triage_kb, include_metadata=True,
+            filter={"$and": [{"type": {"$eq": "triage_kb"}}, {"symptoms": {"$in": [sym]}}]}
+        )
+        matches = triage_kb_res.matches or []
+        logger.debug(f"[RAG][PER][TRIAGE_KB] symptom='{sym}' matches={len(matches)}")
+        results["triage_kb"] = [
+            {
+                "text": m.metadata.get("text", ""),
+                "symptoms": m.metadata.get("symptoms", []),
+                "version": m.metadata.get("version", ""),
+                "score": getattr(m, "score", None),
+            }
+            for m in matches
+        ]
+
     return results
 
 
-def cached_retrieve_single_symptom(symptom: str, *, ttl: int = 3600, k_ctcae=8, k_questions=8) -> Dict[str, List[Dict[str, Any]]]:
+def cached_retrieve_single_symptom(symptom: str, *, ttl: int = 3600, k_ctcae=8, k_questions=8, k_triage_kb=8) -> Dict[str, List[Dict[str, Any]]]:
     cache = _cache_client()
     sym = (symptom or "").strip().lower()
     if not cache:
         logger.debug(f"[RAG][CACHE][PER] Redis disabled → direct per-sym retrieve '{sym}'")
-        return retrieve_for_single_symptom(sym, k_ctcae=k_ctcae, k_questions=k_questions)
+        return retrieve_for_single_symptom(sym, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
 
     key = _single_key("both", sym)
     try:
@@ -172,7 +190,7 @@ def cached_retrieve_single_symptom(symptom: str, *, ttl: int = 3600, k_ctcae=8, 
             logger.error(f"[RAG][CACHE][PER] decode failed key={key} error={e}")
 
     logger.debug(f"[RAG][CACHE][PER] MISS key={key} → querying Pinecone for '{sym}'")
-    res = retrieve_for_single_symptom(sym, k_ctcae=k_ctcae, k_questions=k_questions)
+    res = retrieve_for_single_symptom(sym, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
     try:
         cache.setex(key, ttl, json.dumps(res))
         logger.debug(f"[RAG][CACHE][PER] SET key={key} ttl={ttl}s")
@@ -209,34 +227,38 @@ def _dedupe_and_limit(items: List[Dict[str, Any]], *, top_k: int, kind: str) -> 
     return ordered
 
 
-def _union_from_per_symptoms(symptoms: List[str], *, ttl: int, k_ctcae: int, k_questions: int) -> Dict[str, List[Dict[str, Any]]]:
+def _union_from_per_symptoms(symptoms: List[str], *, ttl: int, k_ctcae: int, k_questions: int, k_triage_kb: int) -> Dict[str, List[Dict[str, Any]]]:
     q_syms = _normalize_symptoms(symptoms)
     logger.debug(f"[RAG][UNION] Building union from per-sym caches for {q_syms}")
 
     ctcae_accum: List[Dict[str, Any]] = []
     q_accum: List[Dict[str, Any]] = []
+    triage_kb_accum: List[Dict[str, Any]] = []
 
     for sym in q_syms:
-        per = cached_retrieve_single_symptom(sym, ttl=ttl, k_ctcae=k_ctcae, k_questions=k_questions)
+        per = cached_retrieve_single_symptom(sym, ttl=ttl, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
         ctcae_accum.extend(per.get("ctcae", []))
         q_accum.extend(per.get("questions", []))
+        triage_kb_accum.extend(per.get("triage_kb", []))
 
     ctcae_final = _dedupe_and_limit(ctcae_accum, top_k=k_ctcae, kind="ctcae")
     q_final = _dedupe_and_limit(q_accum, top_k=k_questions, kind="questions")
+    triage_kb_final = _dedupe_and_limit(triage_kb_accum, top_k=k_triage_kb, kind="triage_kb")
 
     logger.debug(
         f"[RAG][UNION] Combined results → ctcae_in={len(ctcae_accum)} ctcae_out={len(ctcae_final)} "
-        f"questions_in={len(q_accum)} questions_out={len(q_final)}"
+        f"questions_in={len(q_accum)} questions_out={len(q_final)} "
+        f"triage_kb_in={len(triage_kb_accum)} triage_kb_out={len(triage_kb_final)}"
     )
 
-    return {"ctcae": ctcae_final, "questions": q_final}
+    return {"ctcae": ctcae_final, "questions": q_final, "triage_kb": triage_kb_final}
 
 
-def _spawn_background_full_refresh(symptoms: List[str], *, combined_key: str, ttl: int, k_ctcae: int, k_questions: int):
+def _spawn_background_full_refresh(symptoms: List[str], *, combined_key: str, ttl: int, k_ctcae: int, k_questions: int, k_triage_kb: int):
     def _task():
         try:
             logger.debug(f"[RAG][CACHE][REFRESH] Start full-set refresh key={combined_key}")
-            res = retrieve_for_symptoms(symptoms, k_ctcae=k_ctcae, k_questions=k_questions)
+            res = retrieve_for_symptoms(symptoms, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
             cache = _cache_client()
             if cache:
                 cache.setex(combined_key, ttl, json.dumps(res))
@@ -250,17 +272,17 @@ def _spawn_background_full_refresh(symptoms: List[str], *, combined_key: str, tt
 
 # ----- Original full-set retrieval -----
 
-def retrieve_for_symptoms(symptoms: List[str], *, k_ctcae=8, k_questions=8) -> Dict[str, List[Dict[str, Any]]]:
+def retrieve_for_symptoms(symptoms: List[str], *, k_ctcae=8, k_questions=8, k_triage_kb=8) -> Dict[str, List[Dict[str, Any]]]:
     if not symptoms:
         logger.debug("[RAG] Empty symptoms → returning empty results")
-        return {"ctcae": [], "questions": []}
+        return {"ctcae": [], "questions": [], "triage_kb": []}
     q_syms = _normalize_symptoms(symptoms)
     query = ", ".join(q_syms)
     vec = _embed(query)
 
     idx = _index()
 
-    results = {"ctcae": [], "questions": []}
+    results = {"ctcae": [], "questions": [], "triage_kb": []}
 
     if k_ctcae > 0:
         logger.debug(f"[RAG][CTCAE] Query top_k={k_ctcae} filter_syms={q_syms}")
@@ -299,10 +321,28 @@ def retrieve_for_symptoms(symptoms: List[str], *, k_ctcae=8, k_questions=8) -> D
             for m in matches
         ]
 
+    if k_triage_kb > 0:
+        logger.debug(f"[RAG][TRIAGE_KB] Query top_k={k_triage_kb} filter_syms={q_syms}")
+        triage_kb_res = idx.query(
+            vector=vec, top_k=k_triage_kb, include_metadata=True,
+            filter={"$and": [{"type": {"$eq": "triage_kb"}}, {"symptoms": {"$in": q_syms}}]}
+        )
+        matches = triage_kb_res.matches or []
+        logger.debug(f"[RAG][TRIAGE_KB] matches={len(matches)}")
+        results["triage_kb"] = [
+            {
+                "text": m.metadata.get("text", ""),
+                "symptoms": m.metadata.get("symptoms", []),
+                "version": m.metadata.get("version", ""),
+                "score": getattr(m, "score", None),
+            }
+            for m in matches
+        ]
+
     return results
 
 
-def cached_retrieve(symptoms: List[str], *, ttl: int = 3600, k_ctcae=8, k_questions=8) -> Dict[str, List[Dict[str, Any]]]:
+def cached_retrieve(symptoms: List[str], *, ttl: int = 3600, k_ctcae=8, k_questions=8, k_triage_kb=8) -> Dict[str, List[Dict[str, Any]]]:
     cache = _cache_client()
     # Summary line: what symptoms we're retrieving for
     norm_syms = _normalize_symptoms(symptoms)
@@ -312,7 +352,7 @@ def cached_retrieve(symptoms: List[str], *, ttl: int = 3600, k_ctcae=8, k_questi
         logger.info(f"[RAG] symptoms={norm_syms} (cache=disabled)")
 
     if not cache:
-        return retrieve_for_symptoms(symptoms, k_ctcae=k_ctcae, k_questions=k_questions)
+        return retrieve_for_symptoms(symptoms, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
 
     combined_key = _key("both", symptoms)
 
@@ -332,7 +372,7 @@ def cached_retrieve(symptoms: List[str], *, ttl: int = 3600, k_ctcae=8, k_questi
 
     logger.info(f"[RAG][CACHE] MISS symptoms={norm_syms}")
     try:
-        union_res = _union_from_per_symptoms(symptoms, ttl=ttl, k_ctcae=k_ctcae, k_questions=k_questions)
+        union_res = _union_from_per_symptoms(symptoms, ttl=ttl, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
         # Save union as a quick answer
         try:
             cache.setex(combined_key, ttl, json.dumps(union_res))
@@ -340,13 +380,13 @@ def cached_retrieve(symptoms: List[str], *, ttl: int = 3600, k_ctcae=8, k_questi
         except Exception as e:
             logger.error(f"[RAG][CACHE] set (union) failed error={e}")
         # Background refresh with full-set retrieval
-        _spawn_background_full_refresh(symptoms, combined_key=combined_key, ttl=ttl, k_ctcae=k_ctcae, k_questions=k_questions)
+        _spawn_background_full_refresh(symptoms, combined_key=combined_key, ttl=ttl, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
         return union_res
     except Exception as e:
         logger.error(f"[RAG][UNION] failed to assemble union error={e}")
 
     # 3) Fallback to direct full retrieval
-    res = retrieve_for_symptoms(symptoms, k_ctcae=k_ctcae, k_questions=k_questions)
+    res = retrieve_for_symptoms(symptoms, k_ctcae=k_ctcae, k_questions=k_questions, k_triage_kb=k_triage_kb)
     try:
         cache.setex(combined_key, ttl, json.dumps(res))
         logger.debug(f"[RAG][CACHE] SET ttl={ttl}s size={len(json.dumps(res))} bytes")

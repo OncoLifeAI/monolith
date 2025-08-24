@@ -19,9 +19,11 @@ const Login: React.FC = () => {
   const { authenticateLogin } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     setError(null);
+    setIsLoading(true);
     try {
       const result = await authenticateLogin(email, password);
       if (result?.data?.requiresPasswordChange) {
@@ -40,16 +42,20 @@ const Login: React.FC = () => {
           message = 'Failed Authentication';
         }
       setError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleLogin();
+    if (!isLoading) {
+      handleLogin();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isLoading) {
       e.preventDefault();
       handleLogin();
     }
@@ -74,20 +80,28 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={handleKeyDown}
+              disabled={isLoading}
             />
           </StyledInputGroup>
         </Form.Group>
         <InputPassword
           value={password}
-          onChange={setPassword}
+          onChange={(value) => !isLoading && setPassword(value)}
           className="mb-1"
           label="Password"
           placeholder="Password"
           onKeyDown={handleKeyDown}
         />
         <ForgotPassword onClick={() => navigate('/forgot-password', { state: { email } })}>Forgot Password?</ForgotPassword>
-        <StyledButton variant="primary" type="submit">
-          Sign In
+        <StyledButton variant="primary" type="submit" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <span className="login-spinner" />
+              Signing In...
+            </>
+          ) : (
+            'Sign In'
+          )}
         </StyledButton>
       </StyledForm>
     </Card>

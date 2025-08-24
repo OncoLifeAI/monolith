@@ -188,11 +188,40 @@ export const StyledButton = styled(Button)`
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
 
+  &:disabled {
+    background: #a8c5ff;
+    color: #fff;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    
+    &:hover {
+      background: #a8c5ff;
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+  }
+
   @media (max-width: 480px) {
     padding: 1.125rem 0;
     font-size: 1.125rem;
     min-height: 3.75rem;
     border-radius: 0.75rem;
+  }
+
+  .login-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    margin-right: 8px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 `;
 

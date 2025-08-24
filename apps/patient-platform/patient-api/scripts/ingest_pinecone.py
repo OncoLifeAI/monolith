@@ -105,7 +105,7 @@ def chunk_text(text: str, max_chunk_size: int = 1000) -> List[str]:
 
 
 # ---- Ingest CTCAE triage guidance ----
-def ingest_ctcae(path="model_inputs/CTCAE.json", version="CTCAE v5"):
+def ingest_ctcae(path="model_inputs/rag/CTCAE.json", version="CTCAE v5"):
     with open(path, "r") as f:
         data = json.load(f)
     
@@ -131,28 +131,28 @@ def ingest_ctcae(path="model_inputs/CTCAE.json", version="CTCAE v5"):
         
         # Create embeddings for this batch
         embs = embed_texts(batch)
-    vectors = []
+        vectors = []
         
         for text, emb in zip(batch, embs):
             # Extract symptom name for metadata
             symptom_match = re.search(r"Symptom:\s*([^\n]+)", text)
             symptom = symptom_match.group(1).strip().lower() if symptom_match else "general"
             
-        vid = stable_id("ctcae", text[:200])
-        vectors.append({
-            "id": vid,
-            "values": emb,
-            "metadata": {
-                "type": "ctcae",
-                "symptoms": [symptom],
-                "version": version,
-                "source": "ctcae",
-                "text": text,
-            }
-        })
+            vid = stable_id("ctcae", text[:200])
+            vectors.append({
+                "id": vid,
+                "values": emb,
+                "metadata": {
+                    "type": "ctcae",
+                    "symptoms": [symptom],
+                    "version": version,
+                    "source": "ctcae",
+                    "text": text,
+                }
+            })
         
         # Upsert this batch
-    index.upsert(vectors=vectors)
+        index.upsert(vectors=vectors)
         total_vectors += len(vectors)
         print(f"[INGEST] Upserted batch: {len(vectors)} vectors")
     
@@ -160,7 +160,7 @@ def ingest_ctcae(path="model_inputs/CTCAE.json", version="CTCAE v5"):
 
 
 # ---- Ingest Question bank ----
-def ingest_questions(path="model_inputs/questions.json"):
+def ingest_questions(path="model_inputs/rag/questions.json"):
     with open(path, "r") as f:
         q = json.load(f)  # list of {id, text, symptom, phase, ...}
     texts = [item["text"] for item in q]
@@ -184,11 +184,114 @@ def ingest_questions(path="model_inputs/questions.json"):
     print(f"[INGEST] Ingested question chunks: {len(vectors)}")
 
 
-if __name__ == "__main__":
-    # Run from repo root or adjust path
-    ctcae_path = os.getenv("CTCAE_JSON", "model_inputs/CTCAE.json")
-    questions_path = os.getenv("QUESTIONS_JSON", "model_inputs/questions.json")
+# ---- Ingest Triage Knowledge Base ----
+def ingest_triage_kb(path="model_inputs/rag/triage_kb_v2.json", version="triage-rules.v2"):
+    """Ingest triage knowledge base rules, chunking by individual rules for better retrieval."""
+    with open(path, "r") as f:
+        data = json.load(f)
+    
+    # Extract rules and create focused chunks for each rule
+    rules = data.get("rules", [])
+    items = []
+    
+    for rule in rules:
+        # Create a comprehensive chunk for each rule
+        symptom = rule.get("symptom", "unknown")
+        attribute = rule.get("attribute", "unknown")
+        question_id = rule.get("question_id", "unknown")
+        priority_tier = rule.get("priority_tier", "unknown")
+        rule_kind = rule.get("rule_kind", "unknown")
+        equivalence_class = rule.get("equivalence_class", "unknown")
+        preferred_phase = rule.get("preferred_phase", "unknown")
+        is_alert_setter = rule.get("is_alert_setter", False)
+        info_gain = rule.get("info_gain", 0.0)
+        grade_setter = rule.get("grade_setter", False)
+        burden_cost = rule.get("burden_cost", 0.0)
+        
+        # Format thresholds for readability
+        thresholds_text = ""
+        if "thresholds" in rule and rule["thresholds"]:
+            threshold_parts = []
+            for threshold in rule["thresholds"]:
+                if "emergency" in threshold and threshold["emergency"]:
+                    threshold_parts.append("EMERGENCY")
+                elif "min_severity" in threshold:
+                    threshold_parts.append(f"Severity ≥ {threshold['min_severity']}")
+                elif "op" in threshold and "value" in threshold:
+                    threshold_parts.append(f"{threshold['op']} {threshold['value']}")
+                elif "equals" in threshold:
+                    threshold_parts.append(f"Equals: {threshold['equals']}")
+            thresholds_text = " | ".join(threshold_parts)
+        
+        # Create the rule text
+        rule_text = f"""TRIAGE RULE:
+Symptom: {symptom}
+Attribute: {attribute}
+Question ID: {question_id}
+Priority Tier: {priority_tier}
+Rule Type: {rule_kind}
+Equivalence Class: {equivalence_class}
+Preferred Phase: {preferred_phase}
+Alert Setter: {is_alert_setter}
+Info Gain: {info_gain}
+Grade Setter: {grade_setter}
+Burden Cost: {burden_cost}
+Thresholds: {thresholds_text}"""
+        
+        items.append(rule_text)
+    
+    print(f"[INGEST] Created {len(items)} triage rule chunks from {path}")
+    
+    # Process in smaller batches to avoid memory issues
+    batch_size = 100
+    total_vectors = 0
+    
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i + batch_size]
+        print(f"[INGEST] Processing triage KB batch {i//batch_size + 1}/{(len(items) + batch_size - 1)//batch_size} ({len(batch)} items)")
+        
+        # Create embeddings for this batch
+        embs = embed_texts(batch)
+        vectors = []
+        
+        for text, emb in zip(batch, embs):
+            # Extract symptom name for metadata
+            symptom_match = re.search(r"Symptom:\s*([^\n]+)", text)
+            symptom = symptom_match.group(1).strip().lower() if symptom_match else "general"
+            
+            vid = stable_id("triage_kb", text[:200])
+            vectors.append({
+                "id": vid,
+                "values": emb,
+                "metadata": {
+                    "type": "triage_kb",
+                    "symptoms": [symptom],
+                    "version": version,
+                    "source": "triage_kb",
+                    "text": text,
+                }
+            })
+        
+        # Upsert this batch
+        index.upsert(vectors=vectors)
+        total_vectors += len(vectors)
+        print(f"[INGEST] Upserted triage KB batch: {len(vectors)} vectors")
+    
+    print(f"[INGEST] Total triage KB vectors ingested: {total_vectors}")
 
-    ingest_ctcae(ctcae_path, version="CTCAE v5")
-    ingest_questions(questions_path)
-    print("[INGEST] Done.") 
+
+if __name__ == "__main__":
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Go up to patient-api directory
+    patient_api_dir = os.path.dirname(script_dir)
+    
+    # Run from repo root or adjust path
+    ctcae_path = os.getenv("CTCAE_JSON", os.path.join(patient_api_dir, "model_inputs/rag/CTCAE.json"))
+    questions_path = os.getenv("QUESTIONS_JSON", os.path.join(patient_api_dir, "model_inputs/rag/questions.json"))
+    triage_kb_path = os.getenv("TRIAGE_KB_JSON", os.path.join(patient_api_dir, "model_inputs/rag/triage_kb_v2.json"))
+
+    # ingest_ctcae(ctcae_path, version="CTCAE v5")
+    # ingest_questions(questions_path)
+    ingest_triage_kb(triage_kb_path, version="triage-rules.v2")
+    print("[INGEST] Done.")
