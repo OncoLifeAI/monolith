@@ -17,11 +17,36 @@ export { DatePickerContainer as OldDatePickerContainer, DateDisplayButton as Old
 
 // Sleek Date Picker
 export { default as SleekDatePicker } from './components/SleekDatePicker';
-export * from './components/SleekDatePicker/SleekDatePicker.styles';
+export {
+  Backdrop as SleekBackdrop,
+  DatePickerContainer as SleekDatePickerContainer,
+  DateDisplayButton as SleekDateDisplayButton,
+  DropdownContainer as SleekDropdownContainer,
+  DropdownHeader as SleekDropdownHeader,
+  YearSelector as SleekYearSelector,
+  NavigationButton as SleekNavigationButton,
+  MonthGrid as SleekMonthGrid,
+  MonthButton as SleekMonthButton,
+  YearGrid as SleekYearGrid,
+  YearButton as SleekYearButton,
+  CloseButton as SleekCloseButton,
+} from './components/SleekDatePicker/SleekDatePicker.styles';
 
 // Sleek Day Date Picker
 export { default as SleekDayDatePicker } from './components/SleekDayDatePicker';
-export * from './components/SleekDayDatePicker/SleekDayDatePicker.styles';
+export {
+  Backdrop as DayBackdrop,
+  MobileBackdrop as DayMobileBackdrop,
+  DatePickerContainer as DayDatePickerContainer,
+  DateDisplayButton as DayDateDisplayButton,
+  PortalDropdownContainer as DayPortalDropdownContainer,
+  DropdownContainer as DayDropdownContainer,
+  DropdownHeader as DayDropdownHeader,
+  MonthYearSelector as DayMonthYearSelector,
+  NavigationButton as DayNavigationButton,
+  CalendarGrid as DayCalendarGrid,
+  DayButton as DayDayButton,
+} from './components/SleekDayDatePicker/SleekDayDatePicker.styles';
 
 // Session Management
 export { default as SessionTimeoutManager, SESSION_START_KEY } from './components/SessionTimeout/SessionTimeoutManager';
