@@ -135,9 +135,14 @@ router.post('/signup', async (req, res) => {
     }
 
     const backendBase = apiClient?.defaults?.baseURL || '<unknown>';
-    console.log(`[DOCTOR LOGIN] signup for ${email} -> POST ${backendBase}/auth/signup`);
-
-    const response = await api.post('/auth/signup', { email, first_name, last_name });
+    console.log(`[DOCTOR LOGIN] signup for ${email} -> POST ${backendBase}/auth/doctor/signup`);
+    
+    const response = await api.post('/auth/doctor/signup', { 
+      email, 
+      first_name, 
+      last_name,
+      role: 'admin' // Default role for doctor signups
+    });
 
     if (!response.success) {
       console.error('[DOCTOR LOGIN] Upstream error details (signup):', response.error?.details || response.error?.message);
@@ -148,10 +153,10 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    const { message, email: userEmail, user_status } = response.data;
+    const { message, email: userEmail, user_status, staff_uuid } = response.data;
 
-    console.log(`[DOCTOR LOGIN] signup success for ${email}`);
-    return res.status(201).json({ success: true, message: 'User created successfully', data: { message, email: userEmail, user_status } });
+    console.log(`[DOCTOR LOGIN] signup success for ${email} staff_uuid=${staff_uuid}`);
+    return res.status(201).json({ success: true, message: 'User created successfully', data: { message, email: userEmail, user_status, staff_uuid } });
   } catch (error) {
     console.error('Doctor signup endpoint error:', error?.response?.data || error.message);
     return res.status(500).json({ success: false, message: 'Internal server error', error: 'INTERNAL_ERROR' });

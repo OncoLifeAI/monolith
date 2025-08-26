@@ -3,6 +3,7 @@ const router = express.Router();
 
 const healthRoutes = require('./health-endpoint');
 const loginRoutes = require('./login-endpoints');
+const dashboardRoutes = require('./dashboard-endpoints');
 
 router.get('/', (req, res) => {
   res.json({
@@ -15,5 +16,6 @@ router.get('/', (req, res) => {
 
 router.use('/', healthRoutes);
 router.use('/', loginRoutes);
+router.use('/', dashboardRoutes);
 
 module.exports = router;

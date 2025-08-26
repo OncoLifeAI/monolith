@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Login from './Login';
 import logo from '../../assets/logo.png';
 import { Background, WrapperStyle, Logo } from '@oncolife/ui-components';
@@ -16,7 +17,7 @@ const LoginPage: React.FC = () => {
         <LoginHeader>
           <Logo src={logo} alt="Logo" />
           <TopRightText>
-            Doctor Portal - OncoLife AI
+            Need to register a new doctor? <Link to="/signup">Sign up</Link>
           </TopRightText>
         </LoginHeader>
         

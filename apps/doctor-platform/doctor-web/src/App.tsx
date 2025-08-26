@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GlobalStyles, SessionTimeoutManager } from '@oncolife/ui-components';
 import { AuthProvider } from './contexts/AuthContext';
@@ -7,7 +6,9 @@ import { UserTypeProvider } from './contexts/UserTypeContext';
 
 // Doctor-specific pages
 import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
 import ForgotPassword from './pages/LoginPage/ForgotPassword';
+import ResetPassword from './pages/LoginPage/ResetPassword';
 import Layout from './components/Layout';
 import DashboardPage from './pages/Dashboard/DashboardPage';
 import PatientsPage from './pages/Patients/PatientsPage';
@@ -23,7 +24,9 @@ function App() {
             <SessionTimeoutManager />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/patients" element={<PatientsPage />} />

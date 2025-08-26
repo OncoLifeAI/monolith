@@ -24,6 +24,7 @@ export const API_CONFIG = {
       CREATE: '/staff',
       UPDATE: '/staff',
       DELETE: '/staff'
-    }
+    },
+    DASHBOARD: '/dashboard'
   }
 };

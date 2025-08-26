@@ -6,8 +6,6 @@ class DoctorSignupRequest(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    password: str
-    confirm_password: str
     role: str = "admin"  # Default to admin
     npi_number: Optional[str] = None
     physician_uuids: Optional[List[str]] = None  # List of physician UUIDs to associate with

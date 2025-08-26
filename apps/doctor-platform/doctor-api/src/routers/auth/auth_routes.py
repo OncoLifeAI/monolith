@@ -306,6 +306,9 @@ async def signup_doctor(
         )
 
         doctor_db.add(new_staff_profile)
+        doctor_db.commit()  # Commit staff profile first
+        
+        logger.info(f"[AUTH] /doctor/signup staff profile created uuid={user_sub}")
 
         # Handle physician associations - support multiple physicians
         physician_uuids = request.physician_uuids or []
@@ -347,7 +350,7 @@ async def signup_doctor(
 
         doctor_db.commit()
         
-        logger.info(f"[AUTH] /doctor/signup DB records created uuid={user_sub}")
+        logger.info(f"[AUTH] /doctor/signup associations created uuid={user_sub}")
 
         return DoctorSignupResponse(
             message=f"Doctor/Staff member {request.email} created successfully. A temporary password has been sent to their email.",
