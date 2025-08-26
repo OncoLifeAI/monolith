@@ -104,48 +104,70 @@ class ContextLoader:
         
         try:
             # Import here to avoid circular imports
-            from .retrieval import cached_retrieve
+            from .retrieval import parallel_retrieve_all_document_types
             
-            print(f"[CTX] Performing Pinecone RAG for symptoms: {symptoms}")
+            print(f"[CTX] Performing parallel Pinecone RAG for symptoms: {symptoms}")
             
-            # Get CTCAE results (cached)
-            ctcae_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=10, k_questions=0, k_triage_kb=0)
-            ctcae_chunks = [h.get("text", "") for h in ctcae_results.get("ctcae", []) if h.get("text")]
-        
-            # Get questions results (cached)
-            questions_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=0, k_questions=12, k_triage_kb=0)
-            questions_chunks = [h.get("text", "") for h in questions_results.get("questions", []) if h.get("text")]
+            # Get all RAG results in parallel with separate cache keys
+            start_time = time.time()
+            all_results = parallel_retrieve_all_document_types(
+                symptoms, 
+                ttl=1800, 
+                k_ctcae=10, 
+                k_questions=12, 
+                k_triage_kb=8
+            )
+            rag_time = time.time() - start_time
             
-            # Get triage KB results (cached)
-            triage_kb_results = cached_retrieve(symptoms, ttl=1800, k_ctcae=0, k_questions=0, k_triage_kb=8)
-            triage_kb_chunks = [h.get("text", "") for h in triage_kb_results.get("triage_kb", []) if h.get("text")]
+            # Extract results from each document type
+            ctcae_chunks = all_results.get("ctcae", [])
+            questions_chunks = all_results.get("questions", [])
+            triage_kb_chunks = all_results.get("triage_kb", [])
+            
+            print(f"[CTX] ⚡ Parallel RAG completed in {rag_time:.3f}s")
+            print(f"[CTX] 📋 CTCAE: Retrieved {len(ctcae_chunks)} chunks")
+            print(f"[CTX] ❓ Questions: Retrieved {len(questions_chunks)} chunks")
+            print(f"[CTX] 🚨 Triage KB: Retrieved {len(triage_kb_chunks)} chunks")
+            
+            # Show samples of what was retrieved
+            if ctcae_chunks:
+                print(f"[CTX] 📋 CTCAE Sample: {ctcae_chunks[0].get('text', '')[:100]}...")
+            if questions_chunks:
+                print(f"[CTX] ❓ Questions Sample: {questions_chunks[0].get('text', '')[:100]}...")
+            if triage_kb_chunks:
+                print(f"[CTX] 🚨 Triage KB Sample: {triage_kb_chunks[0].get('text', '')[:100]}...")
             
             # Build RAG section
             rag_sections = []
+            total_rag_chunks = 0
         
             if ctcae_chunks:
-                ctcae_text = "\n---\n".join(ctcae_chunks[:6])
+                ctcae_text = "\n---\n".join([chunk.get("text", "") for chunk in ctcae_chunks[:6]])
                 rag_sections.append(f"=== Relevant CTCAE Criteria for {', '.join(symptoms)} ===\n{ctcae_text}")
+                total_rag_chunks += len(ctcae_chunks[:6])
             
             if questions_chunks:
-                questions_text = "\n---\n".join(questions_chunks[:8])
+                questions_text = "\n---\n".join([chunk.get("text", "") for chunk in questions_chunks[:8]])
                 rag_sections.append(f"=== Assessment Questions for {', '.join(symptoms)} ===\n{questions_text}")
+                total_rag_chunks += len(questions_chunks[:8])
             
             if triage_kb_chunks:
-                triage_kb_text = "\n---\n".join(triage_kb_chunks[:6])
+                triage_kb_text = "\n---\n".join([chunk.get("text", "") for chunk in triage_kb_chunks[:6]])
                 rag_sections.append(f"=== Triage Rules for {', '.join(symptoms)} ===\n{triage_kb_text}")
+                total_rag_chunks += len(triage_kb_chunks[:6])
             
             if rag_sections:
                 rag_content = "\n\n".join(rag_sections)
                 full_prompt = f"{base_prompt}\n\n=== RAG Results ===\n{rag_content}"
-                print(f"[CTX] Pinecone RAG results appended, total length: {len(full_prompt)}")
+                print(f"[CTX] ✅ RAG Complete: {total_rag_chunks} total chunks from {len(rag_sections)} document types")
+                print(f"[CTX] 📏 Final prompt length: {len(full_prompt)} characters")
                 return full_prompt
             else:
-                print("[CTX] No Pinecone RAG results found")
+                print("[CTX] ⚠️  No Pinecone RAG results found")
                 return base_prompt
                 
         except Exception as e:
-            print(f"[CTX] Error during Pinecone RAG: {e}")
+            print(f"[CTX] ❌ Error during Pinecone RAG: {e}")
             return base_prompt
 
     def load_context(self, symptoms: List[str] = None) -> str:
@@ -164,7 +186,17 @@ class ContextLoader:
         
         total_time = time.time() - start_time
         cache_status = "CACHED" if (ENABLE_PROMPT_CACHE and ContextLoader._base_documents_cache is not None) else "FRESH"
+        
+        # Calculate RAG content summary
+        base_length = len(base_prompt)
+        rag_length = len(complete_prompt) - base_length
+        rag_percentage = (rag_length / len(complete_prompt)) * 100 if complete_prompt else 0
+        
         print(f"[CTX] Context built in {total_time:.3f}s (mode: {cache_status})")
+        print(f"[CTX] 📊 Content breakdown:")
+        print(f"[CTX]   📚 Base documents: {base_length:,} characters")
+        print(f"[CTX]   🔍 RAG content: {rag_length:,} characters ({rag_percentage:.1f}%)")
+        print(f"[CTX]   📏 Total prompt: {len(complete_prompt):,} characters")
         
         return complete_prompt
 
