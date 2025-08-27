@@ -117,35 +117,66 @@ const api = {
   },
 };
 
-// Helper to always include Authorization from res.locals if present
+// Helper to get auth token from either headers or cookies
+const getAuthToken = (req) => {
+  // In development, prefer Authorization header (localStorage)
+  if (process.env.NODE_ENV === 'development') {
+    if (req.headers.authorization) {
+      return req.headers.authorization;
+    }
+  }
+  
+  // In production, prefer cookies over headers
+  if (process.env.NODE_ENV === 'production') {
+    if (req.cookies?.authToken) {
+      return `Bearer ${req.cookies.authToken}`;
+    }
+    if (req.cookies?.sessionToken) {
+      return `Bearer ${req.cookies.sessionToken}`;
+    }
+  }
+  
+  // Fallback to Authorization header (for backward compatibility)
+  if (req.headers.authorization) {
+    return req.headers.authorization;
+  }
+  
+  return null;
+};
+
+// Helper to always include Authorization from headers or cookies
 const getWithAuth = async (url, req, res) => {
   const config = {};
-  if (req.headers.authorization) {
-    config.headers = { Authorization: req.headers.authorization };
+  const authToken = getAuthToken(req);
+  if (authToken) {
+    config.headers = { Authorization: authToken };
   }
   return api.get(url, config);
 };
 
 const postWithAuth = async (url, data, req, res) => {
   const config = {};
-  if (req.headers.authorization) {
-    config.headers = { Authorization: req.headers.authorization };
+  const authToken = getAuthToken(req);
+  if (authToken) {
+    config.headers = { Authorization: authToken };
   }
   return api.post(url, data, config);
 };
 
 const updateWithAuth = async (url, data, req, res) => {
   const config = {};
-  if (req.headers.authorization) {
-    config.headers = { Authorization: req.headers.authorization };
+  const authToken = getAuthToken(req);
+  if (authToken) {
+    config.headers = { Authorization: authToken };
   }
   return api.patch(url, data, config);
 };
 
 const deleteWithAuth = async (url, req, res) => {
   const config = {};
-  if (req.headers.authorization) {
-    config.headers = { Authorization: req.headers.authorization };
+  const authToken = getAuthToken(req);
+  if (authToken) {
+    config.headers = { Authorization: authToken };
   }
   return api.delete(url, config);
 };

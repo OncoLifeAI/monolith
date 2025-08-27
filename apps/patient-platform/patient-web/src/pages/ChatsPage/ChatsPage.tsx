@@ -13,6 +13,7 @@ import { getTodayInUserTimezone } from '@oncolife/shared-utils';
 import type { ChatSession, Message } from '../../types/chat';
 import '../../components/chat/Chat.css';
 import { API_CONFIG } from '../../config/api';
+import { getAuthHeaders } from '../../utils/authUtils';
 
 const ChatsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -358,7 +359,7 @@ const ChatsPage: React.FC = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+        ...getAuthHeaders()
       },
       body: JSON.stringify({ feeling })
     }).catch(() => {});

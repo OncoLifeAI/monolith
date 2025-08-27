@@ -3,6 +3,18 @@ const router = express.Router();
 const { api } = require('../utils/api.helpers');
 const { apiClient } = require('../config/axios.config');
 
+// Helper function to get cookie configuration based on environment
+const getCookieConfig = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction, // HTTPS required in production
+    sameSite: isProduction ? 'strict' : 'lax',
+    maxAge: 60 * 60 * 1000, // 1 hour (matches Cognito default)
+    domain: undefined // Let browser handle domain
+  };
+};
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -40,6 +52,20 @@ router.post('/login', async (req, res) => {
     if (valid) {
       if (user_status === 'CONFIRMED') {
         console.log(`[LOGIN] Successful login for ${email}`);
+        
+        // Set HTTP-only cookies in production
+        if (process.env.NODE_ENV === 'production' && tokens?.access_token) {
+          const cookieConfig = getCookieConfig();
+          res.cookie('authToken', tokens.access_token, cookieConfig);
+          if (tokens.refresh_token) {
+            res.cookie('refreshToken', tokens.refresh_token, {
+              ...cookieConfig,
+              maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days for refresh token
+            });
+          }
+          console.log(`[LOGIN] Set HTTP-only cookies for ${email}`);
+        }
+        
         return res.status(200).json({
           success: true,
           message: 'Login successful',
@@ -47,6 +73,17 @@ router.post('/login', async (req, res) => {
         });
       } else if (user_status === 'FORCE_CHANGE_PASSWORD') {
         console.log(`[LOGIN] Password change required for ${email}`);
+        
+        // Set session cookie for password change flow
+        if (process.env.NODE_ENV === 'production' && session) {
+          const cookieConfig = getCookieConfig();
+          res.cookie('sessionToken', session, {
+            ...cookieConfig,
+            maxAge: 10 * 60 * 1000 // 10 minutes for session token
+          });
+          console.log(`[LOGIN] Set session cookie for ${email}`);
+        }
+        
         return res.status(200).json({
           success: true,
           message: 'Password change required',
@@ -112,6 +149,21 @@ router.post('/complete-new-password', async (req, res) => {
     }
 
     const { message, tokens } = response.data;
+
+    // Set HTTP-only cookies in production after successful password change
+    if (process.env.NODE_ENV === 'production' && tokens?.access_token) {
+      const cookieConfig = getCookieConfig();
+      res.cookie('authToken', tokens.access_token, cookieConfig);
+      if (tokens.refresh_token) {
+        res.cookie('refreshToken', tokens.refresh_token, {
+          ...cookieConfig,
+          maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days for refresh token
+        });
+      }
+      // Clear session cookie
+      res.clearCookie('sessionToken');
+      console.log(`[LOGIN] Set auth cookies and cleared session cookie for ${email}`);
+    }
 
     console.log(`[LOGIN] complete-new-password success for ${email}`);
     return res.status(200).json({ success: true, message: 'Password changed successfully', data: { message, tokens } });
@@ -252,6 +304,41 @@ router.post('/reset-password', async (req, res) => {
   } catch (error) {
     console.error('[LOGIN] reset-password endpoint error:', error?.response?.data || error.message);
     return res.status(500).json({ success: false, message: 'Internal server error', error: 'INTERNAL_ERROR' });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  try {
+    console.log('[LOGIN] Logout request received');
+    
+    // Clear all auth cookies in production
+    if (process.env.NODE_ENV === 'production') {
+      res.clearCookie('authToken');
+      res.clearCookie('refreshToken');
+      res.clearCookie('sessionToken');
+      console.log('[LOGIN] Cleared auth cookies');
+    }
+    
+    // Call backend logout endpoint
+    try {
+      await api.post('/auth/logout');
+      console.log('[LOGIN] Backend logout successful');
+    } catch (error) {
+      console.warn('[LOGIN] Backend logout failed (non-critical):', error?.response?.data || error.message);
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Logout successful'
+    });
+    
+  } catch (error) {
+    console.error('[LOGIN] Logout endpoint error:', error?.response?.data || error.message);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error', 
+      error: 'INTERNAL_ERROR' 
+    });
   }
 });
 

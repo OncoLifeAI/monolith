@@ -73,17 +73,25 @@ const loginUser = async (data: LoginData): Promise<LoginResponse> => {
   return response.data;
 };
 
+// Helper to determine if we should use localStorage (dev) or rely on cookies (prod)
+const shouldUseLocalStorage = () => {
+  return import.meta.env.DEV || import.meta.env.MODE === 'development';
+};
+
 export const useLogin = () => {
   return useMutation({
     mutationFn: loginUser,
     onSuccess: (data) => {
-
-      if (data.data?.session) {
-        localStorage.setItem('authToken', data.data.session);
+      // Only use localStorage in development
+      if (shouldUseLocalStorage()) {
+        if (data.data?.session) {
+          localStorage.setItem('authToken', data.data.session);
+        }
+        if (data.data?.tokens) {
+          localStorage.setItem('authToken', data.data.tokens.access_token);
+        }
       }
-      if (data.data?.tokens) {
-        localStorage.setItem('authToken', data.data.tokens.access_token);
-      }
+      // In production, tokens are handled via HTTP-only cookies by the server
     },
     onError: (error) => {
       console.error('Login error:', error);
@@ -95,7 +103,7 @@ const completeNewPassword = async (data: CompleteNewPasswordData): Promise<Compl
   const newData = {
     email: data?.email,
     new_password: data?.newPassword,
-    session: localStorage.getItem('authToken'),
+    session: shouldUseLocalStorage() ? localStorage.getItem('authToken') : undefined,
   }
   const response = await apiClient.post<CompleteNewPasswordResponse>(API_CONFIG.ENDPOINTS.AUTH.COMPLETE_NEW_PASSWORD, newData);
   return response.data;
@@ -105,10 +113,12 @@ export const useCompleteNewPassword = () => {
   return useMutation({
     mutationFn: completeNewPassword,
     onSuccess: (data) => {
-      if (data.data?.tokens) {
+      // Only use localStorage in development
+      if (shouldUseLocalStorage() && data.data?.tokens) {
         localStorage.setItem('authToken', data.data.tokens.access_token);
         localStorage.setItem('refreshToken', data.data.tokens.refresh_token);
       }
+      // In production, tokens are handled via HTTP-only cookies by the server
     },
     onError: (error) => {
       console.error('New password reset error:', error);
@@ -131,8 +141,10 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: logoutUser,
     onSuccess: () => {
+      // Always clear localStorage (for development and backward compatibility)
       localStorage.removeItem('authToken');
       localStorage.removeItem('refreshToken');
+      // In production, cookies are cleared by the server
     },
     onError: (error) => {
       console.error('Logout error:', error);

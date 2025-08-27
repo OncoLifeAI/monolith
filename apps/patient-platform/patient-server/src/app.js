@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const configureMiddleware = require('./config/config.middleware');
 const { createWsProxies } = require('./config/config.middleware');
 const routes = require('./routes');
@@ -18,6 +19,7 @@ if (process.env.NODE_ENV !== 'test') {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // Mount Express API routes FIRST (these take precedence over proxy)
 app.use('/api', routes);

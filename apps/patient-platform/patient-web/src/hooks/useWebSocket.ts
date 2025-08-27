@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { API_CONFIG } from '../config/api';
+import { shouldUseLocalStorage, getWebSocketToken } from '../utils/authUtils';
 
 export const useWebSocket = (
   chatUuid: string | null,
@@ -26,8 +27,8 @@ export const useWebSocket = (
       return;
     }
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
+    const token = getWebSocketToken();
+    if (shouldUseLocalStorage() && !token) {
       setConnectionError("Authentication token not found.");
       return;
     }

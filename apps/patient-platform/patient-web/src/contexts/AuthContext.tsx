@@ -5,6 +5,7 @@ import type { CompleteNewPasswordResponse, LoginResponse } from '../services/log
 import { SESSION_START_KEY } from '@oncolife/ui-components';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchProfile } from '../services/profile';
+import { shouldUseLocalStorage } from '../utils/authUtils';
 
 interface User {
   email: string;
@@ -39,26 +40,44 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
+  const [token, setToken] = useState<string | null>(
+    shouldUseLocalStorage() ? localStorage.getItem('authToken') : null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordChangeRequired, setIsPasswordChangeRequired] = useState(false);
+  const [isAuthenticatedViaApi, setIsAuthenticatedViaApi] = useState(false);
   const loginMutation = useLogin();
   const completeNewPasswordMutation = useCompleteNewPassword();
   const queryClient = useQueryClient();
 
-  const isAuthenticated = !!token;
+  // In development, check localStorage; in production, validate via API calls
+  const isAuthenticated = shouldUseLocalStorage() ? !!token : isAuthenticatedViaApi;
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('authToken');
-      if (storedToken) {
-        // TODO: Verify token with backend
-        setToken(storedToken);
-        // Prefetch profile so navigation has data immediately on first render
-        try {
-          await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: fetchProfile });
-        } catch {}
+      if (shouldUseLocalStorage()) {
+        // Development: Check localStorage
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+          // TODO: Verify token with backend
+          setToken(storedToken);
+        }
       }
+      
+      // Always try to prefetch profile (works in both dev and prod)
+      // This will validate authentication via API call
+      try {
+        await queryClient.fetchQuery({ queryKey: ['profile'], queryFn: fetchProfile });
+        // If profile fetch succeeds, user is authenticated
+        setIsAuthenticatedViaApi(true);
+      } catch (error) {
+        // If profile fetch fails, user is not authenticated
+        setIsAuthenticatedViaApi(false);
+        if (shouldUseLocalStorage()) {
+          setToken(null);
+        }
+      }
+      
       setIsLoading(false);
     };
 
@@ -71,9 +90,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (result.success) {
         setUser({email: email});
-        // Ensure token state is updated from localStorage set in useLogin onSuccess
-        const stored = localStorage.getItem('authToken');
-        if (stored) setToken(stored);
+        
+        // Update token state based on environment
+        if (shouldUseLocalStorage()) {
+          const stored = localStorage.getItem('authToken');
+          if (stored) setToken(stored);
+        } else {
+          // In production, we don't track token state (handled by cookies)
+          setIsAuthenticatedViaApi(true);
+        }
+        
         sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
         if (result.data?.requiresPasswordChange) {
           setIsPasswordChangeRequired(true);
@@ -107,11 +133,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    // Always clear localStorage (for development and backward compatibility)
     localStorage.removeItem('authToken');
     sessionStorage.removeItem(SESSION_START_KEY);
     setToken(null);
     setUser(null);
+    setIsAuthenticatedViaApi(false);
     queryClient.removeQueries({ queryKey: ['profile'] });
+    // In production, cookies are cleared by the server via the logout endpoint
   };
 
   const value: AuthContextType = {
