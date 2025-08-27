@@ -65,8 +65,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
     )
 
     try:
+        print(f"[AUTH] Validating token: {token[:20]}...")
+        
         jwks = _get_jwks()
         unverified_header = jwt.get_unverified_header(token)
+        print(f"[AUTH] Token header: {unverified_header}")
+        
         rsa_key = {}
         for key in jwks["keys"]:
             if key["kid"] == unverified_header["kid"]:
@@ -81,13 +85,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
             logger.error("Unable to find a matching public key.")
             raise credentials_exception
 
+        audience = os.getenv("COGNITO_CLIENT_ID")
+        issuer = f"https://cognito-idp.{os.getenv('AWS_REGION')}.amazonaws.com/{os.getenv('COGNITO_USER_POOL_ID')}"
+        print(f"[AUTH] Validating with audience: {audience}, issuer: {issuer}")
+
         payload = jwt.decode(
             token,
             rsa_key,
             algorithms=["RS256"],
-            audience=os.getenv("COGNITO_CLIENT_ID"),
-            issuer=f"https://cognito-idp.{os.getenv('AWS_REGION')}.amazonaws.com/{os.getenv('COGNITO_USER_POOL_ID')}"
+            audience=audience,
+            issuer=issuer
         )
+        
+        print(f"[AUTH] Token payload: {payload}")
         
         # The 'sub' claim is the user's unique ID.
         user_id: str = payload.get("sub")
@@ -98,7 +108,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
 
     except JWTError as e:
         logger.error(f"JWT validation error: {e}")
+        print(f"[AUTH] JWT Error: {e}")
         raise credentials_exception
     except Exception as e:
         logger.error(f"An unexpected error occurred during token validation: {e}")
+        print(f"[AUTH] Unexpected Error: {e}")
         raise credentials_exception 

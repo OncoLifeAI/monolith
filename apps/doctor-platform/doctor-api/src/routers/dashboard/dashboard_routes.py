@@ -21,7 +21,6 @@ def get_physician_uuid_from_staff(staff_uuid: str, doctor_db: Session) -> Option
 
 @router.get("/get-dashboard-info", response_model=PaginatedDashboardResponse)
 async def get_dashboard_info(
-    staff_uuid: str = Query(..., description="Staff UUID for whom to load dashboard"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     patient_db: Session = Depends(get_patient_db),
@@ -30,9 +29,13 @@ async def get_dashboard_info(
 ):
     """
     Returns paginated dashboard information for all patients under the physician
-    associated with the given staff UUID. For each patient, includes full name,
+    associated with the authenticated staff member. For each patient, includes full name,
     DOB, MRN, and the latest conversation's bulleted_summary and symptom_list.
     """
+    print(f"[DASHBOARD API] Authenticated user: {current_user.sub}, email: {current_user.email}")
+    
+    # Use the authenticated user's ID as staff_uuid
+    staff_uuid = current_user.sub
     physician_uuid = get_physician_uuid_from_staff(staff_uuid, doctor_db)
     if not physician_uuid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Staff not associated with any physician")

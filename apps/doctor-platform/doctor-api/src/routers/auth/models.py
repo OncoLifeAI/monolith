@@ -1,6 +1,13 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 
+# Shared models
+class AuthTokens(BaseModel):
+    access_token: str
+    refresh_token: str
+    id_token: str
+    token_type: str
+
 # Doctor-specific models
 class DoctorSignupRequest(BaseModel):
     email: EmailStr
@@ -21,18 +28,12 @@ class DoctorLoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-class DoctorAuthTokens(BaseModel):
-    access_token: str
-    refresh_token: str
-    id_token: str
-    token_type: str
-
 class DoctorLoginResponse(BaseModel):
     valid: bool
     message: str
     user_status: Optional[str] = None
     session: Optional[str] = None
-    tokens: Optional[DoctorAuthTokens] = None
+    tokens: Optional[AuthTokens] = None
     requiresPasswordChange: Optional[bool] = False
 
 class DoctorCompleteNewPasswordRequest(BaseModel):
@@ -42,7 +43,7 @@ class DoctorCompleteNewPasswordRequest(BaseModel):
     
 class DoctorCompleteNewPasswordResponse(BaseModel):
     message: str
-    tokens: DoctorAuthTokens
+    tokens: AuthTokens
 
 class DoctorForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -84,12 +85,6 @@ class SignupResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-
-class AuthTokens(BaseModel):
-    access_token: str
-    refresh_token: str
-    id_token: str
-    token_type: str
 
 class LoginResponse(BaseModel):
     valid: bool

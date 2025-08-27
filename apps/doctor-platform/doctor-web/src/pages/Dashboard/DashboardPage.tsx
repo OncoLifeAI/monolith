@@ -205,7 +205,7 @@ const DashboardPage: React.FC = () => {
         <DashboardContainer>
           {error && (
             <Typography color="error" variant="body2">
-              Error loading patient summaries. Please try again.
+              Error loading patient summaries: {error.message || 'Please try again.'}
             </Typography>
           )}
           
@@ -255,18 +255,17 @@ const DashboardPage: React.FC = () => {
                 ))}
               </div>
               
-              {data && data.totalPages > 1 && (
-                <PaginationContainer>
-                  <Pagination
-                    count={data.totalPages}
-                    page={page}
-                    onChange={handlePageChange}
-                    color="primary"
-                    showFirstButton
-                    showLastButton
-                  />
-                </PaginationContainer>
-              )}
+              <PaginationContainer>
+                <Pagination
+                  count={data?.totalPages || 1}
+                  page={page}
+                  onChange={handlePageChange}
+                  color="primary"
+                  showFirstButton
+                  showLastButton
+                  disabled={!data || data.totalPages <= 1}
+                />
+              </PaginationContainer>
             </>
           )}
         </DashboardContainer>

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/api';
+import { PATIENT_STORAGE_KEYS } from './storageKeys';
 
 // Helper to determine if we should use localStorage (dev) or rely on cookies (prod)
 const shouldUseLocalStorage = () => {
@@ -16,7 +17,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   // Only add Authorization header in development (localStorage)
   if (shouldUseLocalStorage()) {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(PATIENT_STORAGE_KEYS.authToken);
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   // In production, authentication is handled via HTTP-only cookies automatically

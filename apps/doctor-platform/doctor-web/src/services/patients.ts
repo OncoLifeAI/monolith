@@ -1,6 +1,14 @@
+/**
+ * Patient Service - NEEDS API INTEGRATION
+ * 
+ * This service currently uses mock data and needs to be connected to the real
+ * patient API endpoints at /patients/* 
+ * 
+ * API endpoints are available in doctor-api but not connected to frontend yet.
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-// import { apiClient } from '../utils/apiClient';
-// import { API_CONFIG } from '../config/api';
+import { apiClient } from '../utils/apiClient';
 
 export interface Patient {
   id: string;

@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../utils/apiClient';
 import { API_CONFIG } from '../config/api';
+import { DOCTOR_STORAGE_KEYS } from '../utils/storageKeys';
 
 interface LoginData {
   email: string;
@@ -51,12 +52,15 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: loginUser,
     onSuccess: (data) => {
-
       if (data.data?.session) {
-        localStorage.setItem('authToken', data.data.session);
+        localStorage.setItem(DOCTOR_STORAGE_KEYS.authToken, data.data.session);
       }
       if (data.data?.tokens) {
-        localStorage.setItem('authToken', data.data.tokens.access_token);
+        // Store id_token for API authentication (JWT that can be validated)
+        localStorage.setItem(DOCTOR_STORAGE_KEYS.authToken, data.data.tokens.id_token);
+        if (data.data.tokens.refresh_token) {
+          localStorage.setItem(DOCTOR_STORAGE_KEYS.refreshToken, data.data.tokens.refresh_token);
+        }
       }
     },
     onError: (error) => {
@@ -69,7 +73,7 @@ const completeNewPassword = async (data: CompleteNewPasswordData): Promise<Compl
   const newData = {
     email: data?.email,
     new_password: data?.newPassword,
-    session: localStorage.getItem('authToken'),
+    session: localStorage.getItem(DOCTOR_STORAGE_KEYS.authToken),
   }
   const response = await apiClient.post<CompleteNewPasswordResponse>(API_CONFIG.ENDPOINTS.AUTH.COMPLETE_NEW_PASSWORD, newData);
   return response.data;
@@ -80,8 +84,9 @@ export const useCompleteNewPassword = () => {
     mutationFn: completeNewPassword,
     onSuccess: (data) => {
       if (data.data?.tokens) {
-        localStorage.setItem('authToken', data.data.tokens.access_token);
-        localStorage.setItem('refreshToken', data.data.tokens.refresh_token);
+        // Store id_token for API authentication (JWT that can be validated)
+        localStorage.setItem(DOCTOR_STORAGE_KEYS.authToken, data.data.tokens.id_token);
+        localStorage.setItem(DOCTOR_STORAGE_KEYS.refreshToken, data.data.tokens.refresh_token);
       }
     },
     onError: (error) => {
@@ -165,8 +170,8 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: logoutUser,
     onSuccess: () => {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem(DOCTOR_STORAGE_KEYS.authToken);
+      localStorage.removeItem(DOCTOR_STORAGE_KEYS.refreshToken);
     },
     onError: (error) => {
       console.error('Logout error:', error);

@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../utils/apiClient';
 import { API_CONFIG } from '../config/api';
+import { PATIENT_STORAGE_KEYS } from '../utils/storageKeys';
 
 interface LoginData {
   email: string;
@@ -85,10 +86,13 @@ export const useLogin = () => {
       // Only use localStorage in development
       if (shouldUseLocalStorage()) {
         if (data.data?.session) {
-          localStorage.setItem('authToken', data.data.session);
+          localStorage.setItem(PATIENT_STORAGE_KEYS.authToken, data.data.session);
         }
         if (data.data?.tokens) {
-          localStorage.setItem('authToken', data.data.tokens.access_token);
+          localStorage.setItem(PATIENT_STORAGE_KEYS.authToken, data.data.tokens.access_token);
+          if (data.data.tokens.refresh_token) {
+            localStorage.setItem(PATIENT_STORAGE_KEYS.refreshToken, data.data.tokens.refresh_token);
+          }
         }
       }
       // In production, tokens are handled via HTTP-only cookies by the server
@@ -103,7 +107,7 @@ const completeNewPassword = async (data: CompleteNewPasswordData): Promise<Compl
   const newData = {
     email: data?.email,
     new_password: data?.newPassword,
-    session: shouldUseLocalStorage() ? localStorage.getItem('authToken') : undefined,
+    session: shouldUseLocalStorage() ? localStorage.getItem(PATIENT_STORAGE_KEYS.authToken) : undefined,
   }
   const response = await apiClient.post<CompleteNewPasswordResponse>(API_CONFIG.ENDPOINTS.AUTH.COMPLETE_NEW_PASSWORD, newData);
   return response.data;
@@ -115,8 +119,8 @@ export const useCompleteNewPassword = () => {
     onSuccess: (data) => {
       // Only use localStorage in development
       if (shouldUseLocalStorage() && data.data?.tokens) {
-        localStorage.setItem('authToken', data.data.tokens.access_token);
-        localStorage.setItem('refreshToken', data.data.tokens.refresh_token);
+        localStorage.setItem(PATIENT_STORAGE_KEYS.authToken, data.data.tokens.access_token);
+        localStorage.setItem(PATIENT_STORAGE_KEYS.refreshToken, data.data.tokens.refresh_token);
       }
       // In production, tokens are handled via HTTP-only cookies by the server
     },
@@ -142,8 +146,8 @@ export const useLogout = () => {
     mutationFn: logoutUser,
     onSuccess: () => {
       // Always clear localStorage (for development and backward compatibility)
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem(PATIENT_STORAGE_KEYS.authToken);
+      localStorage.removeItem(PATIENT_STORAGE_KEYS.refreshToken);
       // In production, cookies are cleared by the server
     },
     onError: (error) => {

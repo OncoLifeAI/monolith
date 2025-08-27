@@ -1,4 +1,14 @@
+/**
+ * Staff Service - NEEDS API INTEGRATION
+ * 
+ * This service currently uses mock data and needs to be connected to the real
+ * staff API endpoints at /staff/* 
+ * 
+ * API endpoints are available in doctor-api but not connected to frontend yet.
+ */
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../utils/apiClient';
 
 export interface Staff {
   id: string;

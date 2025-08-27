@@ -55,7 +55,6 @@ from routers.auth.models import (
     DoctorProfileResponse,
     DoctorCompleteNewPasswordRequest,
     DoctorCompleteNewPasswordResponse,
-    DoctorAuthTokens,
 )
 # Import DB session and models
 from routers.db.database import get_patient_db, get_doctor_db
@@ -649,7 +648,7 @@ async def doctor_complete_new_password(request: DoctorCompleteNewPasswordRequest
         if "AuthenticationResult" in response:
             logger.info(f"[AUTH] /doctor/complete-new-password success email={request.email}")
             auth_result = response["AuthenticationResult"]
-            tokens = DoctorAuthTokens(
+            tokens = AuthTokens(
                 access_token=auth_result["AccessToken"],
                 refresh_token=auth_result["RefreshToken"],
                 id_token=auth_result["IdToken"],

@@ -6,16 +6,19 @@ import { SESSION_START_KEY } from '@oncolife/ui-components';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchProfile } from '../services/profile';
 import { shouldUseLocalStorage } from '../utils/authUtils';
+import { PATIENT_STORAGE_KEYS } from '../utils/storageKeys';
 
 interface User {
   email: string;
   name?: string;
   role?: string;
+  userType: 'patient';
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  userType: 'patient';
   isAuthenticated: boolean;
   isLoading: boolean;
   isPasswordChangeRequired: boolean;
@@ -38,10 +41,12 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Storage keys are now imported from tokenCleanup utility
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(
-    shouldUseLocalStorage() ? localStorage.getItem('authToken') : null
+    shouldUseLocalStorage() ? localStorage.getItem(PATIENT_STORAGE_KEYS.authToken) : null
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordChangeRequired, setIsPasswordChangeRequired] = useState(false);
@@ -57,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const initializeAuth = async () => {
       if (shouldUseLocalStorage()) {
         // Development: Check localStorage
-        const storedToken = localStorage.getItem('authToken');
+        const storedToken = localStorage.getItem(PATIENT_STORAGE_KEYS.authToken);
         if (storedToken) {
           // TODO: Verify token with backend
           setToken(storedToken);
@@ -89,11 +94,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await loginMutation.mutateAsync({ email, password });
       
       if (result.success) {
-        setUser({email: email});
+        setUser({email: email, userType: 'patient'});
         
         // Update token state based on environment
         if (shouldUseLocalStorage()) {
-          const stored = localStorage.getItem('authToken');
+          const stored = localStorage.getItem(PATIENT_STORAGE_KEYS.authToken);
           if (stored) setToken(stored);
         } else {
           // In production, we don't track token state (handled by cookies)
@@ -134,7 +139,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     // Always clear localStorage (for development and backward compatibility)
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(PATIENT_STORAGE_KEYS.authToken);
+    localStorage.removeItem(PATIENT_STORAGE_KEYS.refreshToken);
     sessionStorage.removeItem(SESSION_START_KEY);
     setToken(null);
     setUser(null);
@@ -146,6 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     token,
+    userType: 'patient',
     isAuthenticated,
     isPasswordChangeRequired,
     isLoading,

@@ -3,16 +3,19 @@ import type { ReactNode } from 'react';
 import { useLogin, useCompleteNewPassword } from '../services/login';
 import type { CompleteNewPasswordResponse, LoginResponse } from '../services/login';
 import { SESSION_START_KEY } from '@oncolife/ui-components';
+import { DOCTOR_STORAGE_KEYS } from '../utils/storageKeys';
 
 interface User {
   email: string;
   name?: string;
   role?: string;
+  userType: 'doctor';
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  userType: 'doctor';
   isAuthenticated: boolean;
   isLoading: boolean;
   isPasswordChangeRequired: boolean;
@@ -35,9 +38,11 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Storage keys are now imported from tokenCleanup utility
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
+  const [token, setToken] = useState<string | null>(localStorage.getItem(DOCTOR_STORAGE_KEYS.authToken));
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordChangeRequired, setIsPasswordChangeRequired] = useState(false);
   const loginMutation = useLogin();
@@ -47,7 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('authToken');
+      const storedToken = localStorage.getItem(DOCTOR_STORAGE_KEYS.authToken);
       if (storedToken) {
         // TODO: Verify token with backend
         setToken(storedToken);
@@ -63,7 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await loginMutation.mutateAsync({ email, password });
       
       if (result.success) {
-        setUser({email: email});
+        setUser({email: email, userType: 'doctor'});
         sessionStorage.setItem(SESSION_START_KEY, Date.now().toString());
         if (result.data?.requiresPasswordChange) {
           setIsPasswordChangeRequired(true);
@@ -92,13 +97,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(DOCTOR_STORAGE_KEYS.authToken);
+    localStorage.removeItem(DOCTOR_STORAGE_KEYS.refreshToken);
     sessionStorage.removeItem(SESSION_START_KEY);
+    setToken(null);
+    setUser(null);
+    setIsPasswordChangeRequired(false);
   };
 
   const value: AuthContextType = {
     user,
     token,
+    userType: 'doctor',
     isAuthenticated,
     isPasswordChangeRequired,
     isLoading,
