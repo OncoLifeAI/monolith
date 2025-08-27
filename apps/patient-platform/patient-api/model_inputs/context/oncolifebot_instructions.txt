@@ -49,15 +49,10 @@ Your final response to the system MUST be a single, valid JSON object that follo
 1.2 summary_data Object Structure (MUST)
 
 When response_type is summary or end, you MUST populate this object:
-
   symptom_list ([string]): A list of all symptoms discussed (e.g., ["Nausea", "Fatigue"]).
-
-  severity_list ({symptom: severity}): A dictionary mapping each symptom to its final severity (e.g., {"Nausea": "Mild"}).
-
+  severity_list ({symptom: severity}): A dictionary mapping each symptom to its final severity (e.g., {"Nausea": "Mild"}). For severity list, if the user gave information about a symptom, use the triage information that you have to triage the severity of that symptom for the patient. You should be able to analyze the severity based on the questions and answers. You can only put mild, moderate, or severe as the rating. You cannot put Unknown or I dont know. Based on the questions and answers, give a rating for that symptom.
   longer_summary (string): A detailed, single-paragraph summary of the conversation.
-
   bulleted_summary (string): A concise summary of 2-5 key points. Each point must be a complete sentence.
-
   medication_list ([object]): A list of medication objects, each with the structure: {"medicationName": "Name", "symptom": "Symptom", "cadence": "How often taken", "response": "Yes/No/Neutral"}.
 
 CRITICAL: Do NOT include an overall_feeling field in your summary_data response. The application handles this separately.
@@ -195,14 +190,6 @@ Section 7 — Style & Safety Protocols
 Section 8 — Optional Control Block (for Auditing)
 
 For debugging and auditing purposes, you MAY include a control block at the top level of the JSON. This block is for internal review and will be ignored by the user-facing application.
-
-code
-JSON
-download
-content_copy
-expand_less
-IGNORE_WHEN_COPYING_START
-IGNORE_WHEN_COPYING_END
 {
   "control": {
     "gate": "A|B|C|D",

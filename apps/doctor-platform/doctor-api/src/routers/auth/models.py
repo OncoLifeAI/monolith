@@ -70,55 +70,7 @@ class DoctorProfileResponse(BaseModel):
     npi_number: Optional[str] = None
     clinic_name: Optional[str] = None
 
-# Legacy patient models (keeping for backward compatibility)
-class SignupRequest(BaseModel):
+# Staff management models
+class DeleteStaffRequest(BaseModel):
     email: EmailStr
-    first_name: str
-    last_name: str
-    physician_email: Optional[EmailStr] = None
-
-class SignupResponse(BaseModel):
-    message: str
-    email: str
-    user_status: str
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-class LoginResponse(BaseModel):
-    valid: bool
-    message: str
-    user_status: Optional[str] = None
-    session: Optional[str] = None
-    tokens: Optional[AuthTokens] = None
-
-class CompleteNewPasswordRequest(BaseModel):
-    email: EmailStr
-    new_password: str
-    session: str
-    
-class CompleteNewPasswordResponse(BaseModel):
-    message: str
-    tokens: AuthTokens
-
-class DeletePatientRequest(BaseModel):
-    email: Optional[EmailStr] = None
-    uuid: Optional[str] = None
     skip_aws: Optional[bool] = False
-
-class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
-
-class ForgotPasswordResponse(BaseModel):
-    message: str
-    email: str
-
-class ResetPasswordRequest(BaseModel):
-    email: EmailStr
-    confirmation_code: str
-    new_password: str
-
-class ResetPasswordResponse(BaseModel):
-    message: str
-    email: str 

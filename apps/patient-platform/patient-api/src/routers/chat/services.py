@@ -209,20 +209,35 @@ class ConversationService:
         """
         Extracts JSON from the LLM response, handling various formats.
         """
+        print(f"🔍 [JSON] Extracting JSON from response...")
+        print(f"🔍 [JSON] Response text length: {len(text)}")
+        print(f"🔍 [JSON] Response text preview: {text[:300]}...")
+        
         try:
             # Try to find JSON in the response
             start_idx = text.find('{')
             end_idx = text.rfind('}')
             
+            print(f"🔍 [JSON] Found JSON markers: start_idx={start_idx}, end_idx={end_idx}")
+            
             if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
                 json_str = text[start_idx:end_idx + 1]
-                return json.loads(json_str)
+                print(f"🔍 [JSON] Extracted JSON string: {json_str}")
+                
+                parsed_json = json.loads(json_str)
+                print(f"✅ [JSON] Successfully parsed JSON with keys: {list(parsed_json.keys())}")
+                return parsed_json
             else:
-                print(f"Could not find JSON in response: {text}")
+                print(f"❌ [JSON] Could not find JSON markers in response")
+                print(f"❌ [JSON] Full response text: {text}")
                 return {}
         except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-            print(f"Response text: {text}")
+            print(f"❌ [JSON] JSON decode error: {e}")
+            print(f"❌ [JSON] Response text: {text}")
+            return {}
+        except Exception as e:
+            print(f"❌ [JSON] Unexpected error during JSON extraction: {e}")
+            print(f"❌ [JSON] Response text: {text}")
             return {}
 
     async def process_message_stream(self, chat_uuid: UUID, message: WebSocketMessageIn) -> AsyncGenerator[Any, None]:
@@ -309,7 +324,13 @@ class ConversationService:
             "history": history_for_llm
         }
 
-        print(f"📝 Context prepared: patient_state={context.get('patient_state')} history_len={len(history_for_llm)}")
+        print(f"📝 [CONTEXT] Context prepared for LLM:")
+        print(f"📝 [CONTEXT] patient_state.current_symptoms: {context.get('patient_state')}")
+        print(f"📝 [CONTEXT] latest_input: {context.get('latest_input')}")
+        print(f"📝 [CONTEXT] history length: {len(history_for_llm)}")
+        print(f"📝 [CONTEXT] history preview: {[m.get('content', '')[:50] + '...' for m in history_for_llm[:3]]}")
+
+        print(f"📝 [CONTEXT] Context prepared: patient_state={context.get('patient_state')} history_len={len(history_for_llm)}")
 
         # 4. Get LLM response (non-streaming)
         try:
@@ -330,10 +351,14 @@ class ConversationService:
             return
             
         # 5. Parse the complete JSON response
+        print(f"🔍 [LLM] Parsing LLM response for JSON...")
+        print(f"🔍 [LLM] Raw LLM response length: {len(llm_response_text)}")
+        print(f"🔍 [LLM] Raw LLM response preview: {llm_response_text[:200]}...")
+        
         llm_json = self._extract_json_from_response(llm_response_text)
 
         if not llm_json:
-            print(f"ERROR: Could not parse JSON from LLM response: {llm_response_text}")
+            print(f"❌ [LLM] ERROR: Could not parse JSON from LLM response: {llm_response_text}")
             # Yield a fallback error message
             yield Message(
                 id=-1,
@@ -344,24 +369,57 @@ class ConversationService:
                 created_at=datetime.utcnow()
             )
             return
+        
+        print(f"✅ [LLM] Successfully parsed JSON response")
+        print(f"✅ [LLM] JSON response keys: {list(llm_json.keys())}")
+        print(f"✅ [LLM] response_type: {llm_json.get('response_type')}")
+        print(f"✅ [LLM] Has summary_data: {'summary_data' in llm_json}")
+        
+        if 'summary_data' in llm_json:
+            summary_data = llm_json.get('summary_data', {})
+            print(f"📊 [LLM] summary_data keys: {list(summary_data.keys()) if summary_data else 'None'}")
+            print(f"📊 [LLM] summary_data content: {summary_data}")
             
         # 6. Process the structured response
         response_type = llm_json.get("response_type", "text")
         content = llm_json.get("content", "I'm not sure how to respond.")
         options = llm_json.get("options")
         new_symptoms_from_model = llm_json.get("new_symptoms", [])
+        
+        print(f"🎯 [RESPONSE] Processing response_type: {response_type}")
+        print(f"🎯 [RESPONSE] Current chat.conversation_state: {chat.conversation_state}")
+        print(f"🎯 [RESPONSE] Will trigger summary/end processing: {response_type in ['summary', 'end']}")
 
         # Check for new symptoms returned by the model and update the symptom list
         if new_symptoms_from_model:
+            print(f"🆕 [SYMPTOMS] New symptoms detected by model: {new_symptoms_from_model}")
+            print(f"🆕 [SYMPTOMS] Current chat.symptom_list: {chat.symptom_list}")
+            
             # Add new symptoms to the chat's symptom list
             chat.symptom_list = list(set((chat.symptom_list or []) + new_symptoms_from_model))
+            
+            print(f"🆕 [SYMPTOMS] Updated symptom list: {chat.symptom_list}")
+            print(f"🆕 [SYMPTOMS] About to commit symptom update to database...")
+            
             self.db.commit()
-            print(f"New symptoms detected by model: {new_symptoms_from_model}. Updated symptom list: {chat.symptom_list}")
+            print(f"✅ [SYMPTOMS] Successfully committed symptom update to database")
+            print(f"✅ [SYMPTOMS] Final chat.symptom_list after commit: {chat.symptom_list}")
+        else:
+            print(f"ℹ️ [SYMPTOMS] No new symptoms detected by model")
 
         # If the user is responding with their feeling, save it to the chat
         if message.message_type == 'feeling_response':
+            print(f"😊 [FEELING] Processing feeling response: {message.content}")
+            print(f"😊 [FEELING] Current chat.overall_feeling: {chat.overall_feeling}")
+            
             chat.overall_feeling = message.content
+            
+            print(f"😊 [FEELING] Updated chat.overall_feeling: {chat.overall_feeling}")
+            print(f"😊 [FEELING] About to commit feeling update to database...")
+            
             self.db.commit()
+            print(f"✅ [FEELING] Successfully committed feeling update to database")
+            print(f"✅ [FEELING] Final chat.overall_feeling after commit: {chat.overall_feeling}")
 
         # Normalize message type for database storage (convert hyphenated to underscore)
         db_message_type = response_type.replace('-', '_')
@@ -371,8 +429,12 @@ class ConversationService:
         # 7. Save and yield the assistant's message
         # If this is the summary, format the content for the user
         if response_type == "summary":
+            print(f"📝 [SUMMARY] Processing summary response_type...")
             summary_data = llm_json.get("summary_data", {})
             bulleted_summary = summary_data.get("bulleted_summary", "No summary available.")
+            
+            print(f"📝 [SUMMARY] Extracted bulleted_summary: {bulleted_summary}")
+            print(f"📝 [SUMMARY] bulleted_summary type: {type(bulleted_summary)}")
             
             # Format the bulleted summary with proper bullet points
             if bulleted_summary and bulleted_summary != "No summary available.":
@@ -380,9 +442,11 @@ class ConversationService:
                 if isinstance(bulleted_summary, list):
                     # If it's already a list, use it directly
                     bullet_lines = bulleted_summary
+                    print(f"📝 [SUMMARY] bulleted_summary is already a list with {len(bullet_lines)} items")
                 else:
                     # If it's a string, split by newlines
                     bullet_lines = bulleted_summary.split('\n')
+                    print(f"📝 [SUMMARY] Split bulleted_summary string into {len(bullet_lines)} lines")
                 
                 formatted_bullets = []
                 for line in bullet_lines:
@@ -392,10 +456,13 @@ class ConversationService:
                         formatted_bullets.append(f"• {str(line).strip()}")
                 
                 bullet_text = '<br>'.join(formatted_bullets) if formatted_bullets else "• No summary available."
+                print(f"📝 [SUMMARY] Formatted bullet_text: {bullet_text}")
             else:
                 bullet_text = "• No summary available."
+                print(f"📝 [SUMMARY] Using default bullet_text: {bullet_text}")
             
             content = f"<b>Thank you for completing this chat!</b><br><br>Here is your conversation summary:<br><br>{bullet_text}"
+            print(f"📝 [SUMMARY] Final formatted content: {content}")
 
         assistant_msg = MessageModel(
             chat_uuid=chat_uuid,
@@ -416,21 +483,72 @@ class ConversationService:
 
         # 8. If the conversation is done, update the chat with the summary and mark as completed
         if response_type in ["summary", "end"]:
+            print(f"🎯 [SUMMARY] Processing {response_type} response for chat {chat_uuid}")
             summary_data = llm_json.get("summary_data", {})
             
-            chat.symptom_list = summary_data.get("symptom_list", chat.symptom_list)
-            chat.severity_list = summary_data.get("severity_list", chat.severity_list)
-            chat.longer_summary = summary_data.get("longer_summary", chat.longer_summary)
-            chat.medication_list = summary_data.get("medication_list", chat.medication_list)
-            chat.bulleted_summary = summary_data.get("bulleted_summary", chat.bulleted_summary)
-            chat.overall_feeling = summary_data.get("overall_feeling", chat.overall_feeling)
+            print(f"📊 [SUMMARY] Raw summary_data from LLM: {summary_data}")
+            print(f"📊 [SUMMARY] summary_data keys: {list(summary_data.keys()) if summary_data else 'None'}")
+            
+            # Log each field before updating
+            print(f"🏥 [SUMMARY] Current chat.symptom_list: {chat.symptom_list}")
+            print(f"🏥 [SUMMARY] Current chat.severity_list: {chat.severity_list}")
+            print(f"🏥 [SUMMARY] Current chat.medication_list: {chat.medication_list}")
+            print(f"🏥 [SUMMARY] Current chat.longer_summary: {chat.longer_summary}")
+            print(f"🏥 [SUMMARY] Current chat.bulleted_summary: {chat.bulleted_summary}")
+            print(f"🏥 [SUMMARY] Current chat.overall_feeling: {chat.overall_feeling}")
+            
+            # Extract and log each field from summary_data
+            new_symptom_list = summary_data.get("symptom_list", chat.symptom_list)
+            new_severity_list = summary_data.get("severity_list", chat.severity_list)
+            new_longer_summary = summary_data.get("longer_summary", chat.longer_summary)
+            new_medication_list = summary_data.get("medication_list", chat.medication_list)
+            new_bulleted_summary = summary_data.get("bulleted_summary", chat.bulleted_summary)
+            new_overall_feeling = summary_data.get("overall_feeling", chat.overall_feeling)
+            
+            print(f"🆕 [SUMMARY] New symptom_list: {new_symptom_list}")
+            print(f"🆕 [SUMMARY] New severity_list: {new_severity_list}")
+            print(f"🆕 [SUMMARY] New medication_list: {new_medication_list}")
+            print(f"🆕 [SUMMARY] New longer_summary: {new_longer_summary}")
+            print(f"🆕 [SUMMARY] New bulleted_summary: {new_bulleted_summary}")
+            print(f"🆕 [SUMMARY] New overall_feeling: {new_overall_feeling}")
+            
+            # Update the chat with new data
+            chat.symptom_list = new_symptom_list
+            chat.severity_list = new_severity_list
+            chat.longer_summary = new_longer_summary
+            chat.medication_list = new_medication_list
+            chat.bulleted_summary = new_bulleted_summary
+            chat.overall_feeling = new_overall_feeling
+
+            print(f"💾 [SUMMARY] About to commit to database...")
+            print(f"💾 [SUMMARY] Final chat.symptom_list: {chat.symptom_list}")
+            print(f"💾 [SUMMARY] Final chat.severity_list: {chat.severity_list}")
+            print(f"💾 [SUMMARY] Final chat.medication_list: {chat.medication_list}")
+            print(f"💾 [SUMMARY] Final chat.longer_summary: {chat.longer_summary}")
+            print(f"💾 [SUMMARY] Final chat.bulleted_summary: {chat.bulleted_summary}")
+            print(f"💾 [SUMMARY] Final chat.overall_feeling: {chat.overall_feeling}")
 
             if response_type == "summary":
                 chat.conversation_state = ConversationState.COMPLETED
+                print(f"✅ [SUMMARY] Marked chat as COMPLETED")
             elif response_type == "end":
                 chat.conversation_state = ConversationState.EMERGENCY
+                print(f"🚨 [SUMMARY] Marked chat as EMERGENCY")
 
-            self.db.commit()
+            try:
+                self.db.commit()
+                print(f"💾 [SUMMARY] Successfully committed summary data to database for chat {chat_uuid}")
+                
+                # Verify the data was actually saved by refreshing from DB
+                self.db.refresh(chat)
+                print(f"🔍 [SUMMARY] After DB refresh - chat.severity_list: {chat.severity_list}")
+                print(f"🔍 [SUMMARY] After DB refresh - chat.medication_list: {chat.medication_list}")
+                print(f"🔍 [SUMMARY] After DB refresh - chat.symptom_list: {chat.symptom_list}")
+                
+            except Exception as e:
+                print(f"❌ [SUMMARY] Failed to commit summary data to database: {e}")
+                self.db.rollback()
+                raise
 
     def get_connection_ack(self, chat_uuid: UUID) -> ConnectionEstablished:
         """Returns a connection acknowledgment message."""
@@ -447,6 +565,8 @@ class ConversationService:
         Gets the most recent chat for today, or creates a new one if none exists.
         Uses user's timezone to determine what "today" means.
         """
+        print(f"🔍 [SESSION] Looking for today's chat for patient {patient_uuid} in timezone {user_timezone}")
+        
         # Get today's date in user's timezone
         user_tz = pytz.timezone(user_timezone)
         user_now = datetime.now(user_tz)
@@ -457,6 +577,8 @@ class ConversationService:
         utc_today_start = user_tz.localize(today_start).astimezone(pytz.UTC)
         utc_today_end = user_tz.localize(today_end).astimezone(pytz.UTC)
         
+        print(f"🔍 [SESSION] Querying for chats between {utc_today_start} and {utc_today_end}")
+        
         # Query for today's chat in user's timezone
         today_chat = self.db.query(ChatModel).filter(
             ChatModel.patient_uuid == patient_uuid,
@@ -465,13 +587,31 @@ class ConversationService:
         ).order_by(ChatModel.created_at.desc()).first()
         
         if today_chat:
+            print(f"✅ [SESSION] Found existing chat {today_chat.uuid} for today")
+            print(f"✅ [SESSION] Chat state: {today_chat.conversation_state}")
+            print(f"✅ [SESSION] Chat symptom_list: {today_chat.symptom_list}")
+            print(f"✅ [SESSION] Chat severity_list: {today_chat.severity_list}")
+            print(f"✅ [SESSION] Chat medication_list: {today_chat.medication_list}")
+            print(f"✅ [SESSION] Chat longer_summary: {today_chat.longer_summary}")
+            print(f"✅ [SESSION] Chat bulleted_summary: {today_chat.bulleted_summary}")
+            print(f"✅ [SESSION] Chat overall_feeling: {today_chat.overall_feeling}")
+            
             messages = self.db.query(MessageModel).filter(
                 MessageModel.chat_uuid == today_chat.uuid
             ).order_by(MessageModel.created_at).all()
+            
+            print(f"✅ [SESSION] Found {len(messages)} messages in existing chat")
             return today_chat, messages, False
         else:
+            print(f"🆕 [SESSION] No existing chat found, creating new one...")
             # Create new chat for today
             new_chat, initial_question = self.create_chat(patient_uuid, commit=True)  # Commit the chat first
+            
+            print(f"🆕 [SESSION] Created new chat {new_chat.uuid}")
+            print(f"🆕 [SESSION] New chat state: {new_chat.conversation_state}")
+            print(f"🆕 [SESSION] New chat symptom_list: {new_chat.symptom_list}")
+            print(f"🆕 [SESSION] New chat severity_list: {new_chat.severity_list}")
+            print(f"🆕 [SESSION] New chat medication_list: {new_chat.medication_list}")
             
             # Create the first assistant message
             first_message = MessageModel(
@@ -482,9 +622,12 @@ class ConversationService:
                 structured_data={"options": initial_question["options"]} if initial_question.get("options") else None
             )
             
+            print(f"🆕 [SESSION] Creating first assistant message: {first_message.content}")
+            
             # Add the message to the database
             self.db.add(first_message)
             self.db.commit()
             self.db.refresh(first_message)
             
+            print(f"✅ [SESSION] Successfully created new chat session with {len([first_message])} messages")
             return new_chat, [first_message], True

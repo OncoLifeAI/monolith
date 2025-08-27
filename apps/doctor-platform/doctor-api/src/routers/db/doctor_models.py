@@ -3,7 +3,8 @@ from sqlalchemy import (
     Integer, 
     String, 
     DateTime, 
-    func
+    func,
+    Boolean
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
@@ -31,6 +32,7 @@ class StaffProfiles(DoctorBase):
     last_name = Column(String)
     role = Column(String)
     npi_number = Column(String, nullable=True)
+    is_archived = Column(Boolean, default=False, nullable=False)
 
 class StaffAssociations(DoctorBase):
     __tablename__ = 'staff_associations'
@@ -38,4 +40,5 @@ class StaffAssociations(DoctorBase):
     created_at = Column(DateTime, server_default=func.now())
     staff_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
     physician_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
-    clinic_uuid = Column(UUID(as_uuid=True), nullable=False, index=True) 
+    clinic_uuid = Column(UUID(as_uuid=True), nullable=False, index=True)
+    is_archived = Column(Boolean, default=False, nullable=False) 

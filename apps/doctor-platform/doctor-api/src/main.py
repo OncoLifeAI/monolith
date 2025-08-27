@@ -10,6 +10,7 @@ from routers.auth.auth_routes import router as auth_router
 from routers.staff.staff_routes import router as staff_router
 from routers.patients.patient_routes import router as patients_router
 from routers.dashboard.dashboard_routes import router as dashboard_router
+from routers.patient_dashboard.patient_dashboard_routes import router as patient_dashboard_router
 
 app = FastAPI(title="OncoLife Doctor API", version="1.0.0")
 
@@ -36,6 +37,7 @@ app.include_router(auth_router)
 app.include_router(staff_router)
 app.include_router(patients_router)
 app.include_router(dashboard_router)
+app.include_router(patient_dashboard_router)
 
 @app.get("/health")
 async def health():
