@@ -23,12 +23,11 @@ const Login: React.FC = () => {
     setError(null);
     try {
       const result = await authenticateLogin(email, password);
-      if (result?.data?.requiresPasswordChange) {
-        // Doctor portal might have different password reset flow
+      if (result?.data?.requiresPasswordChange || result?.data?.user_status === 'FORCE_CHANGE_PASSWORD') {
+        // Navigate to reset password page for doctors with temporary passwords
         navigate('/reset-password');
-      }
-      if (result?.data?.user_status === 'CONFIRMED') {
-        // Navigate to doctor dashboard instead of chat
+      } else if (result?.data?.user_status === 'CONFIRMED') {
+        // Navigate to doctor dashboard for confirmed users
         navigate('/dashboard');
       }
     } catch (err: any) {

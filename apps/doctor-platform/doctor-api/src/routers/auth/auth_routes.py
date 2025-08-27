@@ -16,6 +16,7 @@ Doctor-specific routes:
 - POST /auth/doctor/signup: Register a new doctor/staff member
 - POST /auth/doctor/login: Authenticate doctor/staff member
 - GET /auth/doctor/profile: Get doctor profile information
+- POST /auth/doctor/complete-new-password: Complete password setup for doctors with temporary passwords
 
 All routes handle Cognito integration and manage user data in the appropriate database tables.
 """
@@ -52,6 +53,9 @@ from routers.auth.models import (
     DoctorLoginRequest,
     DoctorLoginResponse,
     DoctorProfileResponse,
+    DoctorCompleteNewPasswordRequest,
+    DoctorCompleteNewPasswordResponse,
+    DoctorAuthTokens,
 )
 # Import DB session and models
 from routers.db.database import get_patient_db, get_doctor_db
@@ -601,6 +605,95 @@ async def doctor_login(request: DoctorLoginRequest):
             )
     except Exception as e:
         logger.error(f"[AUTH] /doctor/login unexpected error email={request.email}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/doctor/complete-new-password", response_model=DoctorCompleteNewPasswordResponse)
+async def doctor_complete_new_password(request: DoctorCompleteNewPasswordRequest):
+    """
+    Complete the new password setup for a doctor/staff member who was created with a temporary password.
+    """
+    logger.info(f"[AUTH] /doctor/complete-new-password email={request.email}")
+    try:
+        user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not user_pool_id or not client_id:
+            logger.error("[AUTH] /doctor/complete-new-password missing Cognito envs")
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        challenge_responses = {
+            "USERNAME": request.email,
+            "NEW_PASSWORD": request.new_password,
+        }
+
+        if client_secret:
+            challenge_responses["SECRET_HASH"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        response = cognito_client.admin_respond_to_auth_challenge(
+            UserPoolId=user_pool_id,
+            ClientId=client_id,
+            ChallengeName="NEW_PASSWORD_REQUIRED",
+            Session=request.session,
+            ChallengeResponses=challenge_responses,
+        )
+
+        if "AuthenticationResult" in response:
+            logger.info(f"[AUTH] /doctor/complete-new-password success email={request.email}")
+            auth_result = response["AuthenticationResult"]
+            tokens = DoctorAuthTokens(
+                access_token=auth_result["AccessToken"],
+                refresh_token=auth_result["RefreshToken"],
+                id_token=auth_result["IdToken"],
+                token_type=auth_result["TokenType"],
+            )
+            return DoctorCompleteNewPasswordResponse(
+                message="Password successfully changed and doctor authenticated.",
+                tokens=tokens,
+            )
+        else:
+            logger.error(f"[AUTH] /doctor/complete-new-password unexpected response email={request.email}")
+            raise HTTPException(
+                status_code=400,
+                detail="Could not set new password. Unexpected response from authentication service.",
+            )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(
+            f"[AUTH] /doctor/complete-new-password Cognito error email={request.email} code={error_code} msg='{error_message}'"
+        )
+        if error_code in [
+            "NotAuthorizedException",
+            "CodeMismatchException",
+            "ExpiredCodeException",
+        ]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid or expired session. Please try logging in again.",
+            )
+        if error_code == "InvalidPasswordException":
+            raise HTTPException(
+                status_code=400,
+                detail=f"New password does not meet requirements: {error_message}",
+            )
+        raise HTTPException(
+            status_code=500, detail=f"AWS Cognito error: {error_message}"
+        )
+
+    except Exception as e:
+        logger.error(
+            f"[AUTH] /doctor/complete-new-password unexpected error email={request.email}: {str(e)}"
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

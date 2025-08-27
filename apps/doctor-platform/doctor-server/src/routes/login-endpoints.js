@@ -17,9 +17,9 @@ router.post('/login', async (req, res) => {
     }
 
     const backendBase = apiClient?.defaults?.baseURL || '<unknown>';
-    console.log(`[DOCTOR LOGIN] Incoming login for ${email} -> POST ${backendBase}/auth/login`);
+    console.log(`[DOCTOR LOGIN] Incoming login for ${email} -> POST ${backendBase}/auth/doctor/login`);
 
-    const response = await api.post('/auth/login', {
+    const response = await api.post('/auth/doctor/login', {
       email,
       password
     });
@@ -94,9 +94,9 @@ router.post('/complete-new-password', async (req, res) => {
     }
 
     const backendBase = apiClient?.defaults?.baseURL || '<unknown>';
-    console.log(`[DOCTOR LOGIN] complete-new-password for ${email} -> POST ${backendBase}/auth/complete-new-password`);
+    console.log(`[DOCTOR LOGIN] complete-new-password for ${email} -> POST ${backendBase}/auth/doctor/complete-new-password`);
 
-    const response = await api.post('/auth/complete-new-password', {
+    const response = await api.post('/auth/doctor/complete-new-password', {
       email,
       new_password,
       session
