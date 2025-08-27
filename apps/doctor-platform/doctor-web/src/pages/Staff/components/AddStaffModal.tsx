@@ -17,7 +17,7 @@ import {
 import { X, User, Mail, Building, Stethoscope } from 'lucide-react';
 import styled from 'styled-components';
 import { theme } from '@oncolife/ui-components';
-import { useAddStaff, type AddStaffRequest } from '../../../../restful/staff';
+import { useAddStaff, type AddStaffRequest } from '../../../../services/staff';
 
 const StyledDialog = styled(Dialog)`
   .MuiDialog-paper {

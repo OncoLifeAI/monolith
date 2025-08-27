@@ -33,7 +33,6 @@ def get_clinic_uuid_from_staff(staff_uuid: str, db: Session) -> Optional[str]:
 
 @router.get("/get-staff", response_model=PaginatedStaffResponse)
 async def get_staff(
-    staff_uuid: str = Query(..., description="Staff UUID to get clinic staff for"),
     page: int = Query(1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(20, ge=1, le=100, description="Number of staff per page"),
     db: Session = Depends(get_doctor_db),
@@ -41,9 +40,13 @@ async def get_staff(
 ):
     """
     Get paginated list of all staff members in the same clinic.
-    Uses staff_uuid to find the clinic, then returns all staff in that clinic.
+    Uses the authenticated user's ID to find the clinic, then returns all staff in that clinic.
     """
-    # Get clinic UUID from the provided staff UUID
+    # Use the authenticated user's ID as staff_uuid
+    staff_uuid = current_user.sub
+    print(f"[STAFF API] Authenticated user: {current_user.sub}, email: {current_user.email}")
+    
+    # Get clinic UUID from the authenticated user's staff UUID
     clinic_uuid = get_clinic_uuid_from_staff(staff_uuid, db)
     if not clinic_uuid:
         raise HTTPException(
@@ -53,10 +56,7 @@ async def get_staff(
     
     # Get total count of staff in this clinic
     total_count = db.query(StaffAssociations).filter(
-        and_(
-            StaffAssociations.clinic_uuid == clinic_uuid,
-            StaffAssociations.is_deleted == False
-        )
+        StaffAssociations.clinic_uuid == clinic_uuid
     ).distinct(StaffAssociations.staff_uuid).count()
     
     # Calculate pagination
@@ -65,10 +65,7 @@ async def get_staff(
     
     # Get staff associations for this clinic with pagination
     staff_assocs = db.query(StaffAssociations).filter(
-        and_(
-            StaffAssociations.clinic_uuid == clinic_uuid,
-            StaffAssociations.is_deleted == False
-        )
+        StaffAssociations.clinic_uuid == clinic_uuid
     ).distinct(StaffAssociations.staff_uuid).offset(offset).limit(page_size).all()
     
     # Get staff details for each association
@@ -79,6 +76,7 @@ async def get_staff(
         ).first()
         
         if staff_profile:
+            print(f"[STAFF API] Processing staff: {staff_profile.staff_uuid}, first_name: {staff_profile.first_name}, role: {staff_profile.role}")
             staff_list.append(StaffResponse(
                 staff_uuid=str(staff_profile.staff_uuid),
                 first_name=staff_profile.first_name or "",

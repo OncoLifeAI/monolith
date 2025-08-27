@@ -17,7 +17,7 @@ import {
 import { X, User, Mail, Building, Stethoscope } from 'lucide-react';
 import styled from 'styled-components';
 import { theme } from '@oncolife/ui-components';
-import { useUpdateStaff, type Staff, type UpdateStaffRequest } from '../../../../restful/staff';
+import { useEditStaff, type Staff, type UpdateStaffRequest } from '../../../../services/staff';
 
 const StyledDialog = styled(Dialog)`
   .MuiDialog-paper {
@@ -92,7 +92,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({ open, onClose, staff })
   
   const [errors, setErrors] = useState<Partial<UpdateStaffRequest>>({});
   
-  const updateStaffMutation = useUpdateStaff();
+  const updateStaffMutation = useEditStaff();
   
   // Populate form when staff data changes
   useEffect(() => {
@@ -148,7 +148,7 @@ const EditStaffModal: React.FC<EditStaffModalProps> = ({ open, onClose, staff })
     }
     
     try {
-      await updateStaffMutation.mutateAsync({ id: staff.id, data: formData });
+              await updateStaffMutation.mutateAsync({ staffId: staff.id, staffData: formData });
       handleClose();
     } catch (error) {
       console.error('Error updating staff:', error);

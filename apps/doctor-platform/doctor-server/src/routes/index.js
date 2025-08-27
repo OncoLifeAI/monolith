@@ -4,6 +4,8 @@ const router = express.Router();
 const healthRoutes = require('./health-endpoint');
 const loginRoutes = require('./login-endpoints');
 const dashboardRoutes = require('./dashboard-endpoints');
+const patientRoutes = require('./patient-endpoints');
+const staffRoutes = require('./staff-endpoints');
 
 router.get('/', (req, res) => {
   res.json({
@@ -17,5 +19,7 @@ router.get('/', (req, res) => {
 router.use('/', healthRoutes);
 router.use('/', loginRoutes);
 router.use('/', dashboardRoutes);
+router.use('/', patientRoutes);
+router.use('/', staffRoutes);
 
 module.exports = router;

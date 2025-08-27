@@ -17,7 +17,7 @@ import {
 import { X, User, Mail, Calendar, Phone, Shield, Stethoscope, Building, Globe, Heart, Users } from 'lucide-react';
 import styled from 'styled-components';
 import { theme } from '@oncolife/ui-components';
-import { useUpdatePatient, type Patient } from '../../../services/patients';
+import { useEditPatient, type Patient } from '../../../services/patients';
 
 const StyledDialog = styled(Dialog)`
   .MuiDialog-paper {
@@ -108,7 +108,7 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({ open, onClose, pati
     treatmentType: ''
   });
 
-  const updatePatientMutation = useUpdatePatient();
+  const updatePatientMutation = useEditPatient();
 
   // Update form data when patient changes
   useEffect(() => {

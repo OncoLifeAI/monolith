@@ -1,15 +1,35 @@
 /**
- * Patient Service - NEEDS API INTEGRATION
+ * Patient Service - Connected to Real API
  * 
- * This service currently uses mock data and needs to be connected to the real
- * patient API endpoints at /patients/* 
+ * This service connects to the real patient API endpoints at /patients/*
  * 
- * API endpoints are available in doctor-api but not connected to frontend yet.
+ * API endpoints are available in doctor-api and connected to frontend.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../utils/apiClient';
+import { API_CONFIG } from '../config/api';
 
+// API response interfaces matching the backend
+export interface ApiPatient {
+  uuid: string;
+  mrn: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  dob?: string;
+  sex?: string;
+}
+
+export interface ApiPatientsResponse {
+  patients: ApiPatient[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+// Frontend interface for UI compatibility
 export interface Patient {
   id: string;
   firstName: string;
@@ -33,349 +53,84 @@ export interface PatientsResponse {
   totalPages: number;
 }
 
-// Mock data for development
-const mockPatients: Patient[] = [
-  {
-    id: '1',
-    firstName: 'Jane',
-    lastName: 'Cooper',
-    email: 'jane.cooper@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'White',
-    phoneNumber: '555-0123',
-    physician: 'Dr. Smith',
-    diseaseType: 'Breast Cancer',
-    associateClinic: 'Oncology Center',
-    treatmentType: 'Chemotherapy'
-  },
-  {
-    id: '2',
-    firstName: 'Esther',
-    lastName: 'Howard',
-    email: 'esther.howard@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Asian',
-    phoneNumber: '555-0124',
-    physician: 'Dr. Johnson',
-    diseaseType: 'Lung Cancer',
-    associateClinic: 'Pulmonary Clinic',
-    treatmentType: 'Radiotherapy'
-  },
-  {
-    id: '3',
-    firstName: 'Robert',
-    lastName: 'Fox',
-    email: 'robert.fox@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'Black',
-    phoneNumber: '555-0125',
-    physician: 'Dr. Williams',
-    diseaseType: 'Colon Cancer',
-    associateClinic: 'Gastroenterology',
-    treatmentType: 'Surgery'
-  },
-  {
-    id: '4',
-    firstName: 'Tim',
-    lastName: 'Jennings',
-    email: 'tim.jennings@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'Hispanic',
-    phoneNumber: '555-0126',
-    physician: 'Dr. Brown',
-    diseaseType: 'Prostate Cancer',
-    associateClinic: 'Urology Center',
-    treatmentType: 'Hormone Therapy'
-  },
-  {
-    id: '5',
-    firstName: 'Debbie',
-    lastName: 'Baker',
-    email: 'debbie.baker@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'White',
-    phoneNumber: '555-0127',
-    physician: 'Dr. Davis',
-    diseaseType: 'Ovarian Cancer',
-    associateClinic: 'Gynecology',
-    treatmentType: 'Chemotherapy'
-  },
-  {
-    id: '6',
-    firstName: 'Waqas',
-    lastName: 'Hafeez',
-    email: 'waqas@gmail.com',
-    mrn: '21',
-    dateOfBirth: '17-01-2001',
-    sex: 'Male',
-    race: 'Other',
-    phoneNumber: '03097273238',
-    physician: 'Dr. Wilson',
-    diseaseType: 'Brain Tumor',
-    associateClinic: 'Neurology',
-    treatmentType: 'Surgery'
-  },
-  {
-    id: '7',
-    firstName: 'Sarah',
-    lastName: 'Miller',
-    email: 'sarah.miller@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Asian',
-    phoneNumber: '555-0128',
-    physician: 'Dr. Taylor',
-    diseaseType: 'Melanoma',
-    associateClinic: 'Dermatology',
-    treatmentType: 'Immunotherapy'
-  },
-  {
-    id: '8',
-    firstName: 'Michael',
-    lastName: 'Anderson',
-    email: 'michael.anderson@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'White',
-    phoneNumber: '555-0129',
-    physician: 'Dr. Garcia',
-    diseaseType: 'Leukemia',
-    associateClinic: 'Hematology',
-    treatmentType: 'Bone Marrow Transplant'
-  },
-  {
-    id: '9',
-    firstName: 'Lisa',
-    lastName: 'Thompson',
-    email: 'lisa.thompson@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Black',
-    phoneNumber: '555-0130',
-    physician: 'Dr. Martinez',
-    diseaseType: 'Pancreatic Cancer',
-    associateClinic: 'Oncology Center',
-    treatmentType: 'Chemotherapy'
-  },
-  {
-    id: '10',
-    firstName: 'David',
-    lastName: 'Wilson',
-    email: 'david.wilson@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'Hispanic',
-    phoneNumber: '555-0131',
-    physician: 'Dr. Rodriguez',
-    diseaseType: 'Liver Cancer',
-    associateClinic: 'Hepatology',
-    treatmentType: 'Targeted Therapy'
-  },
-  {
-    id: '11',
-    firstName: 'Emily',
-    lastName: 'Davis',
-    email: 'emily.davis@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'White',
-    phoneNumber: '555-0132',
-    physician: 'Dr. Lee',
-    diseaseType: 'Thyroid Cancer',
-    associateClinic: 'Endocrinology',
-    treatmentType: 'Radioactive Iodine'
-  },
-  {
-    id: '12',
-    firstName: 'James',
-    lastName: 'Johnson',
-    email: 'james.johnson@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'Black',
-    phoneNumber: '555-0133',
-    physician: 'Dr. White',
-    diseaseType: 'Bladder Cancer',
-    associateClinic: 'Urology Center',
-    treatmentType: 'BCG Therapy'
-  },
-  {
-    id: '13',
-    firstName: 'Maria',
-    lastName: 'Garcia',
-    email: 'maria.garcia@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Hispanic',
-    phoneNumber: '555-0134',
-    physician: 'Dr. Chen',
-    diseaseType: 'Cervical Cancer',
-    associateClinic: 'Gynecology',
-    treatmentType: 'Radiation Therapy'
-  },
-  {
-    id: '14',
-    firstName: 'John',
-    lastName: 'Brown',
-    email: 'john.brown@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'White',
-    phoneNumber: '555-0135',
-    physician: 'Dr. Kim',
-    diseaseType: 'Kidney Cancer',
-    associateClinic: 'Nephrology',
-    treatmentType: 'Targeted Therapy'
-  },
-  {
-    id: '15',
-    firstName: 'Anna',
-    lastName: 'Taylor',
-    email: 'anna.taylor@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Asian',
-    phoneNumber: '555-0136',
-    physician: 'Dr. Patel',
-    diseaseType: 'Ovarian Cancer',
-    associateClinic: 'Gynecology',
-    treatmentType: 'Chemotherapy'
-  },
-  {
-    id: '16',
-    firstName: 'William',
-    lastName: 'Martinez',
-    email: 'william.martinez@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'Hispanic',
-    phoneNumber: '555-0137',
-    physician: 'Dr. Singh',
-    diseaseType: 'Testicular Cancer',
-    associateClinic: 'Urology Center',
-    treatmentType: 'Surgery'
-  },
-  {
-    id: '17',
-    firstName: 'Sophia',
-    lastName: 'Lee',
-    email: 'sophia.lee@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Asian',
-    phoneNumber: '555-0138',
-    physician: 'Dr. Wang',
-    diseaseType: 'Endometrial Cancer',
-    associateClinic: 'Gynecology',
-    treatmentType: 'Hormone Therapy'
-  },
-  {
-    id: '18',
-    firstName: 'Daniel',
-    lastName: 'Clark',
-    email: 'daniel.clark@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'White',
-    phoneNumber: '555-0139',
-    physician: 'Dr. Anderson',
-    diseaseType: 'Esophageal Cancer',
-    associateClinic: 'Gastroenterology',
-    treatmentType: 'Chemoradiation'
-  },
-  {
-    id: '19',
-    firstName: 'Isabella',
-    lastName: 'Rodriguez',
-    email: 'isabella.rodriguez@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Female',
-    race: 'Hispanic',
-    phoneNumber: '555-0140',
-    physician: 'Dr. Thompson',
-    diseaseType: 'Vulvar Cancer',
-    associateClinic: 'Gynecology',
-    treatmentType: 'Surgery'
-  },
-  {
-    id: '20',
-    firstName: 'Christopher',
-    lastName: 'Lewis',
-    email: 'christopher.lewis@example.com',
-    mrn: 'Test',
-    dateOfBirth: 'January 1, 2001',
-    sex: 'Male',
-    race: 'Black',
-    phoneNumber: '555-0141',
-    physician: 'Dr. Harris',
-    diseaseType: 'Penile Cancer',
-    associateClinic: 'Urology Center',
-    treatmentType: 'Surgery'
-  }
-];
+// Helper function to convert API response to UI format
+const convertApiResponseToUIFormat = (apiResponse: ApiPatientsResponse): PatientsResponse => {
+  const convertedPatients: Patient[] = apiResponse.patients.map(patient => ({
+    id: patient.uuid,
+    firstName: patient.first_name,
+    lastName: patient.last_name,
+    email: patient.email,
+    mrn: patient.mrn,
+    dateOfBirth: patient.dob ? new Date(patient.dob).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }) : 'N/A',
+    sex: (patient.sex as 'Male' | 'Female' | 'Other') || 'Other',
+    race: 'N/A', // Not available in API response
+    phoneNumber: 'N/A', // Not available in API response
+    physician: 'N/A', // Not available in API response
+    diseaseType: 'N/A', // Not available in API response
+    associateClinic: 'N/A', // Not available in API response
+    treatmentType: 'N/A' // Not available in API response
+  }));
 
+  return {
+    data: convertedPatients,
+    total: apiResponse.total_count,
+    page: apiResponse.page,
+    totalPages: apiResponse.total_pages
+  };
+};
+
+// Fetch patients from API
 const fetchPatients = async (
   page: number = 1, 
   search: string = '',
   rowsPerPage: number = 10
 ): Promise<PatientsResponse> => {
-  // For now, return mock data
-  // In production, this would be:
-  // const response = await apiClient.get<PatientsResponse>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}?page=${page}&search=${search}&rowsPerPage=${rowsPerPage}`
-  // );
-  // return response.data;
-  
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  let filteredData = mockPatients;
-  
-  // Apply search filter
-  if (search) {
-    filteredData = mockPatients.filter(patient => 
-      patient.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      patient.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      patient.email.toLowerCase().includes(search.toLowerCase()) ||
-      patient.mrn.toLowerCase().includes(search.toLowerCase())
-    );
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: rowsPerPage.toString()
+    });
+
+    const url = `${API_CONFIG.ENDPOINTS.PATIENTS.LIST}?${params.toString()}`;
+    console.log('🔍 Fetching patients from API:', url);
+    console.log('🔍 API_CONFIG.ENDPOINTS.PATIENTS.LIST:', API_CONFIG.ENDPOINTS.PATIENTS.LIST);
+    
+    const response = await apiClient.get<{ success: boolean; data: ApiPatientsResponse }>(url);
+    
+    if (!response.data.success) {
+      throw new Error('API returned unsuccessful response');
+    }
+
+    console.log('Successfully fetched patients from API:', response.data);
+    const convertedResponse = convertApiResponseToUIFormat(response.data.data);
+    
+    // Apply client-side search filter (until API supports it)
+    let filteredData = convertedResponse.data;
+    if (search) {
+      filteredData = filteredData.filter(patient => 
+        patient.firstName.toLowerCase().includes(search.toLowerCase()) ||
+        patient.lastName.toLowerCase().includes(search.toLowerCase()) ||
+        patient.email.toLowerCase().includes(search.toLowerCase()) ||
+        patient.mrn.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    return {
+      ...convertedResponse,
+      data: filteredData
+    };
+    
+  } catch (error) {
+    console.error('Patients API error:', error);
+    throw error;
   }
-  
-  const startIndex = (page - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-  
-  return {
-    data: paginatedData,
-    total: filteredData.length,
-    page,
-    totalPages: Math.ceil(filteredData.length / rowsPerPage)
-  };
 };
 
+// React Query hook for fetching patients
 export const usePatients = (
   page: number = 1, 
   search: string = '',
@@ -384,55 +139,50 @@ export const usePatients = (
   return useQuery({
     queryKey: ['patients', page, search, rowsPerPage],
     queryFn: () => fetchPatients(page, search, rowsPerPage),
-  });
-};
-
-// Fetch individual patient details
-const fetchPatientDetails = async (patientId: string): Promise<Patient> => {
-  // For now, return mock data
-  // In production, this would be:
-  // const response = await apiClient.get<Patient>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}/${patientId}`
-  // );
-  // return response.data;
-  
-  await new Promise(resolve => setTimeout(resolve, 200));
-  
-  const patient = mockPatients.find(p => p.id === patientId);
-  if (!patient) {
-    throw new Error('Patient not found');
-  }
-  
-  return patient;
-};
-
-export const usePatientDetails = (patientId: string) => {
-  return useQuery({
-    queryKey: ['patientDetails', patientId],
-    queryFn: () => fetchPatientDetails(patientId),
-    enabled: !!patientId,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache
   });
 };
 
 // Add patient mutation
 const addPatient = async (patientData: Omit<Patient, 'id'>): Promise<Patient> => {
-  // For now, return mock data
-  // In production, this would be:
-  // const response = await apiClient.post<Patient>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}`,
-  //   patientData
-  // );
-  // return response.data;
-  
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const newPatient: Patient = {
-    ...patientData,
-    id: (mockPatients.length + 1).toString()
-  };
-  
-  mockPatients.push(newPatient);
-  return newPatient;
+  try {
+    console.log('Adding new patient:', patientData);
+    
+    const response = await apiClient.post<{ success: boolean; data: any }>(
+      API_CONFIG.ENDPOINTS.PATIENTS.CREATE,
+      {
+        email_address: patientData.email,
+        first_name: patientData.firstName,
+        last_name: patientData.lastName,
+        sex: patientData.sex,
+        dob: patientData.dateOfBirth,
+        mrn: patientData.mrn,
+        ethnicity: patientData.race,
+        phone_number: patientData.phoneNumber,
+        disease_type: patientData.diseaseType,
+        treatment_type: patientData.treatmentType,
+        physician_uuid: 'mock-physician-uuid', // TODO: Get from context
+        clinic_uuid: 'mock-clinic-uuid' // TODO: Get from context
+      }
+    );
+    
+    if (!response.data.success) {
+      throw new Error('Failed to add patient');
+    }
+    
+    console.log('Successfully added patient:', response.data);
+    
+    // Return the new patient with generated ID
+    return {
+      ...patientData,
+      id: response.data.data.patient_uuid || 'new-patient-id'
+    };
+    
+  } catch (error) {
+    console.error('Add patient API error:', error);
+    throw error;
+  }
 };
 
 export const useAddPatient = () => {
@@ -441,40 +191,99 @@ export const useAddPatient = () => {
   return useMutation({
     mutationFn: addPatient,
     onSuccess: () => {
+      // Invalidate and refetch patients list
       queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+    onError: (error) => {
+      console.error('Add patient error:', error);
     },
   });
 };
 
-// Update patient mutation
-const updatePatient = async ({ id, ...patientData }: Patient): Promise<Patient> => {
-  // For now, return mock data
-  // In production, this would be:
-  // const response = await apiClient.put<Patient>(
-  //   `${API_CONFIG.ENDPOINTS.PATIENTS}/${id}`,
-  //   patientData
-  // );
-  // return response.data;
-  
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const patientIndex = mockPatients.findIndex(p => p.id === id);
-  if (patientIndex === -1) {
-    throw new Error('Patient not found');
+// Edit patient mutation
+const editPatient = async ({ id, ...patientData }: Partial<Patient> & { id: string }): Promise<Patient> => {
+  try {
+    console.log('Editing patient:', id, patientData);
+    
+    const response = await apiClient.patch<{ success: boolean; data: any }>(
+      `${API_CONFIG.ENDPOINTS.PATIENTS.UPDATE}/${id}`,
+      {
+        first_name: patientData.firstName,
+        last_name: patientData.lastName,
+        sex: patientData.sex,
+        dob: patientData.dateOfBirth,
+        ethnicity: patientData.race,
+        phone_number: patientData.phoneNumber,
+        disease_type: patientData.diseaseType,
+        treatment_type: patientData.treatmentType
+      }
+    );
+    
+    if (!response.data.success) {
+      throw new Error('Failed to edit patient');
+    }
+    
+    console.log('Successfully edited patient:', response.data);
+    
+    // Return the updated patient
+    return {
+      id,
+      ...patientData
+    } as Patient;
+    
+  } catch (error) {
+    console.error('Edit patient API error:', error);
+    throw error;
   }
-  
-  const updatedPatient: Patient = { id, ...patientData };
-  mockPatients[patientIndex] = updatedPatient;
-  return updatedPatient;
 };
 
-export const useUpdatePatient = () => {
+export const useEditPatient = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: updatePatient,
+    mutationFn: editPatient,
     onSuccess: () => {
+      // Invalidate and refetch patients list
       queryClient.invalidateQueries({ queryKey: ['patients'] });
     },
+    onError: (error) => {
+      console.error('Edit patient error:', error);
+    },
   });
-}; 
+};
+
+// Delete patient mutation
+const deletePatient = async (patientId: string): Promise<void> => {
+  try {
+    console.log('Deleting patient:', patientId);
+    
+    const response = await apiClient.delete<{ success: boolean }>(
+      `${API_CONFIG.ENDPOINTS.PATIENTS.DELETE}/${patientId}`
+    );
+    
+    if (!response.data.success) {
+      throw new Error('Failed to delete patient');
+    }
+    
+    console.log('Successfully deleted patient:', patientId);
+    
+  } catch (error) {
+    console.error('Delete patient API error:', error);
+    throw error;
+  }
+};
+
+export const useDeletePatient = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: deletePatient,
+    onSuccess: () => {
+      // Invalidate and refetch patients list
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+    onError: (error) => {
+      console.error('Delete patient error:', error);
+    },
+  });
+};

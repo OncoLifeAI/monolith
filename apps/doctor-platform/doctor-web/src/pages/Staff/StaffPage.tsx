@@ -26,6 +26,7 @@ import {
 } from '@mui/material';
 import { Search, Plus, Edit } from 'lucide-react';
 import styled from 'styled-components';
+import { useStaff, type Staff } from '../../services/staff';
 // import AddStaffModal from './components/AddStaffModal';
 // import EditStaffModal from './components/EditStaffModal';
 
@@ -159,46 +160,7 @@ const StyledTable = styled(Table)`
   }
 `;
 
-// Mock Staff type
-interface Staff {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  clinicName?: string;
-}
-
-// Mock data
-const mockStaffData = {
-  data: [
-    {
-      id: '1',
-      firstName: 'John',
-      lastName: 'Smith',
-      email: 'john.smith@clinic.com',
-      role: 'Doctor',
-      clinicName: 'Main Clinic'
-    },
-    {
-      id: '2',
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      email: 'sarah.johnson@clinic.com',
-      role: 'Nurse',
-      clinicName: 'Main Clinic'
-    },
-    {
-      id: '3',
-      firstName: 'Michael',
-      lastName: 'Brown',
-      email: 'michael.brown@clinic.com',
-      role: 'Administrator',
-      clinicName: 'East Branch'
-    }
-  ],
-  total: 3
-};
+// Staff type is now imported from services/staff
 
 const StaffPage: React.FC = () => {
   const [page, setPage] = useState(0); // TablePagination uses 0-based indexing
@@ -208,10 +170,8 @@ const StaffPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   
-  // Mock API response
-  const data = mockStaffData;
-  const isLoading = false;
-  const error = null;
+  // Real API call
+  const { data, isLoading, error } = useStaff(page + 1, search, rowsPerPage);
   
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -301,7 +261,7 @@ const StaffPage: React.FC = () => {
           
           {error && (
             <Typography color="error" variant="body2">
-              Error loading staff. Please try again.
+              Error loading staff: {error.message || 'Please try again.'}
             </Typography>
           )}
           
@@ -359,6 +319,7 @@ const StaffPage: React.FC = () => {
                   labelDisplayedRows={({ from, to, count }) =>
                     `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
                   }
+                  disabled={!data || data.total <= rowsPerPage}
                   sx={{
                     '.MuiTablePagination-selectLabel': {
                       color: theme.colors.gray[600],

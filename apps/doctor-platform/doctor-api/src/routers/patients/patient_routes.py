@@ -37,7 +37,6 @@ def verify_staff_access(staff_uuid: str, physician_uuid: str, clinic_uuid: str, 
 
 @router.get("/get-patients", response_model=PaginatedPatientsResponse)
 async def get_patients(
-    staff_uuid: str = Query(..., description="Staff UUID to get patients for"),
     page: int = Query(1, ge=1, description="Page number (1-based)"),
     page_size: int = Query(20, ge=1, le=100, description="Number of patients per page"),
     patient_db: Session = Depends(get_patient_db),
@@ -45,10 +44,11 @@ async def get_patients(
     current_user = Depends(get_current_user)
 ):
     """
-    Get paginated list of patients for a staff member.
-    Staff UUID is used to find the associated physician, then patients are fetched.
+    Get paginated list of patients for the authenticated staff member.
+    Uses the authenticated user's ID to find the associated physician, then patients are fetched.
     """
-    # Get physician UUID from staff UUID
+    # Use the authenticated user's ID as staff_uuid
+    staff_uuid = current_user.sub
     physician_uuid = get_physician_uuid_from_staff(staff_uuid, doctor_db)
     if not physician_uuid:
         raise HTTPException(
@@ -87,9 +87,10 @@ async def get_patients(
         ).first()
         
         if patient_info:
+            print(f"[PATIENTS API] Processing patient: {patient_info.uuid}, mrn: {patient_info.mrn}, first_name: {patient_info.first_name}")
             patients.append(PatientResponse(
                 uuid=str(patient_info.uuid),
-                mrn=patient_info.mrn,
+                mrn=patient_info.mrn or "",
                 first_name=patient_info.first_name or "",
                 last_name=patient_info.last_name or "",
                 email=patient_info.email_address,
