@@ -28,7 +28,7 @@ To run the complete doctor platform in development mode, you'll need to start al
 npm run dev --workspace=@oncolife/doctor-web
 ```
 
-This starts the React frontend on `http://localhost:5173`
+This starts the React frontend on `http://localhost:5174`
 
 ### Terminal 2: Middleware Server (Node.js)
 
@@ -36,15 +36,15 @@ This starts the React frontend on `http://localhost:5173`
 npm run dev --workspace=@oncolife/doctor-server
 ```
 
-This starts the Express.js middleware server (typically on port 3000)
+This starts the Express.js middleware server (typically on port 3001)
 
 ### Terminal 3: Backend API (Python FastAPI)
 
 ```bash
-PYTHONPATH=apps/doctor-platform/doctor-api/src uvicorn main:app --reload --port 8000 --app-dir apps/doctor-platform/doctor-api/src
+PYTHONPATH=apps/doctor-platform/doctor-api/src uvicorn main:app --reload --port 8001 --app-dir apps/doctor-platform/doctor-api/src
 ```
 
-This starts the FastAPI backend on `http://localhost:8000` with proper Python path configuration
+This starts the FastAPI backend on `http://localhost:8001` with proper Python path configuration
 
 ## Service Details
 
@@ -86,14 +86,14 @@ COGNITO_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 DATABASE_URL=postgresql://username:password@localhost:5432/doctor_db
 
 # CORS
-CORS_ORIGINS=http://localhost:5173
+CORS_ORIGINS=http://localhost:5174
 ```
 
 ## Accessing the Application
 
 Once all three services are running:
 
-1. Open your browser to `http://localhost:5173`
+1. Open your browser to `http://localhost:5174`
 2. The frontend will communicate with the middleware server and backend API
 3. You can sign up new staff members, manage profiles, and handle administrative tasks
 

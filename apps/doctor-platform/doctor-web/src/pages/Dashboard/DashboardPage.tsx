@@ -17,10 +17,11 @@ import {
   CircularProgress,
   Typography
 } from '@mui/material';
-import { Search, Calendar, User, FileText } from 'lucide-react';
+import { Search, Calendar, User, FileText, ChevronRight } from 'lucide-react';
 import styled from 'styled-components';
 import { theme } from '@oncolife/ui-components';
-import { usePatientSummaries, type PatientSummary } from '../../services/dashboard';
+import { useNavigate } from 'react-router-dom';
+import { usePatientSummaries } from '../../services/dashboard';
 
 // Styled components
 const DashboardContainer = styled.div`
@@ -56,13 +57,21 @@ const PatientCard = styled.div`
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
-  transition: box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
   overflow: hidden;
   width: 100%;
+  border: 2px solid transparent;
   
   &:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    border-color: ${theme.colors.primary};
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -70,17 +79,27 @@ const PatientHeader = styled.div`
   background: #e3f2fd;
   padding: 1rem 1.5rem;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e0e0e0;
   width: 100%;
+`;
+
+const ClickIndicator = styled.div`
+  color: ${theme.colors.primary};
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  
+  ${PatientCard}:hover & {
+    opacity: 1;
+  }
 `;
 
 const PatientInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 2rem;
-  width: 100%;
+  flex: 1;
 `;
 
 const PatientName = styled.div`
@@ -135,13 +154,14 @@ const PaginationContainer = styled.div`
 `;
 
 const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   
   const { data, isLoading, error } = usePatientSummaries(page, search, filter);
   
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
   
@@ -153,6 +173,10 @@ const DashboardPage: React.FC = () => {
   const handleFilterChange = (event: any) => {
     setFilter(event.target.value);
     setPage(1); // Reset to first page when filtering
+  };
+
+  const handlePatientCardClick = (patientId: string) => {
+    navigate('/dashboard/details', { state: { patientId } });
   };
   
 
@@ -217,7 +241,10 @@ const DashboardPage: React.FC = () => {
             <>
               <div>
                 {data?.data.map((patient) => (
-                  <PatientCard key={patient.id}>
+                  <PatientCard 
+                    key={patient.id} 
+                    onClick={() => handlePatientCardClick(patient.id)}
+                  >
                     <PatientHeader>
                       <PatientInfo>
                         <PatientName>
@@ -233,6 +260,9 @@ const DashboardPage: React.FC = () => {
                           MRN : {patient.mrn}
                         </DetailItem>
                       </PatientInfo>
+                      <ClickIndicator>
+                        <ChevronRight size={20} />
+                      </ClickIndicator>
                     </PatientHeader>
                     
                     <PatientContent>

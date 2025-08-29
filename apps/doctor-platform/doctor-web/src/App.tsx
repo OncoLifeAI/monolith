@@ -11,6 +11,7 @@ import ForgotPassword from './pages/LoginPage/ForgotPassword';
 import ResetPassword from './pages/LoginPage/ResetPassword';
 import Layout from './components/Layout';
 import DashboardPage from './pages/Dashboard/DashboardPage';
+import DashboardDetailsPage from './pages/Dashboard/DashboardDetailsPage';
 import PatientsPage from './pages/Patients/PatientsPage';
 import StaffPage from './pages/Staff/StaffPage';
 
@@ -29,6 +30,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/dashboard/details" element={<DashboardDetailsPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/staff" element={<StaffPage />} />
               </Route>
