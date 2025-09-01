@@ -160,3 +160,4 @@ Here are 4 different design approaches for the severity filter:
 **Cons**: Takes more space
 
 Which option would you like me to implement? Or would you like to see a combination of these approaches?
+

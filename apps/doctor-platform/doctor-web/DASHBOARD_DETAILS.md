@@ -121,3 +121,4 @@ The page uses realistic mock data with 20 sample entries covering:
 6. **Download Report**: Click "Download Report" to export data as CSV
 
 The page automatically updates all visualizations and statistics when filters are changed, providing real-time analysis of symptom data.
+
