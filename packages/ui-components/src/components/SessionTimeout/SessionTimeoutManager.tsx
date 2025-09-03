@@ -5,7 +5,13 @@ import SessionTimeoutModal from './SessionTimeoutModal';
 
 export const SESSION_START_KEY = 'sessionStartTime';
 
-const SessionTimeoutManager: React.FC = () => {
+interface SessionTimeoutManagerProps {
+  authTokenKey?: string;
+}
+
+const SessionTimeoutManager: React.FC<SessionTimeoutManagerProps> = ({ 
+  authTokenKey = 'authToken' 
+}) => {
   const [sessionTimedOut, setSessionTimedOut] = useState(false);
   const navigate = useNavigate();
 
@@ -14,7 +20,7 @@ const SessionTimeoutManager: React.FC = () => {
     let authCheckInterval: NodeJS.Timeout | null = null;
 
     const startSessionTimeout = () => {
-      const authToken = localStorage.getItem('authToken');
+      const authToken = localStorage.getItem(authTokenKey);
       
       // Only start session timeout if user is authenticated
       if (!authToken) {
@@ -53,7 +59,7 @@ const SessionTimeoutManager: React.FC = () => {
 
     // Set up an interval to check if user authentication state changes
     authCheckInterval = setInterval(() => {
-      const currentAuthToken = localStorage.getItem('authToken');
+      const currentAuthToken = localStorage.getItem(authTokenKey);
       if (!currentAuthToken) {
         // User logged out, clear session and timer
         sessionStorage.removeItem(SESSION_START_KEY);
@@ -72,10 +78,10 @@ const SessionTimeoutManager: React.FC = () => {
       if (timer) clearTimeout(timer);
       if (authCheckInterval) clearInterval(authCheckInterval);
     };
-  }, [sessionTimedOut]);
+  }, [sessionTimedOut, authTokenKey]);
 
   const handleLoginAgain = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(authTokenKey);
     sessionStorage.removeItem(SESSION_START_KEY);
     setSessionTimedOut(false);
     navigate('/login', { replace: true });

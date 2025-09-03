@@ -3,6 +3,7 @@ import { GlobalStyles, SessionTimeoutManager } from '@oncolife/ui-components';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { UserTypeProvider } from './contexts/UserTypeContext';
+import { DOCTOR_STORAGE_KEYS } from './utils/storageKeys';
 
 // Doctor-specific pages
 import LoginPage from './pages/LoginPage';
@@ -22,7 +23,7 @@ function App() {
         <UserProvider>
           <GlobalStyles />
           <BrowserRouter>
-            <SessionTimeoutManager />
+            <SessionTimeoutManager authTokenKey={DOCTOR_STORAGE_KEYS.authToken} />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />

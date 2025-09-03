@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { UserTypeProvider } from './contexts/UserTypeContext';
 import { useAuth } from './contexts/AuthContext';
+import { PATIENT_STORAGE_KEYS } from './utils/storageKeys';
 
 // Shared login from ui-components
 import LoginPage from './pages/LoginPage';
@@ -33,7 +34,7 @@ function App() {
         <UserProvider>
           <GlobalStyles />
           <BrowserRouter>
-            <SessionTimeoutManager />
+            <SessionTimeoutManager authTokenKey={PATIENT_STORAGE_KEYS.authToken} />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
