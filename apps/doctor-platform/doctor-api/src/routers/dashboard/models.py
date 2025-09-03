@@ -5,6 +5,7 @@ from datetime import date
 class ConversationSummary(BaseModel):
     bulleted_summary: Optional[str] = None
     symptom_list: Optional[list] = None
+    conversation_state: Optional[str] = None
 
 class DashboardPatientInfo(BaseModel):
     patient_uuid: str

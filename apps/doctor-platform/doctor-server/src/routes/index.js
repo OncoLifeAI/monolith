@@ -6,6 +6,7 @@ const loginRoutes = require('./login-endpoints');
 const dashboardRoutes = require('./dashboard-endpoints');
 const patientRoutes = require('./patient-endpoints');
 const staffRoutes = require('./staff-endpoints');
+const patientDashboardRoutes = require('./patient-dashboard-endpoints');
 
 router.get('/', (req, res) => {
   res.json({
@@ -21,5 +22,6 @@ router.use('/', loginRoutes);
 router.use('/', dashboardRoutes);
 router.use('/', patientRoutes);
 router.use('/', staffRoutes);
+router.use('/', patientDashboardRoutes);
 
 module.exports = router;

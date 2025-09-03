@@ -70,14 +70,18 @@ async def get_dashboard_info(
 
         full_name = f"{info.first_name or ''} {info.last_name or ''}".strip()
 
-        # Fetch latest conversation for this patient by created_at
+        # Fetch latest conversation for this patient with state COMPLETED or EMERGENCY
         last_convo = patient_db.query(Conversations).filter(
-            Conversations.patient_uuid == assoc.patient_uuid
+            and_(
+                Conversations.patient_uuid == assoc.patient_uuid,
+                Conversations.conversation_state.in_(["COMPLETED", "EMERGENCY"])  # type: ignore
+            )
         ).order_by(desc(Conversations.created_at)).first()
 
         convo_summary = ConversationSummary(
             bulleted_summary=getattr(last_convo, "bulleted_summary", None) if last_convo else None,
             symptom_list=getattr(last_convo, "symptom_list", None) if last_convo else None,
+            conversation_state=getattr(last_convo, "conversation_state", None) if last_convo else None,
         )
 
         patients.append(DashboardPatientInfo(

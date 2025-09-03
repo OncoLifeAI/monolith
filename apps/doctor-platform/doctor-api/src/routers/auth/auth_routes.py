@@ -8,6 +8,8 @@ Routes:
 - POST /auth/admin/signup: Register a new admin user
 - POST /auth/doctor/login: Authenticate doctor/staff member
 - POST /auth/doctor/complete-new-password: Complete password setup for doctors with temporary passwords
+- POST /auth/forgot-password: Initiate forgot password flow (sends reset code to email)
+- POST /auth/reset-password: Complete password reset using confirmation code
 - GET /auth/doctor/profile: Get doctor profile information
 - DELETE /auth/remove-staff: Remove staff member (soft delete)
 - POST /auth/logout: Client-side logout (formality endpoint)
@@ -37,6 +39,10 @@ from routers.auth.models import (
     DoctorProfileResponse,
     DoctorCompleteNewPasswordRequest,
     DoctorCompleteNewPasswordResponse,
+    DoctorForgotPasswordRequest,
+    DoctorForgotPasswordResponse,
+    DoctorResetPasswordRequest,
+    DoctorResetPasswordResponse,
     DeleteStaffRequest,
     AuthTokens,
 )
@@ -81,6 +87,162 @@ async def logout():
     """
     logger.info("[AUTH] /logout called")
     return {"message": "Logout successful"}
+
+
+@router.post("/forgot-password", response_model=DoctorForgotPasswordResponse)
+async def forgot_password(request: DoctorForgotPasswordRequest):
+    """
+    Initiate forgot password flow for a doctor/staff member.
+    Sends a password reset code to the user's email via AWS Cognito.
+    """
+    logger.info(f"[AUTH] /forgot-password email={request.email}")
+    
+    try:
+        user_pool_id = os.getenv("COGNITO_USER_POOL_ID")
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not user_pool_id or not client_id:
+            logger.error("[AUTH] /forgot-password missing Cognito envs")
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_USER_POOL_ID or COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        # Prepare parameters for forgot password
+        params = {
+            "ClientId": client_id,
+            "Username": request.email,
+        }
+
+        # Add secret hash if client secret is configured
+        if client_secret:
+            params["SecretHash"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        # Initiate forgot password flow
+        response = cognito_client.forgot_password(**params)
+        
+        logger.info(f"[AUTH] /forgot-password success email={request.email}")
+        
+        return DoctorForgotPasswordResponse(
+            message="Password reset code has been sent to your email",
+            email=request.email
+        )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(f"[AUTH] /forgot-password Cognito error email={request.email} code={error_code} msg='{error_message}'")
+        
+        if error_code == "UserNotFoundException":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email address"
+            )
+        elif error_code == "InvalidParameterException":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid request parameters"
+            )
+        elif error_code == "LimitExceededException":
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many requests. Please try again later"
+            )
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"AWS Cognito error: {error_message}"
+            )
+    except Exception as e:
+        logger.error(f"[AUTH] /forgot-password unexpected error email={request.email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/reset-password", response_model=DoctorResetPasswordResponse)
+async def reset_password(request: DoctorResetPasswordRequest):
+    """
+    Complete the password reset process using the confirmation code sent via email.
+    """
+    logger.info(f"[AUTH] /reset-password email={request.email}")
+    
+    try:
+        client_id = os.getenv("COGNITO_CLIENT_ID")
+        client_secret = os.getenv("COGNITO_CLIENT_SECRET")
+
+        if not client_id:
+            logger.error("[AUTH] /reset-password missing COGNITO_CLIENT_ID")
+            raise HTTPException(
+                status_code=500,
+                detail="COGNITO_CLIENT_ID not configured",
+            )
+
+        cognito_client = get_cognito_client()
+
+        # Prepare parameters for confirm forgot password
+        params = {
+            "ClientId": client_id,
+            "Username": request.email,
+            "ConfirmationCode": request.confirmation_code,
+            "Password": request.new_password,
+        }
+
+        # Add secret hash if client secret is configured
+        if client_secret:
+            params["SecretHash"] = _get_secret_hash(
+                request.email, client_id, client_secret
+            )
+
+        # Confirm forgot password
+        response = cognito_client.confirm_forgot_password(**params)
+        
+        logger.info(f"[AUTH] /reset-password success email={request.email}")
+        
+        return DoctorResetPasswordResponse(
+            message="Password has been reset successfully",
+            email=request.email
+        )
+
+    except ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        error_message = e.response["Error"]["Message"]
+        logger.error(f"[AUTH] /reset-password Cognito error email={request.email} code={error_code} msg='{error_message}'")
+        
+        if error_code == "UserNotFoundException":
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email address"
+            )
+        elif error_code == "CodeMismatchException":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid confirmation code"
+            )
+        elif error_code == "ExpiredCodeException":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Confirmation code has expired"
+            )
+        elif error_code == "InvalidPasswordException":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"New password does not meet requirements: {error_message}"
+            )
+        elif error_code == "LimitExceededException":
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many requests. Please try again later"
+            )
+        else:
+            raise HTTPException(
+                status_code=500, detail=f"AWS Cognito error: {error_message}"
+            )
+    except Exception as e:
+        logger.error(f"[AUTH] /reset-password unexpected error email={request.email}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/doctor/signup", response_model=DoctorSignupResponse)

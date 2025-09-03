@@ -462,7 +462,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   if (step === 'success') {
     return (
       <SuccessCard>
-        <MobileTitle>Success! ✅</MobileTitle>
+        <MobileTitle>Success!</MobileTitle>
         <MessageBox type="success" style={{ marginBottom: '1.5rem' }}>
           {success}
         </MessageBox>
@@ -490,11 +490,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   if (step === 'email') {
     return (
       <Card>
-        <MobileTitle>Forgot Password? 🔒</MobileTitle>
-        <MobileSubtitle>
-          Enter your email address and we'll send you a password reset code for {platformName}
-        </MobileSubtitle>
-        
+        <MobileTitle>Forgot Password?</MobileTitle>
         {error && (
           <MessageBox type="error">
             {error}

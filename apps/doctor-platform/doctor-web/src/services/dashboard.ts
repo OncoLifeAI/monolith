@@ -6,6 +6,7 @@ import { API_CONFIG } from '../config/api';
 export interface ConversationSummary {
   bulleted_summary?: string;
   symptom_list?: string[];
+  conversation_state?: string;
 }
 
 export interface DashboardPatientInfo {
@@ -32,6 +33,7 @@ export interface PatientSummary {
   mrn: string;
   symptoms: string;
   summary: string;
+  last_conversation_state?: string;
   lastUpdated: string;
   status: 'active' | 'inactive' | 'pending';
   priority: 'high' | 'medium' | 'low';
@@ -48,6 +50,7 @@ export interface DashboardResponse {
 
 // Helper function to convert API response to UI format
 const convertApiResponseToUIFormat = (apiResponse: ApiDashboardResponse): DashboardResponse => {
+  console.debug('dashboard.ts: raw API response', apiResponse);
   const convertedPatients: PatientSummary[] = apiResponse.patients.map(patient => ({
     id: patient.patient_uuid,
     patientName: patient.full_name,
@@ -57,11 +60,12 @@ const convertApiResponseToUIFormat = (apiResponse: ApiDashboardResponse): Dashbo
       day: 'numeric' 
     }) : 'N/A',
     mrn: patient.mrn || 'N/A',
-    symptoms: patient.last_conversation.symptom_list?.join(', ') || 'N/A',
-    summary: patient.last_conversation.bulleted_summary || 'No summary available',
-    lastUpdated: 'Recent', // TODO: Add last_updated field to API
+    symptoms: patient.last_conversation?.symptom_list?.length ? patient.last_conversation.symptom_list.join(', ') : 'N/A',
+    summary: patient.last_conversation?.bulleted_summary?.trim() || 'No summary available',
+    lastUpdated: '',
     status: 'active' as const, // TODO: Add status field to API
-    priority: 'medium' as const // TODO: Add priority field to API
+    priority: 'medium' as const, // TODO: Add priority field to API
+    last_conversation_state: patient.last_conversation?.conversation_state
   }));
 
   return {
@@ -73,9 +77,7 @@ const convertApiResponseToUIFormat = (apiResponse: ApiDashboardResponse): Dashbo
 };
 
 const fetchPatientSummaries = async (
-  page: number = 1, 
-  search: string = '', 
-  filter: string = 'all'
+  page: number = 1
 ): Promise<DashboardResponse> => {
   try {
     const params = new URLSearchParams({
@@ -83,7 +85,6 @@ const fetchPatientSummaries = async (
       page_size: '10' // Adjust as needed
     });
 
-    console.log('Fetching dashboard data from API...');
     const response = await apiClient.get<{ success: boolean; data: ApiDashboardResponse }>(
       `${API_CONFIG.ENDPOINTS.DASHBOARD}?${params.toString()}`
     );
@@ -92,22 +93,8 @@ const fetchPatientSummaries = async (
       throw new Error('API returned unsuccessful response');
     }
 
-    console.log('Successfully fetched data from API:', response.data);
     const convertedResponse = convertApiResponseToUIFormat(response.data.data);
-    
-    // Apply client-side search filter (until API supports it)
-    let filteredData = convertedResponse.data;
-    if (search) {
-      filteredData = filteredData.filter(patient => 
-        patient.patientName.toLowerCase().includes(search.toLowerCase()) ||
-        patient.mrn.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    return {
-      ...convertedResponse,
-      data: filteredData
-    };
+    return convertedResponse;
     
   } catch (error) {
     console.error('Dashboard API error:', error);
@@ -120,11 +107,29 @@ const fetchPatientSummaries = async (
 export const usePatientSummaries = (
   page: number = 1, 
   search: string = '', 
-  filter: string = 'all'
+  _filter: string = 'all'
 ) => {
   return useQuery({
-    queryKey: ['patientSummaries', page, search, filter],
-    queryFn: () => fetchPatientSummaries(page, search, filter),
+    // Only key by page so typing in search does NOT refetch
+    queryKey: ['patientSummaries', page],
+    queryFn: () => fetchPatientSummaries(page),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes (React Query v5)
+    refetchOnWindowFocus: false,
+    // Apply client-side filtering on cached data
+    select: (resp: DashboardResponse): DashboardResponse => {
+      let filtered = resp.data;
+      if (search) {
+        const q = search.toLowerCase();
+        filtered = filtered.filter(p => 
+          p.patientName.toLowerCase().includes(q) ||
+          p.mrn.toLowerCase().includes(q)
+        );
+      }
+      // Placeholder for future status filtering
+      // if (filter !== 'all') filtered = ...
+      return { ...resp, data: filtered };
+    }
   });
 };
 

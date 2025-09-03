@@ -12,7 +12,7 @@ from uuid import UUID
 import logging
 
 # Import database session and models
-from routers.db.database import get_doctor_db
+from routers.db.database import get_patient_db
 from routers.db.patient_models import Conversations as PatientConversations
 from routers.auth.dependencies import get_current_user, TokenData
 
@@ -40,7 +40,7 @@ async def get_patient_conversations(
     start_date: date = Query(..., description="Start date for the range (YYYY-MM-DD)"),
     end_date: date = Query(..., description="End date for the range (YYYY-MM-DD)"),
     current_user: TokenData = Depends(get_current_user),
-    doctor_db: Session = Depends(get_doctor_db)
+    patient_db: Session = Depends(get_patient_db)
 ):
     """
     Fetch medication_list and severity_list for all conversations within a date range for a specific patient.
@@ -72,7 +72,7 @@ async def get_patient_conversations(
         logger.info(f"[PATIENT-DASHBOARD] Querying conversations between {start_datetime} and {end_datetime}")
         
         # Query conversations within the date range
-        conversations = doctor_db.query(PatientConversations).filter(
+        conversations = patient_db.query(PatientConversations).filter(
             PatientConversations.patient_uuid == patient_uuid,
             PatientConversations.created_at >= start_datetime,
             PatientConversations.created_at <= end_datetime
@@ -83,21 +83,27 @@ async def get_patient_conversations(
         # Convert conversations to response format
         conversation_data = []
         for conv in conversations:
-            logger.debug(f"[PATIENT-DASHBOARD] Processing conversation {conv.uuid}")
-            logger.debug(f"[PATIENT-DASHBOARD] Conversation state: {conv.conversation_state}")
-            logger.debug(f"[PATIENT-DASHBOARD] Symptom list: {conv.symptom_list}")
-            logger.debug(f"[PATIENT-DASHBOARD] Severity list: {conv.severity_list}")
-            logger.debug(f"[PATIENT-DASHBOARD] Medication list: {conv.medication_list}")
-            
-            conversation_data.append(ConversationDataResponse(
-                conversation_uuid=conv.uuid,
-                conversation_date=conv.created_at.date(),
-                symptom_list=conv.symptom_list,
-                severity_list=conv.severity_list,
-                medication_list=conv.medication_list,
-                conversation_state=conv.conversation_state,
-                overall_feeling=conv.overall_feeling
-            ))
+            try:
+                logger.debug(f"[PATIENT-DASHBOARD] Processing conversation {conv.uuid}")
+                logger.debug(f"[PATIENT-DASHBOARD] Conversation state: {conv.conversation_state}")
+                logger.debug(f"[PATIENT-DASHBOARD] Symptom list: {conv.symptom_list}")
+                logger.debug(f"[PATIENT-DASHBOARD] Severity list: {conv.severity_list}")
+                logger.debug(f"[PATIENT-DASHBOARD] Medication list: {conv.medication_list}")
+                
+                # Ensure severity_list values are strings
+                severity_list = {symptom: str(severity) for symptom, severity in conv.severity_list.items()}
+                
+                conversation_data.append(ConversationDataResponse(
+                    conversation_uuid=conv.uuid,
+                    conversation_date=conv.created_at.date(),
+                    symptom_list=conv.symptom_list,
+                    severity_list=severity_list,
+                    medication_list=conv.medication_list,
+                    conversation_state=conv.conversation_state,
+                    overall_feeling=conv.overall_feeling
+                ))
+            except Exception as e:
+                logger.warning(f"[PATIENT-DASHBOARD] Skipping conversation {conv.uuid} due to error: {str(e)}")
         
         # Calculate summary statistics
         total_symptoms = set()
@@ -117,7 +123,11 @@ async def get_patient_conversations(
                 for symptom, severity in conv.severity_list.items():
                     if symptom not in severity_summary:
                         severity_summary[symptom] = []
-                    severity_summary[symptom].append(severity)
+                    try:
+                        # Attempt to convert severity to integer
+                        severity_summary[symptom].append(int(severity))
+                    except ValueError:
+                        logger.warning(f"[PATIENT-DASHBOARD] Skipping non-integer severity for symptom {symptom}: {severity}")
         
         # Calculate average severity for each symptom
         avg_severity = {}
@@ -154,7 +164,7 @@ async def get_patient_conversations_summary(
     start_date: date = Query(..., description="Start date for the range (YYYY-MM-DD)"),
     end_date: date = Query(..., description="End date for the range (YYYY-MM-DD)"),
     current_user: TokenData = Depends(get_current_user),
-    doctor_db: Session = Depends(get_doctor_db)
+    patient_db: Session = Depends(get_patient_db)
 ):
     """
     Get summary statistics for patient conversations within a date range.
@@ -173,7 +183,7 @@ async def get_patient_conversations_summary(
         end_datetime = datetime.combine(end_date, datetime.max.time())
         
         # Query conversations within the date range
-        conversations = doctor_db.query(PatientConversations).filter(
+        conversations = patient_db.query(PatientConversations).filter(
             PatientConversations.patient_uuid == patient_uuid,
             PatientConversations.created_at >= start_datetime,
             PatientConversations.created_at <= end_datetime
@@ -217,7 +227,11 @@ async def get_patient_conversations_summary(
                 for symptom, severity in conv.severity_list.items():
                     if symptom not in severity_data:
                         severity_data[symptom] = []
-                    severity_data[symptom].append(severity)
+                    try:
+                        # Attempt to convert severity to integer
+                        severity_data[symptom].append(int(severity))
+                    except ValueError:
+                        logger.warning(f"[PATIENT-DASHBOARD] Skipping non-integer severity for symptom {symptom}: {severity}")
             
             # Count medications
             if conv.medication_list:

@@ -17,7 +17,7 @@ import {
   CircularProgress,
   Typography
 } from '@mui/material';
-import { Search, Calendar, User, FileText, ChevronRight } from 'lucide-react';
+import { Search, Calendar, User, FileText, ChevronRight, AlertTriangle } from 'lucide-react';
 import styled from 'styled-components';
 import { theme } from '@oncolife/ui-components';
 import { useNavigate } from 'react-router-dom';
@@ -175,11 +175,19 @@ const DashboardPage: React.FC = () => {
     setPage(1); // Reset to first page when filtering
   };
 
-  const handlePatientCardClick = (patientId: string) => {
-    navigate('/dashboard/details', { state: { patientId } });
+  const handlePatientCardClick = (patientId: string, patientName: string) => {
+    navigate(`/dashboard/${patientId}`, { state: { patientName } });
   };
   
-
+  // Log data for debugging symptom/summary fields
+  React.useEffect(() => {
+    if (data) {
+      console.debug('DashboardPage: received patient summaries', {
+        count: data.data.length,
+        first: data.data[0]
+      });
+    }
+  }, [data]);
   
   return (
     <Container>
@@ -243,7 +251,7 @@ const DashboardPage: React.FC = () => {
                 {data?.data.map((patient) => (
                   <PatientCard 
                     key={patient.id} 
-                    onClick={() => handlePatientCardClick(patient.id)}
+                    onClick={() => handlePatientCardClick(patient.id, patient.patientName)}
                   >
                     <PatientHeader>
                       <PatientInfo>
@@ -259,6 +267,12 @@ const DashboardPage: React.FC = () => {
                           <FileText size={16} />
                           MRN : {patient.mrn}
                         </DetailItem>
+                        {/* Emergency indicator */}
+                        {patient.last_conversation_state === 'EMERGENCY' ? (
+                          <DetailItem style={{ color: '#dc2626' }}>
+                            <AlertTriangle size={16} /> Emergency
+                          </DetailItem>
+                        ) : null}
                       </PatientInfo>
                       <ClickIndicator>
                         <ChevronRight size={20} />
@@ -274,12 +288,7 @@ const DashboardPage: React.FC = () => {
                         <Label>Summary:</Label>
                         <Value>{patient.summary || 'N/A'}</Value>
                       </ContentRow>
-                      <ContentRow>
-                        <Label>Last Updated:</Label>
-                        <Value style={{ color: theme.colors.primary, cursor: 'pointer' }}>
-                          {patient.lastUpdated}
-                        </Value>
-                      </ContentRow>
+                      {/* Removed Last Updated per request */}
                     </PatientContent>
                   </PatientCard>
                 ))}

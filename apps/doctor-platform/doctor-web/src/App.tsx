@@ -30,7 +30,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/dashboard/details" element={<DashboardDetailsPage />} />
+                <Route path="/dashboard/:patientId" element={<DashboardDetailsPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/staff" element={<StaffPage />} />
               </Route>

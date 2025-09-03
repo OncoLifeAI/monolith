@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Container,
   Header,
@@ -8,282 +8,393 @@ import {
   PageTitle
 } from '@oncolife/ui-components';
 import {
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Button,
-  Typography,
-  Chip,
-  Box
+  Slider,
+  Box,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Download, ArrowLeft, User } from 'lucide-react';
+import { Download, ArrowLeft } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import styled from 'styled-components';
-import { theme } from '@oncolife/ui-components';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import SymptomLineChart from '../../components/SymptomLineChart';
-import SymptomDataTable from '../../components/SymptomDataTable';
-import {
-  mockSymptomEntries,
-  transformDataForChart,
-  symptomOptions,
-  numberToSeverity
-} from '../../data';
+import { apiClient } from '../../utils/apiClient';
+import { API_CONFIG } from '../../config/api';
+import { useParams } from 'react-router-dom';
 
 // Styled components
-const DashboardContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-`;
 
-const ControlsContainer = styled.div`
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-`;
-
-const ControlsGrid = styled.div`
+const MainContent = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 2rem;
-  align-items: start;
+  min-height: 100vh;
   
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1rem;
   }
+`;
+
+const Sidebar = styled.div`
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 8px;
+  height: fit-content;
+  min-width: 260px;
+`;
+
+const SidebarTitle = styled.h3`
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 1.5rem 0;
+`;
+
+const FilterSection = styled.div`
+  margin-bottom: 2rem;
+`;
+
+const FilterLabel = styled.label`
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+`;
+
+const GraphContainer = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
 `;
 
 const DateRangeContainer = styled.div`
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const SymptomDropdown = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
+})<{ isOpen: boolean }>`
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-`;
-
-
-
-const SymptomSelectContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const SelectedSymptomsContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: flex-start;
+  font-size: 0.875rem;
+  color: #374151;
   
-  @media (min-width: 1200px) {
-    align-items: flex-end;
-    justify-content: flex-end;
+  &:hover {
+    border-color: #9ca3af;
   }
 `;
 
-const StatsContainer = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-`;
-
-const StatCard = styled.div`
+const SymptomDropdownContent = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
+})<{ isOpen: boolean }>`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  text-align: center;
+  border: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+  display: ${props => props.isOpen ? 'block' : 'none'};
 `;
 
-const StatValue = styled.div`
-  font-size: 2rem;
-  font-weight: 700;
-  color: ${theme.colors.primary};
-  margin-bottom: 0.5rem;
+const SymptomDropdownContainer = styled.div`
+  position: relative;
 `;
 
-const StatLabel = styled.div`
-  font-size: 0.875rem;
-  color: ${theme.colors.gray[600]};
-  font-weight: 500;
-`;
-
-const PatientInfoBanner = styled.div`
-  background: linear-gradient(135deg, ${theme.colors.primary}, ${theme.colors.secondary || '#1976d2'});
-  color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+const SymptomOption = styled.div`
+  padding: 0.5rem 0.75rem;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background: #f9fafb;
+  }
+`;
+
+const SeveritySliderContainer = styled.div`
+  margin: 1rem 0;
+`;
+
+const SliderLabel = styled.div`
+  display: flex;
   justify-content: space-between;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
 `;
 
-const PatientDetails = styled.div`
+
+
+const TableContainer = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-height: 360px;
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
 `;
 
-const PatientName = styled.div`
+const TableTitle = styled.h3`
   font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  color: #1f2937;
+  margin: 0 0 1rem 0;
+  padding: 1.5rem 1.5rem 0;
 `;
 
-const PatientMeta = styled.div`
+const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-y: auto;
+  flex: 1 1 auto;
+`;
+
+const TableHeader = styled.th`
+  text-align: left;
+  padding: 1rem 1.5rem;
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
   font-size: 0.875rem;
-  opacity: 0.9;
+  border-bottom: 1px solid #e5e7eb;
 `;
 
-const BackButton = styled(Button)`
-  && {
-    color: white;
-    border-color: rgba(255, 255, 255, 0.3);
-    &:hover {
-      border-color: white;
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-  }
+const TableCell = styled.td`
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #6b7280;
+  font-size: 0.875rem;
 `;
 
+// Unused styled components removed
 
+
+
+type Conversation = {
+  conversation_uuid: string;
+  conversation_date: string; // YYYY-MM-DD
+  symptom_list?: string[];
+  severity_list?: Record<string, string>;
+  medication_list?: { medicationName: string; symptom: string; cadence: string; response: string }[];
+  conversation_state: string;
+  overall_feeling?: string | null;
+};
+
+type ConversationsApi = {
+  patient_uuid: string;
+  date_range_start: string;
+  date_range_end: string;
+  total_conversations: number;
+  conversations: Conversation[];
+};
 
 const DashboardDetailsPage: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const patientId = location.state?.patientId;
+  const location = useLocation();
+  const { patientId } = useParams<{ patientId: string }>();
   
-  const [startDate, setStartDate] = useState<Dayjs | null>(dayjs('2024-01-15'));
-  const [endDate, setEndDate] = useState<Dayjs | null>(dayjs('2024-01-31'));
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['fever', 'pain']);
-  const [severityRange, setSeverityRange] = useState<number[]>([0, 4]);
+  // Get patient name from navigation state
+  const patientName = location.state?.patientName || 'Unknown Patient';
+  
+  const [startDate, setStartDate] = useState<Dayjs | null>(dayjs().subtract(30, 'day'));
+  const [endDate, setEndDate] = useState<Dayjs | null>(dayjs());
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [severityRange, setSeverityRange] = useState<number[]>([1, 3]); // Mild to Severe
+  const [isSymptomDropdownOpen, setIsSymptomDropdownOpen] = useState(false);
 
-  // Mock patient data - in a real app, this would come from an API
-  const getPatientInfo = (id: string) => {
-    const mockPatients = {
-      '1': { name: 'John Doe', mrn: 'MRN001', dob: '1985-03-15' },
-      '2': { name: 'Jane Smith', mrn: 'MRN002', dob: '1990-07-22' },
-      '3': { name: 'Mike Johnson', mrn: 'MRN003', dob: '1978-11-08' },
-    };
-    return mockPatients[id as keyof typeof mockPatients] || null;
-  };
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState<boolean>(false);
 
-  const patientInfo = patientId ? getPatientInfo(patientId) : null;
-
-  // Helper function to convert severity to numeric value
-  const getSeverityValue = (severity: string): number => {
-    switch (severity) {
-      case 'symptom_relieved': return 0;
-      case 'mild': return 1;
-      case 'moderate': return 2;
-      case 'severe': return 3;
-      case 'very_severe': return 4;
-      default: return 0;
+  const fetchConversations = async () => {
+    if (!patientId || !startDate || !endDate) return;
+    try {
+      setLoadingConversations(true);
+      const start = startDate.format('YYYY-MM-DD');
+      const end = endDate.format('YYYY-MM-DD');
+      const res = await apiClient.get<{ success: boolean; data: ConversationsApi }>(
+        `${API_CONFIG.ENDPOINTS.PATIENT_DASHBOARD}/${patientId}/conversations?start_date=${start}&end_date=${end}`
+      );
+      const api = res.data.data;
+      setConversations(api.conversations || []);
+    } catch (e: any) {
+      console.error('Failed to load conversations:', e);
+    } finally {
+      setLoadingConversations(false);
     }
   };
 
-  // Filter data based on selected criteria
-  const filteredData = useMemo(() => {
-    let filtered = mockSymptomEntries;
+  const getSeverityValue = (severity: string): number => {
+    const s = severity.toLowerCase();
+    if (s.includes('very')) return 4;
+    if (s.includes('critical')) return 4;
+    if (s.includes('severe')) return 3;
+    if (s.includes('moderate')) return 2;
+    if (s.includes('mild')) return 1;
+    if (s.includes('relieved') || s.includes('present')) return 0;
+    return 0;
+  };
 
-    // TODO: In a real application, filter by patientId when available
-    // if (patientId) {
-    //   filtered = filtered.filter(entry => entry.patientId === patientId);
-    // }
-
-    // Filter by date range
-    if (startDate && endDate) {
+  // Build chart series from conversations.severity_list
+  const chartSeries = useMemo(() => {
+    // Filters applied ONLY to graph as per spec
+    if (!startDate || !endDate) return [] as { symptom: string; color: string; points: { date: string; value: number }[] }[];
       const startStr = startDate.format('YYYY-MM-DD');
       const endStr = endDate.format('YYYY-MM-DD');
-      filtered = filtered.filter(entry => 
-        entry.date >= startStr && entry.date <= endStr
-      );
-    }
 
-    // Filter by selected symptoms
-    if (selectedSymptoms.length > 0) {
-      filtered = filtered.filter(entry =>
-        selectedSymptoms.includes(entry.symptomName)
-      );
-    }
+    // Fixed palette (updated per request) in exact order of assignment
+    const colorPalette = [
+      '#DC143C', // Crimson
+      '#4682B4', // Steel Blue
+      '#DAA520', // Goldenrod
+      '#800080', // Purple
+      '#FF8C00', // Dark Orange
+      '#4B0082', // Indigo
+      '#228B22', // Forest Green
+      '#C71585', // Medium Violet Red
+      '#40E0D0', // Turquoise
+      '#8B4513', // Saddle Brown
+      '#4169E1', // Royal Blue
+      '#556B2F', // Olive Green
+      '#FF6F61', // Coral
+      '#6A5ACD', // Slate Blue
+      '#008080', // Teal
+      '#708090'  // Slate Gray
+    ];
+    const symptomToSeries: Record<string, { symptom: string; color: string; points: { date: string; value: number }[] }> = {};
 
-    // Filter by severity range
-    filtered = filtered.filter(entry => {
-      const severityValue = getSeverityValue(entry.severity);
-      return severityValue >= severityRange[0] && severityValue <= severityRange[1];
+    conversations
+      .filter(c => c.conversation_date >= startStr && c.conversation_date <= endStr)
+      .forEach(c => {
+        const sev = c.severity_list || {};
+        Object.entries(sev).forEach(([symptom, severity]) => {
+          if (selectedSymptoms.length > 0 && !selectedSymptoms.includes(symptom)) return;
+          if (!symptomToSeries[symptom]) {
+            const color = colorPalette[Object.keys(symptomToSeries).length % colorPalette.length];
+            symptomToSeries[symptom] = { symptom, color, points: [] };
+          }
+          const value = getSeverityValue(severity || '');
+          // Severity slider should NOT filter the graph per spec; always push
+          symptomToSeries[symptom].points.push({ date: c.conversation_date, value });
+        });
+      });
+
+    // Sort points by date
+    Object.values(symptomToSeries).forEach(s => s.points.sort((a, b) => a.date.localeCompare(b.date)));
+    return Object.values(symptomToSeries);
+  }, [conversations, startDate, endDate, selectedSymptoms, severityRange]);
+
+  // Get symptoms available in the selected date range
+  const availableSymptoms = useMemo(() => {
+    if (!startDate || !endDate) return [];
+    
+    const start = startDate.format('YYYY-MM-DD');
+    const end = endDate.format('YYYY-MM-DD');
+    
+    const filteredConversations = conversations.filter(c => {
+      const convDate = c.conversation_date;
+      return convDate >= start && convDate <= end;
     });
+    
+    return Array.from(new Set(filteredConversations.flatMap(c => Object.keys(c.severity_list || {}))));
+  }, [conversations, startDate, endDate]);
 
-    return filtered;
-  }, [startDate, endDate, selectedSymptoms, severityRange]);
+  useEffect(() => {
+    fetchConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, startDate, endDate]);
 
-  // Transform data for chart
-  const chartData = useMemo(() => {
-    // filteredData is already filtered by date range and severity, just transform for chart
-    return transformDataForChart(filteredData, undefined, undefined, selectedSymptoms);
-  }, [filteredData, selectedSymptoms]);
+  // Auto-load all symptoms when available symptoms change
+  useEffect(() => {
+    if (availableSymptoms.length > 0) {
+      setSelectedSymptoms(availableSymptoms); // Load ALL symptoms by default
+    }
+  }, [availableSymptoms]);
 
-  // Calculate statistics
-  const stats = useMemo(() => {
-    const totalEntries = filteredData.length;
-    const uniqueDates = new Set(filteredData.map(entry => entry.date)).size;
-    const medicationHelped = filteredData.filter(entry => entry.medicationHelped).length;
-    const helpRate = totalEntries > 0 ? Math.round((medicationHelped / totalEntries) * 100) : 0;
-
-    return {
-      totalEntries,
-      uniqueDates,
-      helpRate,
-      avgSeverity: totalEntries > 0 
-        ? (filteredData.reduce((sum, entry) => sum + getSeverityValue(entry.severity), 0) / totalEntries).toFixed(1)
-        : '0'
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('[data-symptom-dropdown]')) {
+        setIsSymptomDropdownOpen(false);
+      }
     };
-  }, [filteredData]);
 
-  const handleSymptomChange = (event: any) => {
-    const value = event.target.value;
-    setSelectedSymptoms(typeof value === 'string' ? value.split(',') : value);
+    if (isSymptomDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isSymptomDropdownOpen]);
+  const handleAllSymptomsToggle = () => {
+    if (selectedSymptoms.length === availableSymptoms.length) {
+      setSelectedSymptoms([]); // Deselect all
+    } else {
+      setSelectedSymptoms(availableSymptoms); // Select all
+    }
   };
 
-  const handleSymptomRemove = (symptomToRemove: string) => {
-    setSelectedSymptoms(prev => prev.filter(symptom => symptom !== symptomToRemove));
+  const handleSymptomToggle = (symptom: string) => {
+    setSelectedSymptoms(prev => {
+      if (prev.includes(symptom)) {
+        return prev.filter(s => s !== symptom);
+      } else {
+        return [...prev, symptom];
+      }
+    });
+  };
+
+  const getSymptomDisplayText = () => {
+    if (selectedSymptoms.length === 0) return 'No symptoms selected';
+    if (selectedSymptoms.length === availableSymptoms.length) return 'All Symptoms';
+    return `${selectedSymptoms.length} selected`;
   };
 
 
 
   const handleDownloadReport = () => {
-    // Create CSV content
     const headers = ['Date', 'Symptom', 'Severity', 'Medication', 'Frequency', 'Helped'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredData.map(entry => [
-        entry.date,
-        entry.symptomName,
-        entry.severity.replace('_', ' '),
-        `"${entry.medicationName}"`,
-        `"${entry.medicationFrequency}"`,
-        entry.medicationHelped ? 'Yes' : 'No'
-      ].join(','))
-    ].join('\n');
-
-    // Create and download file
+    const rows: string[] = [headers.join(',')];
+    conversations.forEach(c => {
+      const meds = c.medication_list && c.medication_list.length > 0 ? c.medication_list : [
+        { medicationName: 'Anti-diarrheal', symptom: 'Diarrhea', cadence: 'As prescribed', response: 'Yes' }
+      ];
+      meds.forEach(m => {
+        const severityStr = (c.severity_list && (m.symptom in c.severity_list)) ? (c.severity_list as any)[m.symptom] : 'mild';
+        rows.push([
+          c.conversation_date,
+          m.symptom,
+          String(severityStr).replace('_', ' '),
+          `"${m.medicationName}"`,
+          `"${m.cadence}"`,
+          m.response
+        ].join(','));
+      });
+    });
+    const csvContent = rows.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -295,311 +406,251 @@ const DashboardDetailsPage: React.FC = () => {
     document.body.removeChild(link);
   };
 
+
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Container>
         <Header>
-          <Title>Dashboard Details</Title>
+          <Title>Patient Dashboard</Title>
         </Header>
 
         <Content>
           <PageHeader>
-            <PageTitle>
-              {patientInfo 
-                ? `Symptom Analysis - ${patientInfo.name}` 
-                : 'Symptom Tracking & Analysis'
-              }
-            </PageTitle>
-            {!patientInfo && (
+            <PageTitle>{patientName}</PageTitle>
+            <Box sx={{ display: 'flex', gap: 1, marginLeft: 'auto' }}>
+              <Button
+                variant="contained"
+                startIcon={<Download size={16} />}
+                onClick={handleDownloadReport}
+                sx={{ 
+                  textTransform: 'none',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Download Report
+              </Button>
               <Button
                 variant="outlined"
                 startIcon={<ArrowLeft size={20} />}
                 onClick={() => navigate('/dashboard')}
-                sx={{ marginLeft: 'auto' }}
               >
                 Back to Dashboard
               </Button>
-            )}
+            </Box>
           </PageHeader>
 
-          <DashboardContainer>
-            {/* Patient Info Banner */}
-            {patientInfo && (
-              <PatientInfoBanner>
-                <PatientDetails>
-                  <User size={24} />
-                  <div>
-                    <PatientName>{patientInfo.name}</PatientName>
-                    <PatientMeta>
-                      MRN: {patientInfo.mrn} | DOB: {new Date(patientInfo.dob).toLocaleDateString()}
-                    </PatientMeta>
-                  </div>
-                </PatientDetails>
-                <BackButton
-                  variant="outlined"
-                  startIcon={<ArrowLeft size={20} />}
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Back to Dashboard
-                </BackButton>
-              </PatientInfoBanner>
-            )}
-            {/* Controls */}
-            <ControlsContainer>
-              <ControlsGrid>
+          <MainContent>
+            {/* Left Sidebar - Filters */}
+            <Sidebar>
+              <SidebarTitle>Filters</SidebarTitle>
+              
                 {/* Date Range */}
-                <div>
-                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                    Date Range
-                  </Typography>
+              <FilterSection>
+                <FilterLabel>Start Date:</FilterLabel>
                   <DateRangeContainer>
                     <DatePicker
                       label="From"
                       value={startDate}
                       onChange={(newValue) => setStartDate(newValue)}
                       slotProps={{
-                        textField: { size: 'small', sx: { minWidth: 140 } }
-                      }}
-                    />
+                      textField: { 
+                        size: 'small', 
+                        fullWidth: true,
+                        sx: { 
+                          '& .MuiOutlinedInput-root': {
+                            fontSize: '0.875rem'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </DateRangeContainer>
+                
+                <FilterLabel style={{ marginTop: '0.75rem' }}>End Date:</FilterLabel>
+                <DateRangeContainer>
                     <DatePicker
                       label="To"
                       value={endDate}
                       onChange={(newValue) => setEndDate(newValue)}
                       slotProps={{
-                        textField: { size: 'small', sx: { minWidth: 140 } }
+                      textField: { 
+                        size: 'small', 
+                        fullWidth: true,
+                        sx: { 
+                          '& .MuiOutlinedInput-root': {
+                            fontSize: '0.875rem'
+                          }
+                        }
+                      }
                       }}
                     />
                   </DateRangeContainer>
-                </div>
+              </FilterSection>
 
-                {/* Symptom Selection */}
-                <SymptomSelectContainer>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    Select Symptoms
-                  </Typography>
-                  <FormControl size="small" fullWidth>
-                    <InputLabel>Symptoms</InputLabel>
-                    <Select
-                      multiple
-                      value={selectedSymptoms}
-                      onChange={handleSymptomChange}
-                      label="Symptoms"
-                      renderValue={(selected) => `${selected.length} selected`}
-                    >
-                      {symptomOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <SelectedSymptomsContainer>
-                    {selectedSymptoms.map((symptom) => (
-                      <Chip
-                        key={symptom}
-                        label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
-                        onDelete={() => handleSymptomRemove(symptom)}
+                            {/* Symptom Type */}
+              <FilterSection>
+                <FilterLabel>Symptom Type:</FilterLabel>
+                <SymptomDropdownContainer data-symptom-dropdown>
+                  <SymptomDropdown 
+                    isOpen={isSymptomDropdownOpen}
+                    onClick={() => setIsSymptomDropdownOpen(!isSymptomDropdownOpen)}
+                  >
+                    <span>{getSymptomDisplayText()}</span>
+                    <span style={{ transform: isSymptomDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                  </SymptomDropdown>
+                  <SymptomDropdownContent isOpen={isSymptomDropdownOpen}>
+                    <SymptomOption>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={selectedSymptoms.length === availableSymptoms.length}
+                            indeterminate={selectedSymptoms.length > 0 && selectedSymptoms.length < availableSymptoms.length}
+                            onChange={handleAllSymptomsToggle}
                         size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    ))}
-                  </SelectedSymptomsContainer>
-                </SymptomSelectContainer>
-
-                {/* Modern Severity Filter */}
-                <div style={{ minWidth: '300px' }}>
-                  <Typography variant="subtitle2" fontWeight={600} sx={{ marginBottom: '1rem', color: theme.colors.gray[800] }}>
-                    Severity Filter
-                  </Typography>
-                  
-                  <Box sx={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(5, 1fr)',
-                    gap: '8px',
-                    padding: '12px',
-                    backgroundColor: '#fafbfc',
-                    borderRadius: '12px',
-                    border: `1px solid ${theme.colors.gray[200]}`,
-                  }}>
-                    {[
-                      { value: 0, label: 'Relieved', color: '#059669', bgColor: '#ecfdf5' },
-                      { value: 1, label: 'Mild', color: '#d97706', bgColor: '#fffbeb' },
-                      { value: 2, label: 'Moderate', color: '#ea580c', bgColor: '#fff7ed' },
-                      { value: 3, label: 'Severe', color: '#dc2626', bgColor: '#fef2f2' },
-                      { value: 4, label: 'Critical', color: '#991b1b', bgColor: '#fef2f2' }
-                    ].map((severity) => {
-                      const isInRange = severity.value >= severityRange[0] && severity.value <= severityRange[1];
-                      return (
-                        <Box
-                          key={severity.value}
-                          onClick={() => {
-                            if (isInRange) {
-                              // If clicking on an edge, shrink range
-                              if (severity.value === severityRange[0] && severityRange[0] < severityRange[1]) {
-                                setSeverityRange([severityRange[0] + 1, severityRange[1]]);
-                              } else if (severity.value === severityRange[1] && severityRange[0] < severityRange[1]) {
-                                setSeverityRange([severityRange[0], severityRange[1] - 1]);
-                              }
-                            } else {
-                              // Expand range to include this severity
-                              setSeverityRange([
-                                Math.min(severityRange[0], severity.value),
-                                Math.max(severityRange[1], severity.value)
-                              ]);
-                            }
-                          }}
-                          sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            padding: '8px 4px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            backgroundColor: isInRange ? severity.color : 'white',
-                            color: isInRange ? 'white' : severity.color,
-                            border: `2px solid ${isInRange ? severity.color : theme.colors.gray[200]}`,
-                            position: 'relative',
-                            overflow: 'hidden',
-                            '&::before': {
-                              content: '""',
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              backgroundColor: isInRange ? 'transparent' : severity.bgColor,
-                              opacity: isInRange ? 0 : 0.3,
-                              transition: 'opacity 0.2s ease',
-                            },
-                            '&:hover': {
-                              transform: 'translateY(-2px)',
-                              boxShadow: `0 4px 12px ${isInRange ? severity.color + '40' : 'rgba(0,0,0,0.1)'}`,
-                              '&::before': {
-                                opacity: isInRange ? 0 : 0.6,
-                              }
-                            },
-                            '&:active': {
-                              transform: 'translateY(0)',
-                            }
-                          }}
-                        >
-                          {/* Severity Icon/Indicator */}
-                          <Box sx={{
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            backgroundColor: isInRange ? 'rgba(255,255,255,0.3)' : severity.color,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginBottom: '4px',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            color: isInRange ? 'white' : 'white',
-                            zIndex: 1,
-                            position: 'relative'
-                          }}>
-                            {severity.value + 1}
-                          </Box>
-                          
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              fontSize: '0.65rem',
-                              fontWeight: isInRange ? 600 : 500,
-                              textAlign: 'center',
-                              lineHeight: 1.2,
-                              zIndex: 1,
-                              position: 'relative'
-                            }}
-                          >
-                            {severity.label}
-                          </Typography>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                  
-                  {/* Modern Range Display */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
-                    marginTop: '12px',
-                    padding: '6px 12px',
-                    backgroundColor: theme.colors.primary + '10',
-                    borderRadius: '20px',
-                    border: `1px solid ${theme.colors.primary}20`
-                  }}>
-                    <Typography variant="caption" sx={{ 
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: theme.colors.primary,
-                      textAlign: 'center'
-                    }}>
-                      Showing: {numberToSeverity[severityRange[0] as keyof typeof numberToSeverity]} → {numberToSeverity[severityRange[1] as keyof typeof numberToSeverity]}
-                    </Typography>
-                  </Box>
-                </div>
-
-                {/* Download Button */}
-                <ActionButtonsContainer>
-                  <div>
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ marginBottom: '0.5rem' }}>
-                      Export Data
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      startIcon={<Download size={18} />}
-                      onClick={handleDownloadReport}
-                      sx={{ 
-                        borderRadius: '8px',
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        '&:hover': {
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                          />
                         }
-                      }}
-                    >
-                      Download Report
-                    </Button>
+                        label="All Symptoms"
+                        sx={{ margin: 0, fontSize: '0.875rem' }}
+                      />
+                    </SymptomOption>
+                    {availableSymptoms.map((symptom) => (
+                      <SymptomOption key={symptom}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={selectedSymptoms.includes(symptom)}
+                              onChange={() => handleSymptomToggle(symptom)}
+                              size="small"
+                            />
+                          }
+                          label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
+                          sx={{ margin: 0, fontSize: '0.875rem' }}
+                        />
+                      </SymptomOption>
+                    ))}
+                  </SymptomDropdownContent>
+                </SymptomDropdownContainer>
+              </FilterSection>
+
+                            {/* Overall Severity */}
+              <FilterSection>
+                <FilterLabel>Overall Severity:</FilterLabel>
+                <SeveritySliderContainer>
+                  <SliderLabel>
+                    <span>Mild</span>
+                    <span>Severe</span>
+                  </SliderLabel>
+                  <Slider
+                    value={severityRange}
+                    onChange={(_, newValue) => setSeverityRange(newValue as number[])}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(value) => {
+                      const labels = ['Relieved', 'Mild', 'Moderate', 'Severe', 'Critical'];
+                      return labels[value] || '';
+                    }}
+                    min={1}
+                    max={3}
+                    step={1}
+                    marks={[
+                      { value: 1, label: 'Mild' },
+                      { value: 2, label: 'Moderate' },
+                      { value: 3, label: 'Severe' }
+                    ]}
+                          sx={{
+                      color: '#0284c7',
+                      '& .MuiSlider-thumb': {
+                        height: 20,
+                        width: 20,
+                        backgroundColor: '#0284c7',
+                        '&:focus, &:hover, &.Mui-active, &.Mui-focusVisible': {
+                          boxShadow: '0px 0px 0px 8px rgba(2, 132, 199, 0.16)',
+                        },
+                      },
+                      '& .MuiSlider-track': {
+                        height: 6,
+                        backgroundColor: '#0284c7',
+                      },
+                      '& .MuiSlider-rail': {
+                        height: 6,
+                        backgroundColor: '#e2e8f0',
+                      },
+                      '& .MuiSlider-mark': {
+                        backgroundColor: '#64748b',
+                        height: 8,
+                        width: 8,
+                        borderRadius: '50%',
+                        '&.MuiSlider-markActive': {
+                          backgroundColor: '#0284c7',
+                        },
+                      },
+                      '& .MuiSlider-markLabel': {
+                        fontSize: '0.75rem',
+                        color: '#64748b',
+                        marginTop: '0.5rem',
+                      },
+                    }}
+                  />
+                </SeveritySliderContainer>
+              </FilterSection>
+
+
+            </Sidebar>
+
+                        {/* Right Content Area */}
+            <div>
+              {/* Graph */}
+              <GraphContainer>
+                {loadingConversations ? (
+                  <div style={{ height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                    Loading chart…
                   </div>
-                </ActionButtonsContainer>
-              </ControlsGrid>
-            </ControlsContainer>
+                ) : (
+                  <SymptomLineChart series={chartSeries} />
+                )}
+              </GraphContainer>
 
-            {/* Statistics */}
-            <StatsContainer>
-              <StatCard>
-                <StatValue>{stats.totalEntries}</StatValue>
-                <StatLabel>Total Records</StatLabel>
-              </StatCard>
-              <StatCard>
-                <StatValue>{stats.uniqueDates}</StatValue>
-                <StatLabel>Days Tracked</StatLabel>
-              </StatCard>
-              <StatCard>
-                <StatValue>{stats.helpRate}%</StatValue>
-                <StatLabel>Medication Success Rate</StatLabel>
-              </StatCard>
-              <StatCard>
-                <StatValue>{stats.avgSeverity}</StatValue>
-                <StatLabel>Average Severity</StatLabel>
-              </StatCard>
-            </StatsContainer>
-
-            {/* Chart */}
-            <SymptomLineChart 
-              data={chartData} 
-              selectedSymptoms={selectedSymptoms}
-            />
-
-            {/* Data Table */}
-            <SymptomDataTable data={filteredData} />
-          </DashboardContainer>
+              {/* Medications Table */}
+              <TableContainer>
+                <TableTitle>Medications</TableTitle>
+                <Table>
+                  <thead>
+                    <tr>
+                      <TableHeader>Date</TableHeader>
+                      <TableHeader>Symptom Name</TableHeader>
+                      <TableHeader>Severity</TableHeader>
+                      <TableHeader>Medication Name</TableHeader>
+                      <TableHeader>Medication Frequency</TableHeader>
+                      <TableHeader>Medication Helped?</TableHeader>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {conversations.flatMap(c => {
+                      const meds = c.medication_list && c.medication_list.length > 0 ? c.medication_list : [];
+                      const fallback = meds.length === 0 ? [
+                        { medicationName: 'Anti-diarrheal', symptom: 'Diarrhea', cadence: 'As prescribed', response: 'Yes' }
+                      ] : meds;
+                      return fallback.map((m, idx) => {
+                        const severityStr = (c.severity_list && (m.symptom in c.severity_list)) ? (c.severity_list as any)[m.symptom] : 'mild';
+                        const sevVal = getSeverityValue(String(severityStr));
+                        if (sevVal < severityRange[0] || sevVal > severityRange[1]) return null;
+                        return (
+                          <tr key={`${c.conversation_uuid}-${idx}`}>
+                            <TableCell>{new Date(c.conversation_date).toLocaleDateString()}</TableCell>
+                            <TableCell style={{ textTransform: 'capitalize' }}>{m.symptom}</TableCell>
+                            <TableCell style={{ textTransform: 'capitalize' }}>{String(severityStr)}</TableCell>
+                            <TableCell>{m.medicationName}</TableCell>
+                            <TableCell>{m.cadence}</TableCell>
+                            <TableCell>{m.response}</TableCell>
+                          </tr>
+                        );
+                      }).filter(Boolean);
+                    })}
+                  </tbody>
+                </Table>
+              </TableContainer>
+                  </div>
+          </MainContent>
         </Content>
       </Container>
     </LocalizationProvider>

@@ -5,7 +5,7 @@ This module contains Pydantic models for patient dashboard API requests and resp
 """
 
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import date
 from uuid import UUID
 
@@ -15,7 +15,7 @@ class ConversationDataResponse(BaseModel):
     conversation_uuid: UUID
     conversation_date: date
     symptom_list: Optional[List[str]] = None
-    severity_list: Optional[Dict[str, int]] = None
+    severity_list: Optional[Dict[str, Union[int, str]]] = None
     medication_list: Optional[List[Dict[str, Any]]] = None
     conversation_state: str
     overall_feeling: Optional[str] = None

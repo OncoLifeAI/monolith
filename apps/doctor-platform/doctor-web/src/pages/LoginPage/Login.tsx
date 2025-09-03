@@ -57,7 +57,7 @@ const Login: React.FC = () => {
 
   return (
     <Card>
-      <Title>Welcome to OncoLife AI Doctor Portal <span role="img" aria-label="stethoscope">🩺</span></Title>
+      <Title>Welcome to OncoLife AI Doctor Portal</Title>
       <Subtitle>Please enter your credentials to access the doctor dashboard</Subtitle>
       {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
       <StyledForm onSubmit={handleSubmit}>
@@ -87,7 +87,7 @@ const Login: React.FC = () => {
         />
         <ForgotPassword onClick={() => navigate('/forgot-password', { state: { email } })}>Forgot Password?</ForgotPassword>
         <StyledButton variant="primary" type="submit">
-          Sign In to Doctor Portal
+          Sign In
         </StyledButton>
       </StyledForm>
     </Card>

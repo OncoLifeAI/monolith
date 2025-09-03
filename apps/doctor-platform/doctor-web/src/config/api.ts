@@ -13,6 +13,7 @@ export const API_CONFIG = {
     },
     PROFILE: '/profile',
     DASHBOARD: '/dashboard',
+    PATIENT_DASHBOARD: '/patient-dashboard',
     PATIENTS: {
       LIST: '/patients',
       CREATE: '/patients',
