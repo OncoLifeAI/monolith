@@ -27,6 +27,7 @@ const Login: React.FC = () => {
     setError(null);
     try {
       const result = await authenticateLogin(email, password);
+      
       if (result?.data?.requiresPasswordChange || result?.data?.user_status === 'FORCE_CHANGE_PASSWORD') {
         // Navigate to reset password page for doctors with temporary passwords
         navigate('/reset-password');

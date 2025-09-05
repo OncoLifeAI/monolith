@@ -24,7 +24,11 @@ import ProfilePage from './pages/ProfilePage';
 
 function RootRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return null;
+  
+  if (isLoading) {
+    return null;
+  }
+  
   return <Navigate to={isAuthenticated ? '/chat' : '/login'} />;
 }
 

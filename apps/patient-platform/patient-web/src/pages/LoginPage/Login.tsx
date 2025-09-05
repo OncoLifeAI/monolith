@@ -30,10 +30,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await authenticateLogin(email, password);
+      
       if (result?.data?.requiresPasswordChange) {
         navigate('/reset-password');
-      }
-      if (result?.data?.user_status === 'CONFIRMED') {
+      } else if (result?.data?.user_status === 'CONFIRMED') {
         // Navigate back to the page the user was trying to access, or chat as default
         navigate(from, { replace: true });
       }

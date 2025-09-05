@@ -20,7 +20,11 @@ import StaffPage from './pages/Staff/StaffPage';
 
 function RootRedirect() {
   const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return null;
+  
+  if (isLoading) {
+    return null;
+  }
+  
   return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} />;
 }
 
