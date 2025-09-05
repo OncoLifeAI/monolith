@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { Card, Title, Subtitle, InputPassword } from '@oncolife/ui-components';
 import {
   StyledForm,
@@ -10,14 +10,18 @@ import {
   StyledButton
 } from './LoginPage.styles';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { authenticateLogin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+
+  // Get the location the user was trying to access before being redirected to login
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleLogin = async () => {
     setError(null);
@@ -27,8 +31,8 @@ const Login: React.FC = () => {
         // Navigate to reset password page for doctors with temporary passwords
         navigate('/reset-password');
       } else if (result?.data?.user_status === 'CONFIRMED') {
-        // Navigate to doctor dashboard for confirmed users
-        navigate('/dashboard');
+        // Navigate back to the page the user was trying to access, or dashboard as default
+        navigate(from, { replace: true });
       }
     } catch (err: any) {
       let message = 'Login failed';

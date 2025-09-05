@@ -11,15 +11,19 @@ import {
   StyledButton
 } from './LoginPage.styles';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { authenticateLogin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get the location the user was trying to access before being redirected to login
+  const from = location.state?.from?.pathname || '/chat';
 
   const handleLogin = async () => {
     setError(null);
@@ -30,7 +34,8 @@ const Login: React.FC = () => {
         navigate('/reset-password');
       }
       if (result?.data?.user_status === 'CONFIRMED') {
-        navigate('/chat');
+        // Navigate back to the page the user was trying to access, or chat as default
+        navigate(from, { replace: true });
       }
     } catch (err: any) {
       let message = 'Login failed';
